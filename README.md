@@ -13,7 +13,7 @@ Building and executing agentic workflows in production or local environments is 
 
 | Pain Point | How `dt` Cures It |
 |---|---|
-| **Fragility & Rate Limits (429s)** <br> Relying on a single AI provider breaks entire developer workflows when quota limits or network outages hit. | **🔄 Automated Failover Ring** <br> `dt` establishes a robust multi-provider ring. If the selected model fails, it sequentially fails over: `vertexcoder` ➡️ `codex` ➡️ `minimax` ➡️ `opencode` ➡️ `gemini` ➡️ `SELF` until success is guaranteed. |
+| **Fragility & Rate Limits (429s)** <br> Relying on a single AI provider breaks entire developer workflows when quota limits or network outages hit. | **🔄 Best-Effort Failover Ring** <br> `dt` establishes a robust multi-provider ring. If the selected model fails, it sequentially fails over: `vertexcoder` ➡️ `codex` ➡️ `minimax` ➡️ `opencode` ➡️ `gemini` ➡️ `SELF` offering explicit manual fallback if all automated attempts fail. |
 | **Skyrocketing Token Costs** <br> Feeding entire repositories into giant LLMs for minor edits wastes millions of input tokens every run. | **⚡ Lean Token Protocol (LEANBRIEF)** <br> Uses a targeted, compact task contract. The routing engine minimizes file ingestion size, saving up to **80% on prompt tokens** by only context-feeding relevant files. |
 | **Complex Environment Setup** <br> Configuring isolated Python virtualenvs, installing deep SDKs, and managing API keys is a major headache. | **🚀 Autopilot Setup Wizard (`dt setup`)** <br> A fully automated onboarding wizard that handles Python virtual environment creation, pip installs, and cloud provider authentication dynamically. |
 | **Security & Hardcoded Credentials** <br> Hardcoding sensitive developer emails or Cloud Project IDs in git history leads to major security leaks. | **🔒 100% Dynamic Authentication Fallbacks** <br> Zero hardcoded keys or emails. `dt` queries active local `gcloud` sessions and stores configurations outside the project directory (`~/.config/dt/config.json`). |
@@ -48,7 +48,7 @@ Building and executing agentic workflows in production or local environments is 
 To install `dt` globally on your workstation:
 ```bash
 # Clone the repository
-git clone https://github.com/Pixora-dev-ai/delegate-team.git
+git clone https://github.com/imMamdouhaboammar/delegate-team.git
 cd delegate-team
 
 # Link the package globally
@@ -97,10 +97,32 @@ dt vx interactive "Implement a complete Express.js backend with modular JWT auth
 ```
 
 ### 🔌 LLM Gateway Proxy
-Start a highly optimized local LLM Gateway Proxy server on port `8080` (compatible with Cursor / VS Code / IDE integrations):
+> [!WARNING]
+> The proxy server is designed for local development. Do not expose it on a public network without implementing proper authentication and TLS.
+
+Start a highly optimized local LLM Gateway Proxy server on port `3000` (compatible with Cursor / VS Code / IDE integrations):
 ```bash
-dt serve 8080
+dt serve 3000
 ```
+
+### 🌌 Ultra-Premium UI (LobeChat Integration)
+We recommend using **LobeChat** as the ultimate visual interface for `dt`. It provides a stunning, feature-rich web UI while securely using `dt` as its backend orchestrator.
+
+**How to run it via Docker:**
+1. Start the `dt` proxy server:
+   ```bash
+   dt serve 3000
+   ```
+2. Run the LobeChat Docker container pointing to your local `dt` instance:
+   ```bash
+   docker run -d -p 3210:3210 \
+     -e OPENAI_API_KEY=dt-local \
+     -e OPENAI_PROXY_URL=http://host.docker.internal:3000/v1 \
+     -e ACCESS_CODE= \
+     --name lobe-chat \
+     lobehub/lobe-chat
+   ```
+3. Open `http://localhost:3210` in your browser. You now have an ultra-premium UI connected directly to your multi-backend agent dispatcher!
 
 ---
 

@@ -964,7 +964,28 @@ function runOnce(be, opts, stdinData, env, run) {
     const stderrTail = [];
     let extra = {};
 
+    let watchdogTimer = null;
+    let silentCount = 0;
+
+    const resetWatchdog = () => {
+      silentCount = 0;
+    };
+
+    const clearWatchdog = () => {
+      if (watchdogTimer) clearInterval(watchdogTimer);
+    };
+
+    watchdogTimer = setInterval(() => {
+      silentCount++;
+      if (silentCount >= 2) {
+        process.stderr.write(`\\nrelay: watchdog triggered (120s silent). Killing process...\\n`);
+        child.kill("SIGKILL");
+        clearWatchdog();
+      }
+    }, 60000);
+
     child.stdout.on("data", (chunk) => {
+      resetWatchdog();
       const text = chunk.toString();
       stdoutBuf += text;
       if (be.onStdoutLine) {
@@ -978,6 +999,7 @@ function runOnce(be, opts, stdinData, env, run) {
     });
 
     child.stderr.on("data", (chunk) => {
+      resetWatchdog();
       const text = chunk.toString();
       process.stderr.write(text);
       for (const line of text.split("\n")) {
@@ -987,10 +1009,12 @@ function runOnce(be, opts, stdinData, env, run) {
     });
 
     child.on("error", (err) => {
+      clearWatchdog();
       resolveRun({ code: 1, stdoutBuf, stderrTail, extra, spawnError: String(err?.message ?? err) });
     });
 
     child.on("close", (code) => {
+      clearWatchdog();
       resolveRun({ code: code === null ? 1 : code, stdoutBuf, stderrTail, extra });
     });
 
@@ -1069,7 +1093,7 @@ async function dispatch(be, opts, brief, run) {
       const fallbackId = fallbackOpts.resolvedCodexHome ?? fallbackOpts.resolvedProject ?? fallbackOpts.resolvedAccount ?? "fallback";
       process.stderr.write(`\nrelay: account credit exhausted → switching to fallback account (${fallbackId})\n`);
       const switched = await runOnce(be, fallbackOpts, fallbackStdin, fallbackEnv, run);
-      if (switched.code === 0 || !switched.spawnError) {
+      if (switched.code === 0) {
         last = switched;
         Object.assign(opts, fallbackOpts); // update opts so makeResult reflects new account
       }
@@ -1079,11 +1103,18 @@ async function dispatch(be, opts, brief, run) {
   writeFileSync(run.finalPath, last.stdoutBuf, "utf8");
   if (!be.onStdoutLine) appendFileSync(run.eventsPath, last.stdoutBuf, "utf8");
   const finalMessage = be.extractFinalMessage(last.stdoutBuf, run);
+  
+  let touchedFiles = gitTouchedFiles(opts.cd);
+  let status = last.code === 0 ? "completed" : "failed";
+  if (last.code === 0 && touchedFiles && touchedFiles.length === 0) {
+    status = "failed"; // Dud detection
+  }
+
   const result = makeResult({
-    status: last.code === 0 ? "completed" : "failed",
+    status: status,
     exitCode: last.code,
     finalMessage,
-    touchedFiles: gitTouchedFiles(opts.cd),
+    touchedFiles: touchedFiles,
     ...(last.code === 0 ? {} : { stderrTail: last.stderrTail.slice(-20) }),
     ...last.extra,
   });

@@ -1,28 +1,21 @@
-#!/usr/bin/env node
-import http from "node:http";
-import https from "node:https";
-import { readFileSync, existsSync } from "node:fs";
-import { homedir } from "node:os";
-import { join, dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-import { execSync } from "node:child_process";
+import http from 'node:http';
+import https from 'node:https';
+import { readFileSync, existsSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+import { execSync } from 'node:child_process';
+import { WORKSPACE_ROOT } from '../config/index.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const WORKSPACE_ROOT = resolve(__dirname, "..");
-
-const port = process.argv[2] || 3000;
-
-const FALLBACK_RING = {
+const FALLBACK_RING: Record<string, string[]> = {
   gemini: ["openrouter", "openai"],
   openrouter: ["gemini", "openai"],
   openai: ["gemini", "openrouter"]
 };
 
-function readEnvFile(filePath) {
+function readEnvFile(filePath: string): Record<string, string> {
   if (!existsSync(filePath)) return {};
   const content = readFileSync(filePath, "utf8");
-  const env = {};
+  const env: Record<string, string> = {};
   content.split("\n").forEach(line => {
     const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
     if (match) {
@@ -40,8 +33,24 @@ const geminiEnv = readEnvFile(join(homedir(), ".gemini", ".env"));
 const openrouterEnv = readEnvFile(join(homedir(), ".openrouter", ".env"));
 const workspaceEnv = readEnvFile(join(WORKSPACE_ROOT, ".env"));
 
-let cachedGoogleProject = null;
-function getGoogleProject() {
+let cachedConfig: any = null;
+function getLocalConfig() {
+  if (cachedConfig) return cachedConfig;
+  const configPath = join(homedir(), ".config", "dt", "config.json");
+  if (existsSync(configPath)) {
+    try {
+      cachedConfig = JSON.parse(readFileSync(configPath, "utf8"));
+      return cachedConfig;
+    } catch (err) {
+      // Ignore
+    }
+  }
+  cachedConfig = {};
+  return cachedConfig;
+}
+
+let cachedGoogleProject: string | null = null;
+function getGoogleProject(): string {
   if (cachedGoogleProject) return cachedGoogleProject;
   try {
     const proj = execSync("gcloud config get-value project", { encoding: "utf8" }).trim();
@@ -52,32 +61,25 @@ function getGoogleProject() {
   } catch (err) {
     // Ignore
   }
-  const configPath = join(homedir(), ".config", "dt", "config.json");
-  if (existsSync(configPath)) {
-    try {
-      const config = JSON.parse(readFileSync(configPath, "utf8"));
-      if (config.project_id) {
-        cachedGoogleProject = config.project_id;
-        return cachedGoogleProject;
-      }
-    } catch (err) {
-      // Ignore
-    }
+  const config = getLocalConfig();
+  if (config.project_id) {
+    cachedGoogleProject = config.project_id;
+    return cachedGoogleProject;
   }
   cachedGoogleProject = process.env.GOOGLE_CLOUD_PROJECT || "";
   return cachedGoogleProject;
 }
 
-const keys = {
+const keys: Record<string, string | undefined> = {
   gemini: process.env.GEMINI_API_KEY || workspaceEnv.GEMINI_API_KEY || geminiEnv.GEMINI_API_KEY,
   openrouter: process.env.OPENROUTER_API_KEY || workspaceEnv.OPENROUTER_API_KEY || openrouterEnv.OPENROUTER_API_KEY,
   openai: process.env.OPENAI_API_KEY || workspaceEnv.OPENAI_API_KEY
 };
 
-let cachedGcloudToken = null;
+let cachedGcloudToken: string | null = null;
 let cachedTokenExpiry = 0;
 
-function getGcloudToken() {
+function getGcloudToken(): string | null {
   const now = Date.now();
   if (cachedGcloudToken && now < cachedTokenExpiry) {
     return cachedGcloudToken;
@@ -92,10 +94,10 @@ function getGcloudToken() {
   }
 }
 
-function makeRequestStream(urlStr, options, bodyData) {
+function makeRequestStream(urlStr: string, options: any, bodyData?: string): Promise<any> {
   return new Promise((resolve, reject) => {
     const req = https.request(urlStr, options, (res) => {
-      if (res.statusCode >= 400) {
+      if (res.statusCode && res.statusCode >= 400) {
         let errData = "";
         res.on("data", chunk => errData += chunk);
         res.on("end", () => {
@@ -111,18 +113,57 @@ function makeRequestStream(urlStr, options, bodyData) {
   });
 }
 
-function anthropicToOpenAI(payload) {
+function anthropicToOpenAI(payload: any) {
   const newPayload = { ...payload };
   if (newPayload.system) {
     newPayload.messages = [{ role: "system", content: newPayload.system }, ...(newPayload.messages || [])];
     delete newPayload.system;
   }
   
+  if (newPayload.tools) {
+    newPayload.tools = newPayload.tools.map((t: any) => ({
+      type: "function",
+      function: {
+        name: t.name,
+        description: t.description,
+        parameters: t.input_schema
+      }
+    }));
+  }
+
   if (Array.isArray(newPayload.messages)) {
-    newPayload.messages = newPayload.messages.map(msg => {
+    newPayload.messages = newPayload.messages.map((msg: any) => {
       let content = msg.content;
       if (Array.isArray(content)) {
-        content = content.map(block => block.text || "").join("\n");
+        let textContent = "";
+        let tool_calls: any[] = [];
+        
+        for (const block of content) {
+          if (block.type === "text") textContent += block.text;
+          else if (block.type === "tool_use") {
+            tool_calls.push({
+              id: block.id,
+              type: "function",
+              function: {
+                name: block.name,
+                arguments: typeof block.input === "string" ? block.input : JSON.stringify(block.input)
+              }
+            });
+          }
+          else if (block.type === "tool_result") {
+            return {
+              role: "tool",
+              tool_call_id: block.tool_use_id,
+              content: typeof block.content === "string" ? block.content : JSON.stringify(block.content)
+            };
+          }
+        }
+        
+        if (msg.role === "assistant" && tool_calls.length > 0) {
+          return { role: msg.role, content: textContent || null, tool_calls };
+        }
+        
+        content = textContent;
       }
       return { role: msg.role, content };
     });
@@ -130,22 +171,44 @@ function anthropicToOpenAI(payload) {
   return newPayload;
 }
 
-function openAIToAnthropic(responseStr) {
+function openAIToAnthropic(responseStr: string) {
   try {
     const data = JSON.parse(responseStr);
     if (!data.choices) return responseStr;
+    
+    let content: any[] = [];
+    const msg = data.choices[0]?.message;
+    if (msg?.content) {
+      content.push({ type: "text", text: msg.content });
+    }
+    
+    if (msg?.tool_calls) {
+      for (const tc of msg.tool_calls) {
+        if (tc.type === "function") {
+          content.push({
+            type: "tool_use",
+            id: tc.id,
+            name: tc.function.name,
+            input: JSON.parse(tc.function.arguments || "{}")
+          });
+        }
+      }
+    }
+
+    let stop_reason = "end_turn";
+    const fr = data.choices[0]?.finish_reason;
+    if (fr === "tool_calls") stop_reason = "tool_use";
+    else if (fr === "length") stop_reason = "max_tokens";
+    else if (fr === "stop") stop_reason = "end_turn";
+    else if (fr) stop_reason = fr;
+
     return JSON.stringify({
       id: data.id || `msg_${Date.now()}`,
       type: "message",
       role: "assistant",
-      content: [
-        {
-          type: "text",
-          text: data.choices[0]?.message?.content || ""
-        }
-      ],
+      content,
       model: data.model || "unknown",
-      stop_reason: data.choices[0]?.finish_reason === "stop" ? "end_turn" : data.choices[0]?.finish_reason,
+      stop_reason,
       usage: {
         input_tokens: data.usage?.prompt_tokens || 0,
         output_tokens: data.usage?.completion_tokens || 0
@@ -156,48 +219,53 @@ function openAIToAnthropic(responseStr) {
   }
 }
 
-function mapModel(backend, originalModel, useVertex = false) {
+function mapModel(backend: string, originalModel: string, useVertex = false): string {
+  const config = getLocalConfig();
+  const mapping = config.model_mapping || {};
+
   if (!originalModel) {
-    if (backend === "gemini") {
-      return useVertex ? "google/gemini-3.5-flash" : "gemini-1.5-flash";
-    }
-    return backend === "openrouter" ? "google/gemini-3.5-flash" : "gpt-4o";
+    return mapping.default || (backend === "gemini" ? (useVertex ? "google/gemini-3.5-flash" : "gemini-3.5-flash") : "gpt-4o");
   }
 
   const modelLower = originalModel.toLowerCase();
+  
+  // Custom user mappings take precedence
+  if (mapping[modelLower]) {
+    return mapping[modelLower];
+  }
 
   if (backend === "gemini") {
     if (useVertex) {
       if (modelLower.includes("pro") || modelLower.includes("sonnet") || modelLower.includes("opus")) {
-        return "google/gemini-3.1-pro-preview";
+        return "google/gemini-3.1-pro-custom-tools";
       }
       return "google/gemini-3.5-flash";
     } else {
       if (modelLower.includes("pro") || modelLower.includes("sonnet") || modelLower.includes("opus")) {
-        return "gemini-1.5-pro";
+        return "gemini-3.1-pro-custom-tools";
       }
-      return "gemini-1.5-flash";
+      return "gemini-3.5-flash";
     }
   }
 
   if (backend === "openrouter") {
     if (modelLower.includes("sonnet") || modelLower.includes("claude-3-5") || modelLower.includes("claude-3.5")) {
-      return "anthropic/claude-sonnet-4.6";
+      return "anthropic/claude-3.5-sonnet";
     }
     if (modelLower.includes("opus")) {
-      return "anthropic/claude-opus-4.7";
+      return "anthropic/claude-3-opus";
     }
     if (modelLower.includes("haiku")) {
-      return "~anthropic/claude-haiku-latest";
+      return "anthropic/claude-3-5-haiku";
     }
     if (modelLower.includes("gemini") && modelLower.includes("pro")) {
-      return "google/gemini-3.1-pro-preview";
+      return "google/gemini-3.1-pro-custom-tools";
     }
     if (modelLower.includes("gemini") && (modelLower.includes("flash") || modelLower.includes("lite"))) {
       return "google/gemini-3.5-flash";
     }
     if (modelLower.includes("gpt-4") || modelLower.includes("gpt-5") || modelLower.includes("gpt-4o")) {
-      return "openai/gpt-5.5-pro";
+      return "openai/gpt-4o";
     }
     
     if (originalModel.includes("/")) return originalModel;
@@ -214,7 +282,7 @@ function mapModel(backend, originalModel, useVertex = false) {
   return originalModel;
 }
 
-async function handleRequest(req, res) {
+async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse) {
   // CORS Headers
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
@@ -223,6 +291,21 @@ async function handleRequest(req, res) {
   if (req.method === "OPTIONS") {
     res.writeHead(200);
     return res.end();
+  }
+
+  const config = getLocalConfig();
+  const requiredToken = config.proxy_token || process.env.PROXY_TOKEN;
+
+  if (!requiredToken) {
+    res.writeHead(500);
+    return res.end("Proxy requires a configured proxy_token in ~/.config/dt/config.json or PROXY_TOKEN env var");
+  }
+
+  const authHeader = req.headers["authorization"]?.replace(/^Bearer\s+/i, "") || req.headers["x-api-key"] as string;
+
+  if (authHeader !== requiredToken) {
+    res.writeHead(401);
+    return res.end("Unauthorized");
   }
 
   if (req.method !== "POST") {
@@ -243,7 +326,7 @@ async function handleRequest(req, res) {
     return res.end("Bad Request");
   }
 
-  const isAnthropic = req.url.includes("anthropic") || req.headers["x-api-key"] || payload.system !== undefined;
+  const isAnthropic = req.url?.includes("anthropic") || req.headers["x-api-key"] || payload.system !== undefined;
   const isStream = !!payload.stream;
   
   let openAIPayload = { ...payload };
@@ -251,14 +334,12 @@ async function handleRequest(req, res) {
     openAIPayload = anthropicToOpenAI(payload);
   }
 
-  // Prevent OpenRouter credit reservation failure (402) by setting a default max_tokens if omitted
   if (!openAIPayload.max_tokens && !openAIPayload.max_completion_tokens) {
     openAIPayload.max_tokens = 1024;
   }
 
-  const clientKey = req.headers["authorization"]?.replace(/^Bearer\s+/i, "") || req.headers["x-api-key"];
+  const clientKey = authHeader;
 
-  // Prioritize based on local key presence
   let primaryBackend = "gemini";
   const hasGcloud = !!getGcloudToken();
   const hasGeminiKey = !!keys.gemini;
@@ -290,41 +371,43 @@ async function handleRequest(req, res) {
     if (!activeKey) continue;
 
     try {
-      let url, headers;
+      let urlStr: string, headers: any;
       const resolvedModel = mapModel(backend, openAIPayload.model, useVertex);
       const backendPayload = { ...openAIPayload, model: resolvedModel };
 
       if (backend === "gemini") {
         if (useVertex) {
-          url = `https://aiplatform.googleapis.com/v1/projects/${getGoogleProject()}/locations/global/endpoints/openapi/chat/completions`;
+          urlStr = `https://aiplatform.googleapis.com/v1/projects/${getGoogleProject()}/locations/global/endpoints/openapi/chat/completions`;
           headers = {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${activeKey}`
           };
         } else {
-          url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+          urlStr = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
           headers = {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${activeKey}`
           };
         }
       } else if (backend === "openrouter") {
-        url = "https://openrouter.ai/api/v1/chat/completions";
+        urlStr = "https://openrouter.ai/api/v1/chat/completions";
         headers = {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${activeKey}`
         };
       } else if (backend === "openai") {
-        url = "https://api.openai.com/v1/chat/completions";
+        urlStr = "https://api.openai.com/v1/chat/completions";
         headers = {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${activeKey}`
         };
+      } else {
+        continue;
       }
 
       console.log(`[PROXY] Attempting backend [${backend.toUpperCase()}] with model [${resolvedModel}] (Streaming: ${isStream}, Vertex: ${useVertex})`);
 
-      const response = await makeRequestStream(url, { method: "POST", headers }, JSON.stringify(backendPayload));
+      const response = await makeRequestStream(urlStr, { method: "POST", headers }, JSON.stringify(backendPayload));
       
       if (isStream) {
         res.writeHead(200, {
@@ -411,7 +494,7 @@ async function handleRequest(req, res) {
         res.writeHead(response.status, { "Content-Type": "application/json" });
         return res.end(responseData);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(`[PROXY] Backend [${backend.toUpperCase()}] failed or returned error:`, err.status || err.message || err, err.data || "");
     }
   }
@@ -420,7 +503,9 @@ async function handleRequest(req, res) {
   res.end(JSON.stringify({ error: "All backends failed in Fallback Ring" }));
 }
 
-const server = http.createServer(handleRequest);
-server.listen(port, () => {
-  console.log(`LLM Gateway Proxy Server listening on port ${port}`);
-});
+export function runServe(port: number) {
+  const server = http.createServer(handleRequest);
+  server.listen(port, '127.0.0.1', () => {
+    console.log(`\n🚀 Starting LLM Gateway Proxy Server on http://127.0.0.1:${port}...`);
+  });
+}

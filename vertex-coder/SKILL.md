@@ -30,7 +30,7 @@ Before invoking this tool, ensure the following are available on your system:
    ```
 2. **Active GCP Project**: The target project is `fair-geography-494614-q0` (active billing).
 3. **Environment**: The scripts are tied to the Python environment containing `google-genai` and `google-oauth2`:
-   Interpreter: `/Users/mamdouhaboammar/Documents/antigravity/fervent-maxwell/.venv/bin/python3`
+   Interpreter: `~/.config/dt/venv/bin/python3` (or any active virtualenv)
 
 ---
 
@@ -43,7 +43,7 @@ Use this when you want to quickly generate or modify a specific single file.
 
 #### Syntax:
 ```bash
-/Users/mamdouhaboammar/.gemini/config/skills/vertex-coder/scripts/vertex_direct_coder.py <file_path> "<prompt_or_instruction>" [model_name]
+~/.gemini/config/skills/vertex-coder/scripts/vertex_direct_coder.py <file_path> "<prompt_or_instruction>" [model_name]
 ```
 
 #### Supported Models:
@@ -54,10 +54,10 @@ Use this when you want to quickly generate or modify a specific single file.
 #### Examples:
 ```bash
 # Create a new flask app file with gemini-3.5-flash
-/Users/mamdouhaboammar/.gemini/config/skills/vertex-coder/scripts/vertex_direct_coder.py app.py "Create a modular flask application with routes for a user dashboard" gemini-3.5-flash
+~/.gemini/config/skills/vertex-coder/scripts/vertex_direct_coder.py app.py "Create a modular flask application with routes for a user dashboard" gemini-3.5-flash
 
 # Modify an existing file with gemini-3.1-pro
-/Users/mamdouhaboammar/.gemini/config/skills/vertex-coder/scripts/vertex_direct_coder.py app.py "Add JWT-based user authentication and error-handling middleware" gemini-3.1-pro
+~/.gemini/config/skills/vertex-coder/scripts/vertex_direct_coder.py app.py "Add JWT-based user authentication and error-handling middleware" gemini-3.1-pro
 ```
 
 ---
@@ -105,16 +105,16 @@ These guidelines can be loaded in two ways:
 
 #### Syntax:
 ```bash
-/Users/mamdouhaboammar/.gemini/config/skills/vertex-coder/scripts/vertex_interactive_agent.py "<complex_task_prompt>" [model_name] [--skills skill1 skill2 ...]
+~/.gemini/config/skills/vertex-coder/scripts/vertex_interactive_agent.py "<complex_task_prompt>" [model_name] [--skills skill1 skill2 ...]
 ```
 
 #### Examples:
 ```bash
 # Create a math library using TDD (Test-Driven Development) and verify with pytest
-/Users/mamdouhaboammar/.gemini/config/skills/vertex-coder/scripts/vertex_interactive_agent.py "Create a simple matrix multiplication function in matrix_mul.py" gemini-3.5-flash --skills test-driven-development
+~/.gemini/config/skills/vertex-coder/scripts/vertex_interactive_agent.py "Create a simple matrix multiplication function in matrix_mul.py" gemini-3.5-flash --skills test-driven-development
 
 # Execute a complex feature with robust clean-code reviews and planning files
-/Users/mamdouhaboammar/.gemini/config/skills/vertex-coder/scripts/vertex_interactive_agent.py "Add JWT auth and validation to our API" gemini-3.1-pro-custom-tools --skills planning-and-task-breakdown security-and-hardening code-review-and-quality
+~/.gemini/config/skills/vertex-coder/scripts/vertex_interactive_agent.py "Add JWT auth and validation to our API" gemini-3.1-pro-custom-tools --skills planning-and-task-breakdown security-and-hardening code-review-and-quality
 ```
 
 *(Note: If you omit the second parameter, it defaults to `gemini-3.1-pro-custom-tools` for ultimate agentic reasoning and custom tool execution).*

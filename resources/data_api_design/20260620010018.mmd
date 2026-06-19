@@ -1,0 +1,45 @@
+
+classDiagram
+    class Main {
+        +FastAPI app
+        +start_server()
+    }
+    class Config {
+        +str DATABASE_URL
+        +str SECRET_KEY
+        +bool DEBUG
+    }
+    class AuditService {
+        +run_security_audit() dict
+        +check_dependencies() list
+        +generate_report() dict
+    }
+    class DBService {
+        +analyze_slow_queries() list
+        +optimize_indexes() bool
+        +get_db_status() dict
+    }
+    class APIRoutes {
+        -AuditService audit_service
+        -DBService db_service
+        +get_dashboard_stats() dict
+        +trigger_audit() dict
+        +get_db_performance() dict
+    }
+    class DashboardUI {
+        +state stats
+        +render_charts()
+        +fetch_data()
+    }
+    class AuditReportUI {
+        +state report_data
+        +render_vulnerabilities()
+        +download_pdf()
+    }
+
+    Main --> APIRoutes
+    APIRoutes --> Config
+    APIRoutes --> AuditService
+    APIRoutes --> DBService
+    DashboardUI --> APIRoutes : API Call
+    AuditReportUI --> APIRoutes : API Call

@@ -3,21 +3,44 @@
   "version": "1.0.0",
   "description": "Unified Multi-Backend Developer Agent Dispatch & CLI suite",
   "type": "module",
-  "main": "bin/cli.mjs",
+  "main": "dist/cli.js",
   "bin": {
-    "dt": "./bin/cli.mjs",
-    "delegate-team": "./bin/cli.mjs"
+    "dt": "./dist/cli.js",
+    "delegate-team": "./dist/cli.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 0"
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
-    "delegate",
-    "vertex-coder",
+    "delegate-team",
+    "ai",
     "agent",
+    "vertex-coder",
+    "llm",
     "routing",
     "cli"
   ],
-  "author": "",
-  "license": "ISC"
+  "author": "Mamdouh Aboammar",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/imMamdouhaboammar/delegate-team.git"
+  },
+  "bugs": {
+    "url": "https://github.com/imMamdouhaboammar/delegate-team/issues"
+  },
+  "homepage": "https://github.com/imMamdouhaboammar/delegate-team#readme",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  },
+  "dependencies": {
+    "commander": "^15.0.0",
+    "zod": "^4.4.3"
+  }
 }

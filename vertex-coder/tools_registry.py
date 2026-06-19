@@ -16,7 +16,7 @@ def load_global_config():
     return {}
 
 config_data = load_global_config()
-project_id = config_data.get("project_id", "fair-geography-494614-q0")
+project_id = config_data.get("project_id", os.environ.get("GOOGLE_CLOUD_PROJECT"))
 location = config_data.get("location", "us-central1")
 
 def get_gcloud_credentials():
@@ -164,8 +164,8 @@ class MCPProcessClient:
 def list_global_skills() -> str:
     """Lists all available global agent skills on your macOS and their descriptions."""
     paths = [
-        "/Users/mamdouhaboammar/.agents/skills",
-        "/Users/mamdouhaboammar/.gemini/config/skills"
+        os.path.expanduser("~/.agents/skills"),
+        os.path.expanduser("~/.gemini/config/skills")
     ]
     skills = {}
     for p in paths:
@@ -205,8 +205,8 @@ def use_global_skill(skill_name: str, task: str) -> str:
     """
     print(f"\n[Tool Execution] use_global_skill(skill_name='{skill_name}', task_len={len(task)})")
     paths_to_check = [
-        f"/Users/mamdouhaboammar/.agents/skills/{skill_name}/SKILL.md",
-        f"/Users/mamdouhaboammar/.gemini/config/skills/{skill_name}/SKILL.md"
+        os.path.expanduser(f"~/.agents/skills/{skill_name}/SKILL.md"),
+        os.path.expanduser(f"~/.gemini/config/skills/{skill_name}/SKILL.md")
     ]
     skill_content = ""
     for path in paths_to_check:
@@ -257,8 +257,8 @@ def load_superpower_skill(skill_name: str) -> str:
     """
     print(f"\n[Tool Execution] load_superpower_skill(skill_name='{skill_name}')")
     paths_to_check = [
-        f"/Users/mamdouhaboammar/.agents/skills/{skill_name}/SKILL.md",
-        f"/Users/mamdouhaboammar/.gemini/config/skills/{skill_name}/SKILL.md"
+        os.path.expanduser(f"~/.agents/skills/{skill_name}/SKILL.md"),
+        os.path.expanduser(f"~/.gemini/config/skills/{skill_name}/SKILL.md")
     ]
     skill_content = ""
     for path in paths_to_check:
@@ -489,7 +489,11 @@ def add_dependency(package_name: str, dependency_type: str = "auto") -> str:
         package_name: The name of the package/dependency to install (e.g. 'lodash@latest' or 'requests').
         dependency_type: 'auto', 'npm', or 'pip'. If 'auto', we auto-detect based on workspace files.
     """
-    print(f"\n[Tool Execution] add_dependency(package_name='{package_name}', dependency_type='{dependency_type}')")
+    print(f"\\n[Tool Execution] add_dependency(package_name='{package_name}', dependency_type='{dependency_type}')")
+    import re
+    if not re.match(r'^[\\w\\-@/.]+$', package_name):
+        return "Error: Invalid package name."
+        
     try:
         dep_type = dependency_type.lower()
         if dep_type == "auto":
@@ -501,26 +505,29 @@ def add_dependency(package_name: str, dependency_type: str = "auto") -> str:
                 dep_type = "npm" # Default fallback
                 
         if dep_type == "npm":
-            cmd = f"npm install {package_name}"
-            print(f" -> Auto-detected Node.js project. Running: {cmd}")
-            res = run_command(cmd)
-            return f"Success: Node.js package installed:\n{res}"
+            cmd = ["npm", "install", package_name]
+            print(f" -> Auto-detected Node.js project. Running: {' '.join(cmd)}")
+            res = subprocess.run(cmd, shell=False, text=True, capture_output=True)
+            output = f"Exit Code: {res.returncode}\\n\\n[STDOUT]\\n{res.stdout}\\n[STDERR]\\n{res.stderr}"
+            return f"Success: Node.js package installed:\\n{output}"
         elif dep_type == "pip":
             pip_path = "pip"
             if os.path.exists(".venv/bin/pip"):
                 pip_path = ".venv/bin/pip"
             elif os.path.exists("venv/bin/pip"):
                 pip_path = "venv/bin/pip"
-            cmd = f"{pip_path} install {package_name}"
-            print(f" -> Auto-detected Python project. Running: {cmd}")
-            res = run_command(cmd)
+            cmd = [pip_path, "install", package_name]
+            print(f" -> Auto-detected Python project. Running: {' '.join(cmd)}")
+            res = subprocess.run(cmd, shell=False, text=True, capture_output=True)
+            output = f"Exit Code: {res.returncode}\\n\\n[STDOUT]\\n{res.stdout}\\n[STDERR]\\n{res.stderr}"
             # Re-freeze dependencies to requirements.txt if it exists
             if os.path.exists("requirements.txt"):
                 try:
-                    subprocess.run(f"{pip_path} freeze > requirements.txt", shell=True)
+                    with open("requirements.txt", "w") as req_file:
+                        subprocess.run([pip_path, "freeze"], shell=False, text=True, stdout=req_file)
                 except Exception:
                     pass
-            return f"Success: Python dependency installed:\n{res}"
+            return f"Success: Python dependency installed:\\n{output}"
         else:
             return f"Error: Unsupported dependency type '{dependency_type}'."
     except Exception as e:
@@ -532,11 +539,17 @@ def run_command(command: str) -> str:
     Args:
         command: The shell command to run.
     """
-    print(f"\n[Tool Execution] run_command(command='{command}')")
+    print(f"\\n[Tool Execution] run_command(command='{command}')")
+    denylist = ["rm -rf /", "mkfs", "dd if="]
+    if any(bad in command for bad in denylist):
+        return "Error: Command rejected by denylist."
+
+    import shlex
     try:
+        args = shlex.split(command)
         result = subprocess.run(
-            command,
-            shell=True,
+            args,
+            shell=False,
             text=True,
             capture_output=True,
             timeout=60
@@ -557,6 +570,11 @@ def run_command(command: str) -> str:
     except Exception as e:
         return f"Error running command: {str(e)}"
 
+def get_memory_file_path() -> str:
+    path = os.path.expanduser('~/.config/dt/memory/agent_memory.json')
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    return path
+
 def save_memory(key: str, value: str) -> str:
     """Stores a user preference, architectural rule, tech stack choice, or project context
     inside a local persistent `.agent_memory.json` file in the current directory.
@@ -565,8 +583,8 @@ def save_memory(key: str, value: str) -> str:
         key: The configuration or context key (e.g., 'ui_preference', 'tech_stack').
         value: The value/text content to store for this key.
     """
-    print(f"\n[Tool Execution] save_memory(key='{key}', value_len={len(value)})")
-    memory_file = ".agent_memory.json"
+    print(f"\\n[Tool Execution] save_memory(key='{key}', value_len={len(value)})")
+    memory_file = get_memory_file_path()
     try:
         data = {}
         if os.path.exists(memory_file):
@@ -590,8 +608,8 @@ def read_memories() -> str:
     """Reads and returns all stored key-value context memories from `.agent_memory.json`
     in the current directory.
     """
-    print("\n[Tool Execution] read_memories()")
-    memory_file = ".agent_memory.json"
+    print("\\n[Tool Execution] read_memories()")
+    memory_file = get_memory_file_path()
     if not os.path.exists(memory_file):
         return "No local memories or preferences have been stored yet."
     try:
@@ -631,7 +649,7 @@ class ToolsRegistry:
         self.mcp_tools_map = {} # Maps dynamic tool names to (client, original_name)
         
     def load_mcp_servers(self, server_names: list = None):
-        config_path = "/Users/mamdouhaboammar/.gemini/antigravity/mcp_config.json"
+        config_path = os.path.expanduser("~/.gemini/antigravity/mcp_config.json")
         if not os.path.exists(config_path):
             return
             

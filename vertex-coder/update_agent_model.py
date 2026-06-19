@@ -55,7 +55,7 @@ def update_model():
     generative_settings = dialogflow.GenerativeSettings()
     generative_settings.name = f"{agent_path}/generativeSettings"
     generative_settings.language_code = "en"
-    generative_settings.llm_model_settings.model = "gemini-1.5-pro"
+    generative_settings.llm_model_settings.model = "gemini-3.1-pro-custom-tools"
     
     # Specify the update mask (only updating the model setting)
     update_mask = field_mask_pb2.FieldMask(paths=["llm_model_settings.model"])

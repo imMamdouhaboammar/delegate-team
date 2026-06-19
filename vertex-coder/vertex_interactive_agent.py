@@ -1,4 +1,4 @@
-#!/Users/mamdouhaboammar/Documents/antigravity/fervent-maxwell/.venv/bin/python3
+#!/usr/bin/env python3
 import sys
 import os
 import subprocess
@@ -25,7 +25,7 @@ def load_global_config():
     return {}
 
 config_data = load_global_config()
-project_id = config_data.get("project_id", "fair-geography-494614-q0")
+project_id = config_data.get("project_id", os.environ.get("GOOGLE_CLOUD_PROJECT"))
 location = config_data.get("location", "us-central1")
 
 def load_skill_instructions(skill_names: list) -> str:
@@ -34,8 +34,8 @@ def load_skill_instructions(skill_names: list) -> str:
     
     loaded_skills_content = []
     paths = [
-        "/Users/mamdouhaboammar/.agents/skills",
-        "/Users/mamdouhaboammar/.gemini/config/skills"
+        os.path.expanduser("~/.agents/skills"),
+        os.path.expanduser("~/.gemini/config/skills")
     ]
     
     for skill_name in skill_names:

@@ -69,21 +69,36 @@ function structuralScore(brief) {
   else if (brief.length >  400) s += 1;
   else if (brief.length <  200) s -= 3;
   else if (brief.length <  300) s -= 1;
-  const filesBlock = brief.match(/^FILES:([\s\S]*?)(?=^[A-Z]+:|^$)/m)?.[1] ?? "";
-  const fileCount = filesBlock.split("\n").filter(l => l.trim()).length;
+  
+  const filesBlock = brief.match(/^FILES:([\\s\\S]*?)(?=^[A-Z]+:|^$)/m)?.[1] ?? "";
+  const fileLines = filesBlock.split("\\n").filter(l => l.trim());
+  const fileCount = fileLines.length;
   if      (fileCount >= 6) s += 4;
   else if (fileCount >= 4) s += 2;
   else if (fileCount >= 2) s += 1;
   else if (fileCount === 1) s -= 1;
-  const verb = (brief.match(/^TASK\s+\S+:\s*(\w+)/mi)?.[1] ?? "").toLowerCase();
+
+  let fileScore = 0;
+  for (const f of fileLines) {
+    if (f.match(/\\.(ts|js|py|go|rs|cpp|c|java|swift)$/i)) fileScore += 1;
+    if (f.match(/\\.(md|txt|csv|json|yml|yaml|toml|lock|log)$/i)) fileScore -= 1;
+    if (f.match(/\\/(tests|__tests__|test|specs)\\//i)) fileScore += 1;
+    if (f.match(/\\/(docs|documentation)\\//i)) fileScore -= 1;
+  }
+  s += fileScore;
+
+  const verb = (brief.match(/^TASK\\s+\\S+:\\s*(\\w+)/mi)?.[1] ?? "").toLowerCase();
   if (["architect","implement","build","design","refactor","migrate","debug","investigate","optimize","audit","analyze"].some(v => verb.startsWith(v))) s += 3;
   if (["fix","update","add","remove","delete","change","rename","format","bump","patch"].some(v => verb.startsWith(v))) s -= 2;
-  const gates = (brief.match(/^GATES:([\s\S]*?)(?=^[A-Z]+:|^$)/m)?.[1] ?? "").split(";").filter(g => g.trim()).length;
+  
+  const gates = (brief.match(/^GATES:([\\s\\S]*?)(?=^[A-Z]+:|^$)/m)?.[1] ?? "").split(";").filter(g => g.trim()).length;
   if (gates >= 4) s += 3;
   else if (gates >= 2) s += 1;
-  const changeLines = (brief.match(/^CHANGE:([\s\S]*?)(?=^[A-Z]+:|^$)/m)?.[1] ?? "").split("\n").filter(l => l.trim()).length;
+  
+  const changeLines = (brief.match(/^CHANGE:([\\s\\S]*?)(?=^[A-Z]+:|^$)/m)?.[1] ?? "").split("\\n").filter(l => l.trim()).length;
   if (changeLines > 15) s += 2;
   else if (changeLines > 8) s += 1;
+  
   return s;
 }
 
