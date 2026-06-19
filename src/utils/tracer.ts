@@ -47,20 +47,25 @@ export class TraceManager {
   }
 
   public createTrace(parentId: string = 'claude-code-session'): DelegationTrace {
+    const inheritedParentId = process.env.DT_TRACE_ID || parentId;
+    const inheritedDepth = process.env.DT_EXECUTION_DEPTH ? parseInt(process.env.DT_EXECUTION_DEPTH, 10) + 1 : 1;
+    const canCallMetagpt = process.env.DT_CAN_CALL_METAGPT ? process.env.DT_CAN_CALL_METAGPT === 'true' : true;
+    const inheritedMaxRoles = process.env.DT_MAX_ROLES ? parseInt(process.env.DT_MAX_ROLES, 10) : 5;
+
     const traceId = `dt-${new Date().toISOString().split('T')[0]}-${Date.now()}`;
     const trace: DelegationTrace = {
       trace_id: traceId,
-      parent_id: parentId,
+      parent_id: inheritedParentId,
       controller: 'claude-code',
       executor: 'metagpt',
       depth_control: {
         max_depth: 2,
-        current_depth: 1,
+        current_depth: inheritedDepth,
         can_delegate: true,
-        can_call_metagpt: false // Lock out circular MetaGPT calls
+        can_call_metagpt: canCallMetagpt // Respect environment restriction
       },
       budget: {
-        max_roles: 5,
+        max_roles: inheritedMaxRoles,
         max_rounds: 2,
         max_tokens_total: 120000,
         max_runtime_seconds: 900,
@@ -70,6 +75,11 @@ export class TraceManager {
       final_status: 'initialized',
       commit_allowed: false // Enforce Review Gate
     };
+
+    if (!canCallMetagpt) {
+      // Force block if it's explicitly disabled in environment
+      trace.depth_control.current_depth = trace.depth_control.max_depth + 1;
+    }
 
     this.saveTrace(trace);
     return trace;

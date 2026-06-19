@@ -19,10 +19,10 @@ Access to sensitive paths like `.env`, `~/.ssh`, and `~/.config` is blocked unle
 
 ### 2. Command Allowlisting (Mitigates OS Command Injection & LLM08)
 The `run_command` tool enforces a strict allowlist of safe commands (e.g., `npm test`, `git status`).
-Destructive operations (e.g., `rm -rf /`) are hard-blocked. Unlisted commands require an explicit approval flag from the agent.
+Destructive operations (e.g., `rm -rf /`) are hard-blocked. Unsafe or unlisted commands require explicit human approval via setting the `DT_ALLOW_UNSAFE_COMMANDS=true` environment variable; the model cannot bypass this independently.
 
 ### 3. Supply Chain Protection (Mitigates LLM05: Supply Chain Vulnerabilities)
-The `add_dependency` tool blocks direct tarball/zip installations and forces `--ignore-scripts` during npm installs. Installing packages requires explicit approval mode.
+The `add_dependency` tool blocks direct tarball/zip installations, local path references (e.g. `../pkg`), editable installs, and forces `--ignore-scripts` during npm installs. Furthermore, installing packages requires explicit human approval via the `DT_ALLOW_DEP_INSTALL=true` environment variable.
 
 ### 4. Untrusted Skills Protection (Mitigates LLM01: Prompt Injection)
 Global skills (`SKILL.md`) loaded from external directories are treated as untrusted. They cannot be injected as system instructions or directly into the agent's context without a strict allowlist or an explicit `approve_untrusted` flag.
@@ -34,5 +34,8 @@ The local LLM gateway proxy (`dt serve`) is secured by:
 - 2MB request body size limits to prevent local DoS.
 - Automatic log redaction for API keys and Bearer tokens in error outputs.
 
-### 6. Dynamic Authentication
+### 6. MCP Process Security (Mitigates LLM07: Insecure Plugin Design)
+MCP (Model Context Protocol) servers define external tools and resources. By default, `dt` blocks the auto-loading of MCP servers defined in the `mcp_config.json` to prevent malicious config files from triggering arbitrary remote code execution via `subprocess.Popen`. Users must explicitly opt-in by setting `DT_ENABLE_MCP=true`.
+
+### 7. Dynamic Authentication
 `dt` avoids hardcoded keys in `.env` files by using dynamic CLI authentication (e.g., `gcloud auth print-access-token`) where possible and caching config globally in `~/.config/dt/config.json`.

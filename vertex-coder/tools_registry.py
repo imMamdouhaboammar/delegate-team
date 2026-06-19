@@ -298,7 +298,7 @@ def load_superpower_skill(skill_name: str, approve_untrusted: bool = False) -> s
 def resolve_safe_path(p: str) -> str:
     workspace_root = os.path.realpath(os.environ.get("DT_WORKSPACE_ROOT", os.getcwd()))
     real_p = os.path.realpath(os.path.join(workspace_root, p))
-    if not real_p.startswith(workspace_root):
+    if real_p != workspace_root and not real_p.startswith(workspace_root + os.sep):
         raise ValueError(f"Security Error: Path '{p}' escapes the workspace boundary.")
     
     # Block access to common sensitive paths even if within workspace unless explicitly approved
@@ -516,24 +516,27 @@ def line_replace(file_path: str, first_replaced_line: int, last_replaced_line: i
     except Exception as e:
         return f"Error executing line_replace: {str(e)}"
 
-def add_dependency(package_name: str, dependency_type: str = "auto", approve_installation: bool = False) -> str:
+def add_dependency(package_name: str, dependency_type: str = "auto") -> str:
     """Adds a package dependency to the project. Supports Node.js (npm) and Python (pip).
 
     Args:
         package_name: The name of the package/dependency to install (e.g. 'lodash@latest' or 'requests').
         dependency_type: 'auto', 'npm', or 'pip'. If 'auto', we auto-detect based on workspace files.
-        approve_installation: Explicitly approve the installation of this external package.
     """
-    print(f"\n[Tool Execution] add_dependency(package_name='{package_name}', dependency_type='{dependency_type}', approve={approve_installation})")
+    print(f"\n[Tool Execution] add_dependency(package_name='{package_name}', dependency_type='{dependency_type}')")
     import re
     if not re.match(r'^[\w\-@/.]+$', package_name):
         return "Security Error: Invalid package name format."
+        
+    if ".." in package_name or package_name.startswith(".") or package_name.startswith("/") or package_name.startswith("-e"):
+        return "Security Error: Local path dependencies, URLs, and editable installs are blocked."
     
     if package_name.endswith(('.tgz', '.tar.gz', '.zip', '.whl', '.tar')):
         return "Security Error: Direct installation from archives is blocked."
 
+    approve_installation = os.environ.get("DT_ALLOW_DEP_INSTALL") == "true"
     if not approve_installation:
-        return f"Security Error: Installation of '{package_name}' requires explicit approval. If you are sure this package is safe, call add_dependency again with approve_installation=True."
+        return f"Security Error: Installation of '{package_name}' requires explicit approval via DT_ALLOW_DEP_INSTALL=true."
 
     try:
         dep_type = dependency_type.lower()
@@ -574,27 +577,27 @@ def add_dependency(package_name: str, dependency_type: str = "auto", approve_ins
     except Exception as e:
         return f"Error installing dependency: {str(e)}"
 
-def run_command(command: str, allow_unsafe_commands: bool = False) -> str:
+def run_command(command: str) -> str:
     """Executes a terminal/bash command on the macOS system and returns the combined stdout and stderr.
 
     Args:
         command: The shell command to run.
-        allow_unsafe_commands: Explicit approval flag for commands outside the allowlist.
     """
-    print(f"\n[Tool Execution] run_command(command='{command}', allow_unsafe_commands={allow_unsafe_commands})")
+    print(f"\n[Tool Execution] run_command(command='{command}')")
     
     allowlist = [
-        "npm test", "npm run build", "npm run typecheck", "npm run",
-        "pytest", "python -m pytest", "git status", "git diff", "ls", "cat", "node --version", "python --version"
+        "npm test", "npm run build", "npm run typecheck",
+        "pytest", "python -m pytest", "git status", "git diff", "node --version", "python --version"
     ]
     
     command_lower = command.strip().lower()
     is_allowed = any(command_lower == allowed or command_lower.startswith(allowed + " ") for allowed in allowlist)
     
+    allow_unsafe_commands = os.environ.get("DT_ALLOW_UNSAFE_COMMANDS") == "true"
     if not is_allowed and not allow_unsafe_commands:
         return (f"Security Error: Command '{command}' is not in the allowlist. "
                 f"Allowed prefixes: {', '.join(allowlist)}. "
-                "If you are certain this command is safe and necessary, call run_command again with allow_unsafe_commands=True.")
+                "Unsafe commands require DT_ALLOW_UNSAFE_COMMANDS=true.")
 
     # Hard denylist for critical destructive operations even if allow_unsafe_commands=True
     hard_denylist = ["rm -rf /", "rm -rf .", "git reset --hard", "shutdown", "reboot", "mkfs", "dd "]
@@ -706,6 +709,10 @@ class ToolsRegistry:
         self.mcp_tools_map = {} # Maps dynamic tool names to (client, original_name)
         
     def load_mcp_servers(self, server_names: list = None):
+        if os.environ.get("DT_ENABLE_MCP") != "true":
+            print("🔌 [MCP] Auto-loading blocked. Set DT_ENABLE_MCP=true to enable.")
+            return
+
         config_path = os.environ.get("DT_MCP_CONFIG_PATH", os.path.expanduser("~/.gemini/antigravity/mcp_config.json"))
         if not os.path.exists(config_path):
             return
@@ -800,11 +807,22 @@ class ToolsRegistry:
             parameters_json_schema={
                 "type": "object",
                 "properties": {
-                    "package_name": {"type": "string", "description": "The package name to install (e.g., 'lodash@latest' or 'requests')."},
-                    "dependency_type": {"type": "string", "description": "Package type: 'auto', 'npm', or 'pip'.", "enum": ["auto", "npm", "pip"]},
-                    "approve_installation": {"type": "boolean", "description": "Must be true to explicitly approve the installation of this package."}
+                    "package_name": {"type": "string", "description": "The name of the package/dependency to install."},
+                    "dependency_type": {"type": "string", "description": "'auto', 'npm', or 'pip'."}
                 },
                 "required": ["package_name"]
+            }
+        ))
+
+        gemini_tools.append(types.FunctionDeclaration(
+            name="run_command",
+            description="Executes a terminal command from an allowlist.",
+            parameters_json_schema={
+                "type": "object",
+                "properties": {
+                    "command": {"type": "string", "description": "The shell command to run."}
+                },
+                "required": ["command"]
             }
         ))
         

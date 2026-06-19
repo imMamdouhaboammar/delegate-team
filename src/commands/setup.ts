@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, rmSync, symlinkSync, writeFileSync, lstatSync, readlinkSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { homedir } from 'node:os';
 import { spawnSync } from 'node:child_process';
@@ -39,20 +39,58 @@ export function runLinkSkill() {
 
     // Symlink delegate-team
     try {
-      if (existsSync(delTarget)) rmSync(delTarget, { recursive: true, force: true });
-      symlinkSync(DELEGATE_TEAM_PATH, delTarget, "dir");
-      console.log(`  ${C.green}✅ Linked delegate-team${C.reset} -> ${C.dim}${dir}/delegate-team${C.reset}`);
-      linkedCount++;
+      let shouldLink = true;
+      try {
+        const stat = lstatSync(delTarget);
+        if (stat.isSymbolicLink()) {
+          const target = readlinkSync(delTarget);
+          if (target === DELEGATE_TEAM_PATH) {
+            shouldLink = false;
+          } else {
+            rmSync(delTarget, { force: true });
+          }
+        } else {
+          console.log(`  ${C.yellow}⚠️  Directory ${delTarget} exists and is not a symlink. Skipping to prevent data loss.${C.reset}`);
+          shouldLink = false;
+        }
+      } catch (e) {
+        // Doesn't exist
+      }
+      
+      if (shouldLink) {
+        symlinkSync(DELEGATE_TEAM_PATH, delTarget, "dir");
+        console.log(`  ${C.green}✅ Linked delegate-team${C.reset} -> ${C.dim}${dir}/delegate-team${C.reset}`);
+        linkedCount++;
+      }
     } catch (err: any) {
       console.error(`  ${C.red}❌ Failed link delegate-team to ${dir}: ${err.message}${C.reset}`);
     }
 
     // Symlink vertex-coder
     try {
-      if (existsSync(vtxTarget)) rmSync(vtxTarget, { recursive: true, force: true });
-      symlinkSync(VERTEX_CODER_PATH, vtxTarget, "dir");
-      console.log(`  ${C.green}✅ Linked vertex-coder${C.reset}  -> ${C.dim}${dir}/vertex-coder${C.reset}`);
-      linkedCount++;
+      let shouldLink = true;
+      try {
+        const stat = lstatSync(vtxTarget);
+        if (stat.isSymbolicLink()) {
+          const target = readlinkSync(vtxTarget);
+          if (target === VERTEX_CODER_PATH) {
+            shouldLink = false;
+          } else {
+            rmSync(vtxTarget, { force: true });
+          }
+        } else {
+          console.log(`  ${C.yellow}⚠️  Directory ${vtxTarget} exists and is not a symlink. Skipping to prevent data loss.${C.reset}`);
+          shouldLink = false;
+        }
+      } catch (e) {
+        // Doesn't exist
+      }
+
+      if (shouldLink) {
+        symlinkSync(VERTEX_CODER_PATH, vtxTarget, "dir");
+        console.log(`  ${C.green}✅ Linked vertex-coder${C.reset}  -> ${C.dim}${dir}/vertex-coder${C.reset}`);
+        linkedCount++;
+      }
     } catch (err: any) {
       console.error(`  ${C.red}❌ Failed link vertex-coder to ${dir}: ${err.message}${C.reset}`);
     }

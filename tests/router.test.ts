@@ -27,11 +27,26 @@ describe('Router Routing', () => {
     (fs.existsSync as any).mockReturnValue(true);
   });
 
-  it('should route to vertexcoder if score > 5', () => {
+  it('should route to metagpt if score >= 8', () => {
     const spawnSyncMock = cp.spawnSync as any;
     spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
       if (args.some((a: string) => a.includes('opencode-router.mjs'))) {
         return { status: 0, stdout: '{"score": 8}' };
+      }
+      return { status: 0 };
+    });
+
+    runDispatch('architecture task', {});
+
+    const metagptCall = spawnSyncMock.mock.calls.find((c: any) => c[1].some((arg: string) => arg.includes('metagpt')));
+    expect(metagptCall).toBeDefined();
+  });
+
+  it('should route to vertexcoder if 5 <= score < 8', () => {
+    const spawnSyncMock = cp.spawnSync as any;
+    spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
+      if (args.some((a: string) => a.includes('opencode-router.mjs'))) {
+        return { status: 0, stdout: '{"score": 6}' };
       }
       return { status: 0 };
     });

@@ -1,15 +1,12 @@
 import { spawn } from "node:child_process";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { TraceManager } from "../utils/tracer.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { VERTEX_CODER_PATH } from "../config/index.js";
 
 export async function runMetaGPTRouter(prompt: string, options: any = {}): Promise<number> {
-  const venvDir = join(__dirname, "..", "..", "vertex-coder", ".venv");
+  const venvDir = join(VERTEX_CODER_PATH, ".venv");
   const pythonPath = join(venvDir, "bin", "python3");
-  const metagptCliPath = join(venvDir, "bin", "metagpt");
+  const metagptAdapterPath = join(VERTEX_CODER_PATH, "dt_metagpt_adapter.py");
 
   const tracer = new TraceManager();
   const trace = tracer.createTrace();
@@ -23,28 +20,34 @@ export async function runMetaGPTRouter(prompt: string, options: any = {}): Promi
   console.log(`📋 Trace ID: ${trace.trace_id}`);
   console.log(`📋 Prompt: "${prompt}"\n`);
   
-  const metagptArgs = [metagptCliPath, prompt, "--project-path", process.cwd()];
+  const metagptArgs = [metagptAdapterPath, prompt, "--project-path", process.cwd()];
   
+  const metagptEnv: Record<string, string> = {};
+
   if (options.planOnly) {
     console.log(`🛡️  Guardrail Active: [--plan-only] MetaGPT will generate plan/architecture only.`);
-    // Map to MetaGPT config or args if natively supported, or pass as custom flag if extended
     metagptArgs.push("--plan-only");
+    metagptEnv['DT_PLAN_ONLY'] = 'true';
   }
   if (options.approveWrite) {
     console.log(`🛡️  Guardrail Active: [--approve-write] Requiring human approval before disk writes.`);
     metagptArgs.push("--approve-write");
+    metagptEnv['DT_APPROVE_WRITE'] = 'true';
   }
   if (options.workspaceOnly) {
     console.log(`🛡️  Guardrail Active: [--workspace-only] Sandboxing to workspace root.`);
     metagptArgs.push("--workspace-only");
+    metagptEnv['DT_WORKSPACE_ONLY'] = 'true';
   }
   if (options.noInstall) {
     console.log(`🛡️  Guardrail Active: [--no-install] Package installation blocked.`);
     metagptArgs.push("--no-install");
+    metagptEnv['DT_NO_INSTALL'] = 'true';
   }
   if (options.dryRun) {
     console.log(`🛡️  Guardrail Active: [--dry-run] Simulating workflow safely.`);
     metagptArgs.push("--dry-run");
+    metagptEnv['DT_DRY_RUN'] = 'true';
   }
 
   console.log(`\x1b[90mEnsure your dt proxy server is running (dt serve 3000) for MetaGPT to connect to the backend.\x1b[0m\n`);
@@ -54,6 +57,7 @@ export async function runMetaGPTRouter(prompt: string, options: any = {}): Promi
     // Pass execution bounds via Env
     const execEnv = { 
       ...process.env,
+      ...metagptEnv,
       DT_TRACE_ID: trace.trace_id,
       DT_MAX_ROLES: trace.budget.max_roles.toString(),
       DT_MAX_TOKENS: trace.budget.max_tokens_total.toString(),
@@ -78,7 +82,7 @@ export async function runMetaGPTRouter(prompt: string, options: any = {}): Promi
         trace.final_status = 'ready_for_review';
       } else {
         console.log(`\n⚠️ MetaGPT exited with code ${code}.`);
-        trace.final_status = 'executing'; // or failed depending on logic
+        trace.final_status = 'failed';
       }
       
       // Save trace after execution

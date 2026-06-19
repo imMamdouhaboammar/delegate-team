@@ -21,7 +21,11 @@
     "delegate-team",
     "vertex-coder",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "SECURITY.md",
+    "DELEGATION_PROTOCOL.md",
+    "ROLE_ROUTING.md",
+    "TRACE_SCHEMA.md"
   ],
   "keywords": [
     "delegate-team",

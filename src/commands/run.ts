@@ -69,7 +69,8 @@ ${rawPrompt}
 
   const briefText = readFileSync(briefFile, "utf8");
 
-  // 2. Resolve default backend via Router if not specified
+    // 2. Resolve default backend via Router if not specified
+  let forceMetagpt = false;
   if (!backend) {
     console.log(`${C.dim}Running OpenCode Router to evaluate task complexity...${C.reset}`);
     try {
@@ -82,7 +83,10 @@ ${rawPrompt}
         const routeData = JSON.parse(routerProc.stdout.trim());
         console.log(`${C.bold}${C.cyan}Router Complexity Score: ${routeData.score}${C.reset}`);
         // Choose best backend based on score
-        if (routeData.score > 5) {
+        if (routeData.score >= 8) {
+          backend = "metagpt";
+          console.log(`  🎯 Routing to: ${C.bold}${C.magenta}metagpt${C.reset} (MetaGPT Team Orchestrator for complex tasks)`);
+        } else if (routeData.score > 5) {
           backend = "vertexcoder";
           console.log(`  🎯 Routing to: ${C.bold}${C.green}vertexcoder${C.reset} (Premium Gemini AI via GCP SDK)`);
         } else if (routeData.score > 0) {
@@ -105,42 +109,52 @@ ${rawPrompt}
     if (!backend) {
       backend = "vertexcoder";
     }
-    
-    forwardArgs.push("--backend", backend as string);
+  }
+  
+  if (backend === "metagpt") {
+    forceMetagpt = true;
   } else {
-    forwardArgs.push("--backend", backend);
+    forwardArgs.push("--backend", backend as string);
   }
 
   // 3. Dispatch & Automatic Fallback Ring
-  let activeBackend = backend as string;
-  let currentChain = [activeBackend, ...(FALLBACK_RING[activeBackend] || [])];
   let success = false;
+  if (forceMetagpt) {
+    console.log(`\n${C.bold}${C.magenta}🚀 Dispatching task to team orchestrator: [METAGPT]${C.reset}`);
+    // We import runMetaGPTRouter dynamically to avoid circular dependencies if any, but since it's just a run we can spawn the CLI
+    const dtCli = process.argv[1] || process.argv[0]; 
+    const proc = spawnSync(process.execPath, [dtCli, "metagpt", rawPrompt || briefText], { stdio: "inherit" });
+    success = proc.status === 0;
+  } else {
+    let activeBackend = backend as string;
+    let currentChain = [activeBackend, ...(FALLBACK_RING[activeBackend] || [])];
 
-  for (let attempt = 0; attempt < currentChain.length; attempt++) {
-    activeBackend = currentChain[attempt];
-    console.log(`\n${C.bold}${C.magenta}🚀 Dispatching task to backend: [${activeBackend.toUpperCase()}] (Attempt ${attempt + 1}/${currentChain.length})${C.reset}`);
-    console.log(`${C.dim}relay.mjs ${forwardArgs.filter(a => a !== "--backend" && a !== activeBackend).join(" ")} --backend ${activeBackend}${C.reset}\n`);
+    for (let attempt = 0; attempt < currentChain.length; attempt++) {
+      activeBackend = currentChain[attempt];
+      console.log(`\n${C.bold}${C.magenta}🚀 Dispatching task to backend: [${activeBackend.toUpperCase()}] (Attempt ${attempt + 1}/${currentChain.length})${C.reset}`);
+      console.log(`${C.dim}relay.mjs ${forwardArgs.filter(a => a !== "--backend" && a !== activeBackend).join(" ")} --backend ${activeBackend}${C.reset}\n`);
 
-    const runArgs = [...forwardArgs];
-    const bIndex = runArgs.indexOf("--backend");
-    if (bIndex !== -1) {
-      runArgs[bIndex + 1] = activeBackend;
-    }
+      const runArgs = [...forwardArgs];
+      const bIndex = runArgs.indexOf("--backend");
+      if (bIndex !== -1) {
+        runArgs[bIndex + 1] = activeBackend;
+      }
 
-    const start = Date.now();
-    const proc = spawnSync(process.execPath, [RELAY_SCRIPT, ...runArgs], { stdio: "inherit" });
-    const durationSec = ((Date.now() - start) / 1000).toFixed(1);
+      const start = Date.now();
+      const proc = spawnSync(process.execPath, [RELAY_SCRIPT, ...runArgs], { stdio: "inherit" });
+      const durationSec = ((Date.now() - start) / 1000).toFixed(1);
 
-    if (proc.status === 0) {
-      console.log(`\n${C.bold}${C.green}✅ Task completed successfully by [${activeBackend.toUpperCase()}] in ${durationSec}s!${C.reset}\n`);
-      success = true;
-      break;
-    } else {
-      console.log(`\n${C.bold}${C.yellow}⚠️  Backend [${activeBackend.toUpperCase()}] failed or exited with status code ${proc.status || "N/A"} after ${durationSec}s.${C.reset}`);
-      
-      const nextBackend = currentChain[attempt + 1];
-      if (nextBackend) {
-        console.log(`${C.bold}${C.yellow}🔄 Activating Automated Failover Ring → Routing to next backup: [${nextBackend.toUpperCase()}]${C.reset}`);
+      if (proc.status === 0) {
+        console.log(`\n${C.bold}${C.green}✅ Task completed successfully by [${activeBackend.toUpperCase()}] in ${durationSec}s!${C.reset}\n`);
+        success = true;
+        break;
+      } else {
+        console.log(`\n${C.bold}${C.yellow}⚠️  Backend [${activeBackend.toUpperCase()}] failed or exited with status code ${proc.status || "N/A"} after ${durationSec}s.${C.reset}`);
+        
+        const nextBackend = currentChain[attempt + 1];
+        if (nextBackend) {
+          console.log(`${C.bold}${C.yellow}🔄 Activating Automated Failover Ring → Routing to next backup: [${nextBackend.toUpperCase()}]${C.reset}`);
+        }
       }
     }
   }
