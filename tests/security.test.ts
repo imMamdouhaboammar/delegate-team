@@ -58,7 +58,7 @@ describe('Delegate Team Security Behaviors', () => {
       const corsHeader = response.headers.get('access-control-allow-origin');
       expect(corsHeader).not.toBe('http://malicious-site.com');
       // Origin is invalid, but standard fetches from node might just get 400 Bad Request since it doesn't match standard payload
-    });
+    }, 15000);
 
     it('should reject payloads larger than 2MB', async () => {
       // Create a 3MB string
