@@ -1,5 +1,8 @@
 import { existsSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 import { homedir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import readline from 'node:readline';

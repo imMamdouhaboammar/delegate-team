@@ -51,7 +51,7 @@ function getLocalConfig() {
 
 let cachedGoogleProject: string | null = null;
 function getGoogleProject(): string {
-  if (cachedGoogleProject) return cachedGoogleProject;
+  if (cachedGoogleProject) return cachedGoogleProject as string;
   try {
     const proj = execSync("gcloud config get-value project", { encoding: "utf8" }).trim();
     if (proj && proj !== "(unset)") {
@@ -64,10 +64,10 @@ function getGoogleProject(): string {
   const config = getLocalConfig();
   if (config.project_id) {
     cachedGoogleProject = config.project_id;
-    return cachedGoogleProject;
+    return cachedGoogleProject as string;
   }
   cachedGoogleProject = process.env.GOOGLE_CLOUD_PROJECT || "";
-  return cachedGoogleProject;
+  return cachedGoogleProject as string;
 }
 
 const keys: Record<string, string | undefined> = {

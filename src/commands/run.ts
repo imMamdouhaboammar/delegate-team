@@ -55,7 +55,7 @@ CHANGE:
 ${rawPrompt}
 `;
     writeFileSync(briefFile, briefContent, "utf8");
-    forwardArgs.push("--brief", briefFile);
+    forwardArgs.push("--brief", briefFile ?? "");
     isTempBrief = true;
     console.log(`${C.dim}Generated temporary brief file: ${briefFile}${C.reset}`);
   } else if (briefFile) {
