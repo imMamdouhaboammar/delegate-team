@@ -3,7 +3,23 @@
 # ═╩╝╚═╝╩═╝╚═╝╚═╝╩ ╩ ╩ ╚═╝   ╩ ╚═╝╩ ╩╩ ╩
 # Unified Developer Agent Dispatch Suite & CLI
 
-`dt` (Delegate Team) is a powerful, lightweight TypeScript CLI tool that acts as a **Master Orchestrator** for developer agent tasks. It allows you to take any coding task, automatically route it to the optimal backend AI agent, execute it directly in your local workspace, and automatically manage **seamless, multi-backend failover** if any agent fails.
+`dt` (Delegate Team) is a powerful, lightweight TypeScript CLI tool that acts as a **Policy Gateway and Delegation Runtime**. `dt` can let Claude Code delegate complex tasks to a MetaGPT software team while Claude Code stays in control of review and commit. It allows you to take any coding task, automatically route it to the optimal backend AI agent (or a multi-agent team), execute it directly in your local workspace, and manage **seamless, multi-backend failover** if any agent fails.
+
+---
+
+## 🧠 Nested Agent Orchestration Architecture
+
+Unlike standard tools that just "support MetaGPT", `dt` is built as a **Claude-supervised MetaGPT delegation runtime**. This creates a 4-layer orchestration model:
+
+1. **Claude Code (Controller)**: Writes the technical brief, supervises execution, and holds final commit authority.
+2. **`dt` (Policy Gateway)**: Enforces budgets, selects modes, and prevents excessive agency.
+3. **MetaGPT (Team Orchestrator)**: Decomposes tasks into specialized roles (Architect, Coder, Reviewer).
+4. **Backend Models (Workers)**: e.g., VertexCoder, Codex, MiniMax execute the roles based on capabilities.
+
+**Learn more about our core protocols:**
+- 📜 [Delegation Protocol](./DELEGATION_PROTOCOL.md): Strict boundaries, untrusted output handling, and security policies.
+- 🔀 [Role Routing](./ROLE_ROUTING.md): How MetaGPT roles are dynamically mapped to specific models via capability tags.
+- 🕵️ [Trace Schema](./TRACE_SCHEMA.md): JSON schema to prevent circular delegation, control depth, and avoid cost explosions.
 
 ---
 
@@ -14,7 +30,7 @@ Building and executing agentic workflows in production or local environments is 
 | Pain Point | How `dt` Cures It |
 |---|---|
 | **Fragility & Rate Limits (429s)** <br> Relying on a single AI provider breaks entire developer workflows when quota limits or network outages hit. | **🔄 Best-Effort Failover Ring** <br> `dt` establishes a robust multi-provider ring. If the selected model fails, it sequentially fails over: `vertexcoder` ➡️ `codex` ➡️ `minimax` ➡️ `opencode` ➡️ `gemini` ➡️ `SELF` offering explicit manual fallback if all automated attempts fail. |
-| **Skyrocketing Token Costs** <br> Feeding entire repositories into giant LLMs for minor edits wastes millions of input tokens every run. | **⚡ Lean Token Protocol (LEANBRIEF)** <br> Uses a targeted, compact task contract. The routing engine minimizes file ingestion size, saving up to **80% on prompt tokens** by only context-feeding relevant files. |
+| **Skyrocketing Token Costs** <br> Feeding entire repositories into giant LLMs for minor edits wastes millions of input tokens every run. | **⚡ Lean Token Protocol (LEANBRIEF)** <br> Uses a targeted, compact task contract. The routing engine minimizes file ingestion size, which can significantly reduce prompt token usage by only context-feeding relevant files. |
 | **Complex Environment Setup** <br> Configuring isolated Python virtualenvs, installing deep SDKs, and managing API keys is a major headache. | **🚀 Autopilot Setup Wizard (`dt setup`)** <br> A fully automated onboarding wizard that handles Python virtual environment creation, pip installs, and cloud provider authentication dynamically. |
 | **Security & Hardcoded Credentials** <br> Hardcoding sensitive developer emails or Cloud Project IDs in git history leads to major security leaks. | **🔒 100% Dynamic Authentication Fallbacks** <br> Zero hardcoded keys or emails. `dt` queries active local `gcloud` sessions and stores configurations outside the project directory (`~/.config/dt/config.json`). |
 | **Limited Out-of-the-Box Skills** <br> Standard terminal-based coding agents are restricted by their client host tools and lack advanced multi-file capabilities. | **🔗 Skill Linker (`dt link-skill`)** <br> Instantly symlinks the orchestrators directly into local Claude Code and Gemini CLI customization paths as global, high-performance capabilities. |
@@ -103,6 +119,22 @@ Start a full autonomous loop to write code, install packages, run tests, and sel
 dt vx interactive "Implement a complete Express.js backend with modular JWT authorization"
 ```
 
+### 🏢 MetaGPT AI Software Company (Multi-Agent Workflow)
+While `dt run` and `dt vx` are designed for focused engineering tasks and single-backend dispatch, `dt metagpt` spins up an entire AI software company. Use this mode when your task requires a deep, multi-agent workflow (Product Manager -> Architect -> Engineer -> QA).
+
+```bash
+# Launch a full AI software company for complex architectures
+dt metagpt "Build a complete multiplayer snake game using websockets"
+```
+
+Because MetaGPT operates with high autonomy and can generate many files or install dependencies, `dt` provides strict guardrails:
+- `--plan-only`: Generate plan and architecture without writing code.
+- `--approve-write`: Require human approval before writing to disk.
+- `--workspace-only`: Strictly sandbox MetaGPT to the current workspace root.
+- `--no-install`: Prevent MetaGPT from installing package dependencies.
+- `--dry-run`: Simulate workflow without making destructive changes.
+
+
 ### 🔌 LLM Gateway Proxy
 > [!WARNING]
 > The proxy server is designed for local development. Do not expose it on a public network without implementing proper authentication and TLS.
@@ -141,15 +173,15 @@ If you are using a coding agent (e.g., Claude Code, Cursor, Gemini CLI) to work 
 
 ```text
 =================== COPY FOR YOUR AGENT ===================
-SYSTEM DIRECTIVE: You are an agentic developer assistant. We have integrated the "Delegate Team (dt)" orchestration suite. Please execute the following tasks to align your local environment:
-1. Verify the repository is cloned and linked globally. If not, link it:
-   run commands: npm install && npm run build && npm link
-2. Trigger the Autopilot Onboarding Wizard to build python environments and verify cloud dependencies:
-   run command: dt setup
-3. Automatically register the orchestrators as global capabilities on this workstation:
-   run command: dt link-skill
+SYSTEM DIRECTIVE: You are an agentic developer assistant. We have integrated the "Delegate Team (dt)" orchestration suite. Please execute the following tasks to align your local environment, but ALWAYS ask for user approval before running commands:
+1. Verify the repository is cloned and linked globally. If not, ask the user if you should run:
+   npm install && npm run build && npm link
+2. Ask the user for permission to trigger the Autopilot Onboarding Wizard to build python environments and verify cloud dependencies using:
+   dt setup
+3. Ask the user for permission to automatically register the orchestrators as global capabilities on this workstation using:
+   dt link-skill
 4. Run a system scan to verify all 6 backends are green:
-   run command: dt check
+   dt check
 5. Guide the user on selecting complex multi-file tasks and orchestrating them via:
    dt run "your-prompt"
 ===========================================================

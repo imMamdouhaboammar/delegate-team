@@ -196,14 +196,22 @@ def list_global_skills() -> str:
         output.append(f"- **{s_name}**: {s_desc}")
     return "\n".join(output) if output else "No global skills found."
 
-def use_global_skill(skill_name: str, task: str) -> str:
+def use_global_skill(skill_name: str, task: str, approve_untrusted: bool = False) -> str:
     """Loads and executes a global skill's instructions on a specific task/query.
 
     Args:
         skill_name: The name of the global skill (e.g. 'firebase-basics', 'code-simplification').
         task: The specific task or code query to process using that skill's rules.
+        approve_untrusted: Must be True if the skill is not in the trusted allowlist.
     """
-    print(f"\n[Tool Execution] use_global_skill(skill_name='{skill_name}', task_len={len(task)})")
+    print(f"\n[Tool Execution] use_global_skill(skill_name='{skill_name}', task_len={len(task)}, approve={approve_untrusted})")
+    
+    TRUSTED_SKILLS = ["test-driven-development", "code-simplification", "graphify", "doubt-driven-development"]
+    if skill_name not in TRUSTED_SKILLS and not approve_untrusted:
+        return (f"Security Error: Skill '{skill_name}' is not in the trusted allowlist. "
+                "Loading untrusted skills as system instructions is blocked by default to prevent prompt injection. "
+                "If you are certain this skill is safe, call use_global_skill again with approve_untrusted=True.")
+
     paths_to_check = [
         os.environ.get("DT_SKILLS_PATH_1", os.path.expanduser("~/.agents/skills")) + f"/{skill_name}/SKILL.md",
         os.environ.get("DT_SKILLS_PATH_2", os.path.expanduser("~/.gemini/config/skills")) + f"/{skill_name}/SKILL.md"
@@ -249,13 +257,21 @@ def use_global_skill(skill_name: str, task: str) -> str:
     except Exception as e:
         return f"Error executing nested skill '{skill_name}': {str(e)}"
 
-def load_superpower_skill(skill_name: str) -> str:
+def load_superpower_skill(skill_name: str, approve_untrusted: bool = False) -> str:
     """Loads a global skill's full instructions (SKILL.md) directly into the agent's context.
 
     Args:
         skill_name: The name of the global skill (e.g. 'test-driven-development', 'graphify', 'doubt-driven-development').
+        approve_untrusted: Must be True if the skill is not in the trusted allowlist.
     """
-    print(f"\n[Tool Execution] load_superpower_skill(skill_name='{skill_name}')")
+    print(f"\n[Tool Execution] load_superpower_skill(skill_name='{skill_name}', approve={approve_untrusted})")
+    
+    TRUSTED_SKILLS = ["test-driven-development", "code-simplification", "graphify", "doubt-driven-development"]
+    if skill_name not in TRUSTED_SKILLS and not approve_untrusted:
+        return (f"Security Error: Skill '{skill_name}' is not in the trusted allowlist. "
+                "Loading untrusted skills directly into context can lead to indirect prompt injection. "
+                "If you are certain this skill is safe, call load_superpower_skill again with approve_untrusted=True.")
+
     paths_to_check = [
         os.environ.get("DT_SKILLS_PATH_1", os.path.expanduser("~/.agents/skills")) + f"/{skill_name}/SKILL.md",
         os.environ.get("DT_SKILLS_PATH_2", os.path.expanduser("~/.gemini/config/skills")) + f"/{skill_name}/SKILL.md"
@@ -279,6 +295,19 @@ def load_superpower_skill(skill_name: str) -> str:
 # 3. Base Workspace Tools
 # =====================================================================
 
+def resolve_safe_path(p: str) -> str:
+    workspace_root = os.path.realpath(os.environ.get("DT_WORKSPACE_ROOT", os.getcwd()))
+    real_p = os.path.realpath(os.path.join(workspace_root, p))
+    if not real_p.startswith(workspace_root):
+        raise ValueError(f"Security Error: Path '{p}' escapes the workspace boundary.")
+    
+    # Block access to common sensitive paths even if within workspace unless explicitly approved
+    sensitive_patterns = [".env", ".ssh", ".config", "credentials", "secret"]
+    if any(pat in real_p for pat in sensitive_patterns) and os.environ.get("DT_ALLOW_SENSITIVE_FILES") != "true":
+        raise ValueError(f"Security Error: Access to sensitive file '{p}' is blocked by default.")
+        
+    return real_p
+
 def list_dir(dir_path: str = ".") -> str:
     """Lists the contents of a directory.
 
@@ -287,6 +316,7 @@ def list_dir(dir_path: str = ".") -> str:
     """
     print(f"\n[Tool Execution] list_dir(dir_path='{dir_path}')")
     try:
+        dir_path = resolve_safe_path(dir_path)
         if not os.path.exists(dir_path):
             return f"Error: Directory '{dir_path}' does not exist."
         if not os.path.isdir(dir_path):
@@ -312,6 +342,7 @@ def read_file(file_path: str) -> str:
     """
     print(f"\n[Tool Execution] read_file(file_path='{file_path}')")
     try:
+        file_path = resolve_safe_path(file_path)
         if not os.path.exists(file_path):
             return f"Error: File '{file_path}' does not exist."
         if os.path.isdir(file_path):
@@ -332,6 +363,7 @@ def write_file(file_path: str, content: str) -> str:
     """
     print(f"\n[Tool Execution] write_file(file_path='{file_path}', content_len={len(content)})")
     try:
+        file_path = resolve_safe_path(file_path)
         parent_dir = os.path.dirname(file_path)
         if parent_dir and not os.path.exists(parent_dir):
             os.makedirs(parent_dir, exist_ok=True)
@@ -353,6 +385,7 @@ def grep_search(query: str, search_path: str = ".") -> str:
     import re
     print(f"\n[Tool Execution] grep_search(query='{query}', search_path='{search_path}')")
     try:
+        search_path = resolve_safe_path(search_path)
         if not os.path.exists(search_path):
             return f"Error: Search path '{search_path}' does not exist."
         
@@ -411,6 +444,7 @@ def line_replace(file_path: str, first_replaced_line: int, last_replaced_line: i
     import re
     print(f"\n[Tool Execution] line_replace(file_path='{file_path}', range=[{first_replaced_line}, {last_replaced_line}])")
     try:
+        file_path = resolve_safe_path(file_path)
         if not os.path.exists(file_path):
             return f"Error: File '{file_path}' does not exist."
         if os.path.isdir(file_path):
@@ -482,18 +516,25 @@ def line_replace(file_path: str, first_replaced_line: int, last_replaced_line: i
     except Exception as e:
         return f"Error executing line_replace: {str(e)}"
 
-def add_dependency(package_name: str, dependency_type: str = "auto") -> str:
+def add_dependency(package_name: str, dependency_type: str = "auto", approve_installation: bool = False) -> str:
     """Adds a package dependency to the project. Supports Node.js (npm) and Python (pip).
 
     Args:
         package_name: The name of the package/dependency to install (e.g. 'lodash@latest' or 'requests').
         dependency_type: 'auto', 'npm', or 'pip'. If 'auto', we auto-detect based on workspace files.
+        approve_installation: Explicitly approve the installation of this external package.
     """
-    print(f"\\n[Tool Execution] add_dependency(package_name='{package_name}', dependency_type='{dependency_type}')")
+    print(f"\n[Tool Execution] add_dependency(package_name='{package_name}', dependency_type='{dependency_type}', approve={approve_installation})")
     import re
-    if not re.match(r'^[\\w\\-@/.]+$', package_name):
-        return "Error: Invalid package name."
-        
+    if not re.match(r'^[\w\-@/.]+$', package_name):
+        return "Security Error: Invalid package name format."
+    
+    if package_name.endswith(('.tgz', '.tar.gz', '.zip', '.whl', '.tar')):
+        return "Security Error: Direct installation from archives is blocked."
+
+    if not approve_installation:
+        return f"Security Error: Installation of '{package_name}' requires explicit approval. If you are sure this package is safe, call add_dependency again with approve_installation=True."
+
     try:
         dep_type = dependency_type.lower()
         if dep_type == "auto":
@@ -505,11 +546,11 @@ def add_dependency(package_name: str, dependency_type: str = "auto") -> str:
                 dep_type = "npm" # Default fallback
                 
         if dep_type == "npm":
-            cmd = ["npm", "install", package_name]
+            cmd = ["npm", "install", package_name, "--ignore-scripts"]
             print(f" -> Auto-detected Node.js project. Running: {' '.join(cmd)}")
             res = subprocess.run(cmd, shell=False, text=True, capture_output=True)
-            output = f"Exit Code: {res.returncode}\\n\\n[STDOUT]\\n{res.stdout}\\n[STDERR]\\n{res.stderr}"
-            return f"Success: Node.js package installed:\\n{output}"
+            output = f"Exit Code: {res.returncode}\n\n[STDOUT]\n{res.stdout}\n[STDERR]\n{res.stderr}"
+            return f"Success: Node.js package installed (scripts ignored for safety):\n{output}"
         elif dep_type == "pip":
             pip_path = "pip"
             if os.path.exists(".venv/bin/pip"):
@@ -527,27 +568,38 @@ def add_dependency(package_name: str, dependency_type: str = "auto") -> str:
                         subprocess.run([pip_path, "freeze"], shell=False, text=True, stdout=req_file)
                 except Exception:
                     pass
-            return f"Success: Python dependency installed:\\n{output}"
+            return f"Success: Python dependency installed:\n{output}"
         else:
             return f"Error: Unsupported dependency type '{dependency_type}'."
     except Exception as e:
         return f"Error installing dependency: {str(e)}"
 
-def run_command(command: str) -> str:
+def run_command(command: str, allow_unsafe_commands: bool = False) -> str:
     """Executes a terminal/bash command on the macOS system and returns the combined stdout and stderr.
 
     Args:
         command: The shell command to run.
+        allow_unsafe_commands: Explicit approval flag for commands outside the allowlist.
     """
-    print(f"\\n[Tool Execution] run_command(command='{command}')")
-    denylist_prefixes = [
-        "rm -rf", "find . -delete", "git clean", "chmod", "chown", 
-        "mkfs", "dd ", "reboot", "shutdown", "halt", "poweroff", 
-        "mv /", "cp /"
+    print(f"\n[Tool Execution] run_command(command='{command}', allow_unsafe_commands={allow_unsafe_commands})")
+    
+    allowlist = [
+        "npm test", "npm run build", "npm run typecheck", "npm run",
+        "pytest", "python -m pytest", "git status", "git diff", "ls", "cat", "node --version", "python --version"
     ]
+    
     command_lower = command.strip().lower()
-    if any(command_lower.startswith(bad) or (f" {bad}" in command_lower) for bad in denylist_prefixes):
-        return "Error: Command rejected by denylist due to security policies."
+    is_allowed = any(command_lower == allowed or command_lower.startswith(allowed + " ") for allowed in allowlist)
+    
+    if not is_allowed and not allow_unsafe_commands:
+        return (f"Security Error: Command '{command}' is not in the allowlist. "
+                f"Allowed prefixes: {', '.join(allowlist)}. "
+                "If you are certain this command is safe and necessary, call run_command again with allow_unsafe_commands=True.")
+
+    # Hard denylist for critical destructive operations even if allow_unsafe_commands=True
+    hard_denylist = ["rm -rf /", "rm -rf .", "git reset --hard", "shutdown", "reboot", "mkfs", "dd "]
+    if any(bad in command_lower for bad in hard_denylist):
+        return "Error: Command rejected by hard denylist. Unsafe operations blocked."
 
     import shlex
     try:
@@ -749,7 +801,8 @@ class ToolsRegistry:
                 "type": "object",
                 "properties": {
                     "package_name": {"type": "string", "description": "The package name to install (e.g., 'lodash@latest' or 'requests')."},
-                    "dependency_type": {"type": "string", "description": "Package type: 'auto', 'npm', or 'pip'.", "enum": ["auto", "npm", "pip"]}
+                    "dependency_type": {"type": "string", "description": "Package type: 'auto', 'npm', or 'pip'.", "enum": ["auto", "npm", "pip"]},
+                    "approve_installation": {"type": "boolean", "description": "Must be true to explicitly approve the installation of this package."}
                 },
                 "required": ["package_name"]
             }
@@ -774,7 +827,8 @@ class ToolsRegistry:
             parameters_json_schema={
                 "type": "object",
                 "properties": {
-                    "command": {"type": "string", "description": "The shell command to run."}
+                    "command": {"type": "string", "description": "The shell command to run."},
+                    "allow_unsafe_commands": {"type": "boolean", "description": "Set to true to explicitly approve commands outside the safety allowlist."}
                 },
                 "required": ["command"]
             }
@@ -792,7 +846,8 @@ class ToolsRegistry:
                 "type": "object",
                 "properties": {
                     "skill_name": {"type": "string", "description": "The name of the global skill."},
-                    "task": {"type": "string", "description": "The task or code query to process using that skill's rules."}
+                    "task": {"type": "string", "description": "The task or code query to process using that skill's rules."},
+                    "approve_untrusted": {"type": "boolean", "description": "Set to true to explicitly approve loading a skill not in the trusted allowlist."}
                 },
                 "required": ["skill_name", "task"]
             }
@@ -804,7 +859,8 @@ class ToolsRegistry:
             parameters_json_schema={
                 "type": "object",
                 "properties": {
-                    "skill_name": {"type": "string", "description": "The name of the global skill (e.g. 'test-driven-development', 'graphify', 'doubt-driven-development')."}
+                    "skill_name": {"type": "string", "description": "The name of the global skill (e.g. 'test-driven-development', 'graphify', 'doubt-driven-development')."},
+                    "approve_untrusted": {"type": "boolean", "description": "Set to true to explicitly approve loading a skill not in the trusted allowlist."}
                 },
                 "required": ["skill_name"]
             }

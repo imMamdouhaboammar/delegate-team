@@ -102,9 +102,15 @@ program
   .command('metagpt [prompt...]')
   .alias('mg')
   .description('Launch MetaGPT AI Software Company for complex multi-agent architectures')
-  .action((promptArray) => {
+  .option('--plan-only', 'Generate plan and architecture without writing code')
+  .option('--approve-write', 'Require human approval before writing to disk')
+  .option('--workspace-only', 'Strictly sandbox MetaGPT to the current workspace root')
+  .option('--no-install', 'Prevent MetaGPT from installing package dependencies')
+  .option('--dry-run', 'Simulate workflow without making destructive changes')
+  .action(async (promptArray, options) => {
     const prompt = Array.isArray(promptArray) ? promptArray.join(" ") : promptArray;
-    runMetaGPTRouter(prompt);
+    const code = await runMetaGPTRouter(prompt, options);
+    process.exit(code);
   });
 
 program

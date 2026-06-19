@@ -12,6 +12,13 @@ const FALLBACK_RING: Record<string, string[]> = {
   openai: ["gemini", "openrouter"]
 };
 
+function redact(s: any) {
+  if (!s) return "";
+  return String(s)
+    .replace(/Bearer\s+[A-Za-z0-9._-]+/gi, "Bearer [REDACTED]")
+    .replace(/(api[_-]?key["']?\s*[:=]\s*["']?)[^"',\s]+/gi, "$1[REDACTED]");
+}
+
 function readEnvFile(filePath: string): Record<string, string> {
   if (!existsSync(filePath)) return {};
   const content = readFileSync(filePath, "utf8");
@@ -285,7 +292,22 @@ function mapModel(backend: string, originalModel: string, useVertex = false): st
 
 async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse) {
   // CORS Headers
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  const origin = req.headers.origin || "";
+  const allowedOrigins = new Set([
+    "http://localhost:3210",
+    "http://127.0.0.1:3210",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000"
+  ]);
+
+  if (origin && allowedOrigins.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  } else if (!origin) {
+    // allow server-to-server or CLI requests where origin is generally not set
+  } else {
+    // If an unknown origin calls, we don't set the header
+  }
+  
   res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-api-key");
 
@@ -315,7 +337,14 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
   }
 
   let body = "";
+  const MAX_BODY_BYTES = 2 * 1024 * 1024; // 2MB
+  let size = 0;
   for await (const chunk of req) {
+    size += chunk.length;
+    if (size > MAX_BODY_BYTES) {
+      res.writeHead(413);
+      return res.end("Payload Too Large");
+    }
     body += chunk;
   }
 
@@ -515,7 +544,8 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
         return res.end(responseData);
       }
     } catch (err: any) {
-      console.error(`[PROXY] Backend [${backend.toUpperCase()}] failed or returned error:`, err.status || err.message || err, err.data || "");
+      const errStr = typeof err === 'object' ? JSON.stringify(err) : String(err);
+      console.error(`[PROXY] Backend [${backend.toUpperCase()}] failed or returned error:`, redact(err.status || err.message || errStr), redact(err.data || ""));
     }
   }
 
