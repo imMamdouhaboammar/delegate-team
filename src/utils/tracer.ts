@@ -32,7 +32,7 @@ export interface DelegationTrace {
   depth_control: TraceDepthControl;
   budget: TraceBudget;
   roles: TraceRole[];
-  final_status: 'initialized' | 'executing' | 'ready_for_review' | 'committed';
+  final_status: 'initialized' | 'executing' | 'ready_for_review' | 'committed' | 'failed';
   commit_allowed: boolean;
 }
 
