@@ -51,6 +51,10 @@ To install `dt` globally on your workstation:
 git clone https://github.com/imMamdouhaboammar/delegate-team.git
 cd delegate-team
 
+# Install dependencies and build
+npm install
+npm run build
+
 # Link the package globally
 npm link
 ```
@@ -117,11 +121,13 @@ We recommend using **LobeChat** as the ultimate visual interface for `dt`. It pr
    ```bash
    docker run -d -p 3210:3210 \
      -e OPENAI_API_KEY=dt-local \
+     -e PROXY_TOKEN=dt-local \
      -e OPENAI_PROXY_URL=http://host.docker.internal:3000/v1 \
      -e ACCESS_CODE= \
      --name lobe-chat \
      lobehub/lobe-chat
    ```
+   > **Note:** The `dt` proxy server requires a proxy token. You must pass it via `PROXY_TOKEN=...` or use the generated one in `~/.config/dt/config.json`. The example uses `dt-local` for simplicity, ensure this matches your local setup.
 3. Open `http://localhost:3210` in your browser. You now have an ultra-premium UI connected directly to your multi-backend agent dispatcher!
 
 ---
@@ -134,7 +140,7 @@ If you are using a coding agent (e.g., Claude Code, Cursor, Gemini CLI) to work 
 =================== COPY FOR YOUR AGENT ===================
 SYSTEM DIRECTIVE: You are an agentic developer assistant. We have integrated the "Delegate Team (dt)" orchestration suite. Please execute the following tasks to align your local environment:
 1. Verify the repository is cloned and linked globally. If not, link it:
-   run command: npm link
+   run commands: npm install && npm run build && npm link
 2. Trigger the Autopilot Onboarding Wizard to build python environments and verify cloud dependencies:
    run command: dt setup
 3. Automatically register the orchestrators as global capabilities on this workstation:

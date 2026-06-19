@@ -92,11 +92,18 @@ ${rawPrompt}
           backend = "minimax";
           console.log(`  🎯 Routing to: ${C.bold}${C.green}minimax${C.reset} (Fast MiniMax Agent)`);
         }
+      } else {
+        backend = "vertexcoder";
+        console.log(`Router returned non-zero status, defaulting to: ${C.bold}${C.green}vertexcoder${C.reset}`);
       }
     } catch {
       // Fallback default
       backend = "vertexcoder";
       console.log(`Router evaluation failed, defaulting to: ${C.bold}${C.green}vertexcoder${C.reset}`);
+    }
+    
+    if (!backend) {
+      backend = "vertexcoder";
     }
     
     forwardArgs.push("--backend", backend as string);

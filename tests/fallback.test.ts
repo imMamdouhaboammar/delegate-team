@@ -36,7 +36,7 @@ describe('Fallback Ring', () => {
     // 2nd attempt: codex -> succeeds
     spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
       // Mock router
-      if (args.includes('opencode-router.mjs')) {
+      if (args.some(a => a.includes('opencode-router.mjs'))) {
         return { status: 0, stdout: '{"score": 2}' }; // routes to opencode
       }
       
@@ -54,7 +54,7 @@ describe('Fallback Ring', () => {
 
     // Assert that spawnSync was called multiple times, eventually succeeding with codex
     const calls = spawnSyncMock.mock.calls;
-    const relayCalls = calls.filter((c: any) => c[1].includes('relay.mjs'));
+    const relayCalls = calls.filter((c: any) => c[1].some((arg: string) => arg.includes('relay.mjs')));
     
     expect(relayCalls.length).toBe(2);
     expect(relayCalls[0][1]).toContain('opencode');
@@ -70,7 +70,7 @@ describe('Fallback Ring', () => {
     runDispatch(undefined, { backend: 'minimax', brief: 'test.txt' });
 
     const calls = spawnSyncMock.mock.calls;
-    const relayCalls = calls.filter((c: any) => c[1].includes('relay.mjs'));
+    const relayCalls = calls.filter((c: any) => c[1].some((arg: string) => arg.includes('relay.mjs')));
     
     // minimax -> codex -> opencode -> vertexcoder -> gemini
     expect(relayCalls.length).toBe(5);

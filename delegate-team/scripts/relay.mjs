@@ -1108,6 +1108,7 @@ async function dispatch(be, opts, brief, run) {
   let status = last.code === 0 ? "completed" : "failed";
   if (last.code === 0 && touchedFiles && touchedFiles.length === 0) {
     status = "failed"; // Dud detection
+    last.code = 1; // Make sure the script reflects the failure
   }
 
   const result = makeResult({

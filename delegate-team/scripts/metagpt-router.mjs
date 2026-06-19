@@ -1,11 +1,14 @@
 import { spawn } from "node:child_process";
-import { join } from "node:path";
-import { homedir } from "node:os";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export async function runMetaGPTRouter(prompt) {
-  const condaEnvDir = join(homedir(), "miniconda", "envs", "metagpt");
-  const pythonPath = join(condaEnvDir, "bin", "python3");
-  const metagptCliPath = join(condaEnvDir, "bin", "metagpt");
+  const venvDir = join(__dirname, "..", "..", "vertex-coder", ".venv");
+  const pythonPath = join(venvDir, "bin", "python3");
+  const metagptCliPath = join(venvDir, "bin", "metagpt");
 
   console.log(`\n🤖 Launching MetaGPT AI Software Company...`);
   console.log(`📋 Prompt: "${prompt}"\n`);

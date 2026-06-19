@@ -33,7 +33,7 @@ jobs:
       run: npm run build
       
     - name: Test
-      run: npm test || echo "No tests yet"
+      run: npm test
 
   python-checks:
     runs-on: ubuntu-latest

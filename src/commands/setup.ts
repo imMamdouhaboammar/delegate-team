@@ -1,13 +1,11 @@
 import { existsSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 import { homedir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import readline from 'node:readline';
+import { randomBytes } from 'node:crypto';
 import { C, runCmd } from '../utils/index.js';
-import { DELEGATE_TEAM_PATH, RELAY_SCRIPT, VERTEX_CODER_PATH, VERTEX_DIRECT_SCRIPT, VERTEX_INTERACTIVE_SCRIPT } from '../config/index.js';
+import { DELEGATE_TEAM_PATH, RELAY_SCRIPT, VERTEX_CODER_PATH, VERTEX_DIRECT_SCRIPT, VERTEX_INTERACTIVE_SCRIPT, VERTEX_VENV_PYTHON } from '../config/index.js';
 
 export function runLinkSkill() {
   console.log(`\n${C.bold}${C.cyan}🔗 Symlinking Agent Skills to Local Systems...${C.reset}`);
@@ -212,7 +210,8 @@ export async function runSetup() {
     const configPath = join(configDir, "config.json");
     const configData = {
       project_id: selectedProjectId,
-      location: "us-central1"
+      location: "us-central1",
+      proxy_token: "dt-local-" + randomBytes(8).toString('hex')
     };
     writeFileSync(configPath, JSON.stringify(configData, null, 2), "utf8");
 
@@ -235,7 +234,8 @@ export async function runSetup() {
   const configPath = join(configDir, "config.json");
   const configData = {
     project_id: selectedProjectId,
-    location: "us-central1"
+    location: "us-central1",
+    proxy_token: "dt-local-" + randomBytes(8).toString('hex')
   };
   writeFileSync(configPath, JSON.stringify(configData, null, 2), "utf8");
   console.log(`  ${C.green}💾 Written configuration to: ${C.dim}${configPath}${C.reset}`);
@@ -297,8 +297,8 @@ export async function runVertexProvision() {
   console.log(`\n${C.bold}${C.cyan}🤖 Provisioning Vertex AI Agent...${C.reset}`);
   console.log(`  ${C.dim}Running vertex-coder provisioner...${C.reset}`);
   
-  const provisionScript = join(__dirname, "..", "..", "vertex-coder", "provision_agent.py");
-  const pythonPath = join(homedir(), ".config", "dt", "venv", "bin", "python");
+  const provisionScript = join(VERTEX_CODER_PATH, "provision_agent.py");
+  const pythonPath = VERTEX_VENV_PYTHON;
   
   if (!existsSync(pythonPath)) {
     console.error(`  ${C.red}❌ Python virtual environment not found at ${pythonPath}. Please run 'dt setup' first.${C.reset}`);

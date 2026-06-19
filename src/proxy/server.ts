@@ -264,7 +264,7 @@ function mapModel(backend: string, originalModel: string, useVertex = false): st
     if (modelLower.includes("gemini") && (modelLower.includes("flash") || modelLower.includes("lite"))) {
       return "google/gemini-3.5-flash";
     }
-    if (modelLower.includes("gpt-4") || modelLower.includes("gpt-5") || modelLower.includes("gpt-4o")) {
+    if (modelLower.includes("gpt-4") || modelLower.includes("gpt-4o")) {
       return "openai/gpt-4o";
     }
     
@@ -273,7 +273,7 @@ function mapModel(backend: string, originalModel: string, useVertex = false): st
   }
 
   if (backend === "openai") {
-    if (modelLower.includes("gpt-4") || modelLower.includes("gpt-5") || modelLower.includes("gpt-4o")) {
+    if (modelLower.includes("gpt-4") || modelLower.includes("gpt-4o")) {
       return "gpt-4o";
     }
     return originalModel;

@@ -30,7 +30,7 @@ describe('Router Routing', () => {
   it('should route to vertexcoder if score > 5', () => {
     const spawnSyncMock = cp.spawnSync as any;
     spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
-      if (args.includes('opencode-router.mjs')) {
+      if (args.some((a: string) => a.includes('opencode-router.mjs'))) {
         return { status: 0, stdout: '{"score": 8}' };
       }
       return { status: 0 };
@@ -38,14 +38,14 @@ describe('Router Routing', () => {
 
     runDispatch('hard task', {});
 
-    const relayCall = spawnSyncMock.mock.calls.find((c: any) => c[1].includes('relay.mjs'));
+    const relayCall = spawnSyncMock.mock.calls.find((c: any) => c[1].some((arg: string) => arg.includes('relay.mjs')));
     expect(relayCall[1]).toContain('vertexcoder');
   });
 
   it('should route to opencode if 0 < score <= 5', () => {
     const spawnSyncMock = cp.spawnSync as any;
     spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
-      if (args.includes('opencode-router.mjs')) {
+      if (args.some((a: string) => a.includes('opencode-router.mjs'))) {
         return { status: 0, stdout: '{"score": 3}' };
       }
       return { status: 0 };
@@ -53,14 +53,14 @@ describe('Router Routing', () => {
 
     runDispatch('medium task', {});
 
-    const relayCall = spawnSyncMock.mock.calls.find((c: any) => c[1].includes('relay.mjs'));
+    const relayCall = spawnSyncMock.mock.calls.find((c: any) => c[1].some((arg: string) => arg.includes('relay.mjs')));
     expect(relayCall[1]).toContain('opencode');
   });
 
   it('should route to minimax if score <= 0', () => {
     const spawnSyncMock = cp.spawnSync as any;
     spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
-      if (args.includes('opencode-router.mjs')) {
+      if (args.some((a: string) => a.includes('opencode-router.mjs'))) {
         return { status: 0, stdout: '{"score": 0}' };
       }
       return { status: 0 };
@@ -68,14 +68,14 @@ describe('Router Routing', () => {
 
     runDispatch('easy task', {});
 
-    const relayCall = spawnSyncMock.mock.calls.find((c: any) => c[1].includes('relay.mjs'));
+    const relayCall = spawnSyncMock.mock.calls.find((c: any) => c[1].some((arg: string) => arg.includes('relay.mjs')));
     expect(relayCall[1]).toContain('minimax');
   });
 
   it('should route to vertexcoder by default if router fails', () => {
     const spawnSyncMock = cp.spawnSync as any;
     spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
-      if (args.includes('opencode-router.mjs')) {
+      if (args.some((a: string) => a.includes('opencode-router.mjs'))) {
         return { status: 1, stderr: 'error' }; // router failed
       }
       return { status: 0 };
@@ -83,7 +83,7 @@ describe('Router Routing', () => {
 
     runDispatch('task', {});
 
-    const relayCall = spawnSyncMock.mock.calls.find((c: any) => c[1].includes('relay.mjs'));
+    const relayCall = spawnSyncMock.mock.calls.find((c: any) => c[1].some((arg: string) => arg.includes('relay.mjs')));
     expect(relayCall[1]).toContain('vertexcoder');
   });
 });
