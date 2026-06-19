@@ -607,6 +607,26 @@ def run_command(command: str) -> str:
     import shlex
     try:
         args = shlex.split(command)
+        
+        # Argument Validation for Safe Commands
+        if not allow_unsafe_commands:
+            base_cmd = args[0]
+            if base_cmd == "git" and len(args) > 1:
+                subcmd = args[1]
+                if subcmd in ["diff", "status"]:
+                    for arg in args[2:]:
+                        if arg.startswith("-"): continue
+                        if arg == "/dev/null" or os.path.isabs(arg):
+                            return f"Security Error: Absolute path '{arg}' not allowed in git commands without DT_ALLOW_UNSAFE_COMMANDS=true."
+            elif base_cmd == "npm" and len(args) > 1 and args[1] == "run":
+                if len(args) < 3 or args[2] not in ["build", "test", "typecheck"]:
+                    return "Security Error: Only 'npm run build', 'test', or 'typecheck' are allowed without DT_ALLOW_UNSAFE_COMMANDS=true."
+            elif base_cmd == "pytest" or (base_cmd == "python" and len(args) > 2 and args[1] == "-m" and args[2] == "pytest"):
+                for arg in args:
+                    if not arg.startswith("-") and arg not in ["python", "-m", "pytest"]:
+                        if os.path.isabs(arg):
+                            return f"Security Error: Absolute path '{arg}' not allowed in pytest without DT_ALLOW_UNSAFE_COMMANDS=true."
+
         result = subprocess.run(
             args,
             shell=False,

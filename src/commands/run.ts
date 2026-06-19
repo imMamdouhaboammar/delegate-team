@@ -37,8 +37,11 @@ export function runVertex(mode: string, args: string[]) {
   }
 }
 
-export function runDispatch(rawPrompt: string | undefined, options: { backend?: string, brief?: string }) {
+export function runDispatch(rawPrompt: string | undefined, options: { backend?: string, brief?: string, team?: boolean, allowInstall?: boolean, approveWrite?: boolean }) {
   let backend = options.backend;
+  if (options.team) {
+    backend = "metagpt";
+  }
   let briefFile = options.brief;
   
   const forwardArgs: string[] = [];
@@ -71,6 +74,7 @@ ${rawPrompt}
 
     // 2. Resolve default backend via Router if not specified
   let forceMetagpt = false;
+  let autoRouted = false;
   if (!backend) {
     console.log(`${C.dim}Running OpenCode Router to evaluate task complexity...${C.reset}`);
     try {
@@ -85,6 +89,7 @@ ${rawPrompt}
         // Choose best backend based on score
         if (routeData.score >= 8) {
           backend = "metagpt";
+          autoRouted = true;
           console.log(`  🎯 Routing to: ${C.bold}${C.magenta}metagpt${C.reset} (MetaGPT Team Orchestrator for complex tasks)`);
         } else if (routeData.score > 5) {
           backend = "vertexcoder";
@@ -123,7 +128,19 @@ ${rawPrompt}
     console.log(`\n${C.bold}${C.magenta}🚀 Dispatching task to team orchestrator: [METAGPT]${C.reset}`);
     // We import runMetaGPTRouter dynamically to avoid circular dependencies if any, but since it's just a run we can spawn the CLI
     const dtCli = process.argv[1] || process.argv[0]; 
-    const proc = spawnSync(process.execPath, [dtCli, "metagpt", rawPrompt || briefText], { stdio: "inherit" });
+    const metagptArgs = ["metagpt", rawPrompt || briefText];
+    
+    // Guardrails injection
+    if (autoRouted || !options.allowInstall) {
+      metagptArgs.push("--no-install");
+    }
+    metagptArgs.push("--workspace-only");
+    
+    if (options.approveWrite) {
+      metagptArgs.push("--approve-write");
+    }
+    
+    const proc = spawnSync(process.execPath, [dtCli, ...metagptArgs], { stdio: "inherit" });
     success = proc.status === 0;
   } else {
     let activeBackend = backend as string;

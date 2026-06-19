@@ -119,6 +119,9 @@ program
   .description('Dispatch a task to a backend agent with automatic routing & failover')
   .option('-b, --backend <backend>', 'Specify a backend to use directly')
   .option('--brief <file>', 'Specify a brief file instead of a direct prompt')
+  .option('--team', 'Force routing to the MetaGPT team orchestrator')
+  .option('--allow-install', 'Allow package installation during execution')
+  .option('--approve-write', 'Require human approval before writing to disk')
   .action((promptArray, options) => {
     const prompt = Array.isArray(promptArray) ? promptArray.join(" ") : promptArray;
     runDispatch(prompt, options);

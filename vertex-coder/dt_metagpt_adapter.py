@@ -19,13 +19,27 @@ def load_role_routing():
     # In a full implementation, this parses ROLE_ROUTING.md or a JSON config
     return ROLE_BACKEND_MAP
 
+def get_proxy_token():
+    token = "dt-proxy-token"
+    config_path = os.path.expanduser("~/.config/dt/config.json")
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if "proxy_token" in data:
+                    token = data["proxy_token"]
+        except Exception:
+            pass
+    return os.environ.get("PROXY_TOKEN", token)
+
 def generate_metagpt_config(workspace_root):
     # Generates a dynamic MetaGPT config that routes its internal LLM calls
     # through the dt proxy (localhost:3000)
+    token = get_proxy_token()
     config = {
         "llm": {
             "api_type": "openai",
-            "api_key": "dt-proxy-token",
+            "api_key": token,
             "base_url": "http://127.0.0.1:3000/v1",
             "model": "google/gemini-3.5-pro" # Default
         },
@@ -36,7 +50,7 @@ def generate_metagpt_config(workspace_root):
     for role, backend in routing.items():
         config["llms"][role] = {
             "api_type": "openai",
-            "api_key": f"dt-proxy-token",
+            "api_key": token,
             "base_url": "http://127.0.0.1:3000/v1",
             "model": backend
         }
@@ -62,48 +76,51 @@ def main():
         
     config_path = generate_metagpt_config(workspace_root)
     print(f"[DT MetaGPT Adapter] Generated dynamic MetaGPT config pointing to DT Proxy: {config_path}")
+    print("[DT MetaGPT Adapter] Bootstrapping team orchestrator with per-role execution...")
     
-    # Try to import metagpt
-    try:
-        import metagpt
-        print("[DT MetaGPT Adapter] MetaGPT package found. Bootstrapping team orchestrator...")
-        # Here we would normally do:
-        # from metagpt.software_company import generate_repo
-        # generate_repo(prompt)
+    executed_roles = []
+    all_success = True
+    
+    for role, backend in routing.items():
+        print(f"\n[DT MetaGPT Adapter] === Executing Role: {role} via Backend: {backend} ===")
+        role_prompt = f"Role: {role}. Task: {prompt}"
+        cmd = ["dt", "run", role_prompt, "--backend", backend]
         
-        # For the sake of the adapter shell when metagpt isn't fully initialized, we just launch the CLI
-        cmd = ["metagpt", prompt, "--project-path", workspace_root]
+        # Pass guardrails
+        if os.environ.get("DT_PLAN_ONLY") == "true":
+            # For non-metagpt backends we might not have a --plan-only flag natively, but we can pass env
+            pass
+            
+        env = os.environ.copy()
+        env["DT_CAN_CALL_METAGPT"] = "false" # Prevent recursive MetaGPT calls
+        env["METAGPT_CONFIG"] = config_path # Use the generated config
+        
         print(f"[DT MetaGPT Adapter] Executing: {' '.join(cmd)}")
-        result = subprocess.run(cmd, env=os.environ)
+        result = subprocess.run(cmd, env=env)
         
-        # Create an aggregation contract
-        contract_path = os.path.join(workspace_root, ".dt_aggregation_contract.json")
-        contract = {
-            "status": "success" if result.returncode == 0 else "failed",
-            "roles_executed": list(routing.keys()),
-            "files_touched": ["unknown - see workspace"]
-        }
-        with open(contract_path, "w") as f:
-            json.dump(contract, f, indent=2)
-            
-        print(f"[DT MetaGPT Adapter] Generated aggregation contract: {contract_path}")
-        sys.exit(result.returncode)
+        executed_roles.append({
+            "role": role,
+            "backend": backend,
+            "status": "success" if result.returncode == 0 else "failed"
+        })
         
-    except ImportError:
-        print("[DT MetaGPT Adapter] Warning: 'metagpt' package not installed in the current environment.")
-        print("[DT MetaGPT Adapter] This is a mock execution to demonstrate the adapter routing.")
+        if result.returncode != 0:
+            all_success = False
+            print(f"[DT MetaGPT Adapter] Role {role} failed. Halting pipeline.")
+            break
         
-        contract_path = os.path.join(workspace_root, ".dt_aggregation_contract.json")
-        contract = {
-            "status": "mock_success",
-            "roles_executed": list(routing.keys()),
-            "files_touched": ["mock_file.py"]
-        }
-        with open(contract_path, "w") as f:
-            json.dump(contract, f, indent=2)
-            
-        print(f"[DT MetaGPT Adapter] Generated mock aggregation contract: {contract_path}")
-        sys.exit(0)
+    # Create an aggregation contract
+    contract_path = os.path.join(workspace_root, ".dt_aggregation_contract.json")
+    contract = {
+        "status": "success" if all_success else "failed",
+        "roles_executed": executed_roles,
+        "files_touched": ["unknown - see workspace"]
+    }
+    with open(contract_path, "w") as f:
+        json.dump(contract, f, indent=2)
+        
+    print(f"[DT MetaGPT Adapter] Generated aggregation contract: {contract_path}")
+    sys.exit(0 if all_success else 1)
 
 if __name__ == "__main__":
     main()

@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
 import { TraceManager } from "../utils/tracer.js";
 import { VERTEX_CODER_PATH } from "../config/index.js";
 
@@ -83,6 +84,22 @@ export async function runMetaGPTRouter(prompt: string, options: any = {}): Promi
       } else {
         console.log(`\n⚠️ MetaGPT exited with code ${code}.`);
         trace.final_status = 'failed';
+      }
+      
+      const contractPath = join(process.cwd(), ".dt_aggregation_contract.json");
+      if (existsSync(contractPath)) {
+        try {
+          const contract = JSON.parse(readFileSync(contractPath, "utf8"));
+          if (Array.isArray(contract.roles_executed)) {
+            if (contract.roles_executed.length > 0 && typeof contract.roles_executed[0] === 'object') {
+                trace.roles = contract.roles_executed;
+            } else {
+                trace.roles = contract.roles_executed.map((r: any) => ({ role: r, backend: "unknown", status: "completed", files_touched: contract.files_touched || [] }));
+            }
+          }
+        } catch (e) {
+          console.error(`Failed to parse aggregation contract: ${e}`);
+        }
       }
       
       // Save trace after execution

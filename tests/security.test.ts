@@ -183,5 +183,71 @@ else:
       const out = execSync(`python3`, { input: script, encoding: 'utf8' }).trim();
       expect(out).toContain('BLOCKED');
     });
+
+    it('should block absolute paths in git diff', () => {
+      const script = `
+import sys
+import os
+import types
+
+class MockGenAI:
+    class types:
+        class FunctionDeclaration:
+            def __init__(self, **kwargs): pass
+        class Tool:
+            def __init__(self, **kwargs): pass
+        class HttpOptions:
+            def __init__(self, **kwargs): pass
+        class GenerateContentConfig:
+            def __init__(self, **kwargs): pass
+
+mock_google = types.ModuleType('google')
+mock_google.genai = MockGenAI
+sys.modules['google'] = mock_google
+sys.modules['google.genai'] = MockGenAI
+
+sys.path.append(os.path.join(os.getcwd(), 'vertex-coder'))
+from tools_registry import run_command
+
+res = run_command("git diff --no-index /etc/passwd /dev/null")
+if "Security Error" in res:
+    print("BLOCKED")
+else:
+    print("ALLOWED")
+      `;
+      const out = execSync(`python3`, { input: script, encoding: 'utf8' }).trim();
+      expect(out).toContain('BLOCKED');
+    });
+  });
+
+  describe('TraceManager Security', () => {
+    it('should prevent recursive MetaGPT execution by verifying depth bounds', async () => {
+      // Simulate being inside a deep execution
+      process.env.DT_EXECUTION_DEPTH = '2'; 
+      const { TraceManager } = await import('../src/utils/tracer.js');
+      const tracer = new TraceManager();
+      const trace = tracer.createTrace();
+      // current_depth should be 2 + 1 = 3, which is > max_depth (2)
+      expect(trace.depth_control.current_depth).toBeGreaterThan(trace.depth_control.max_depth);
+    });
+  });
+
+  describe('MetaGPT Adapter Security', () => {
+    it('should not write dummy dt-proxy-token if real token exists', () => {
+      const script = `
+import sys
+import os
+import json
+
+os.environ['PROXY_TOKEN'] = 'real-secure-token'
+sys.path.append(os.path.join(os.getcwd(), 'vertex-coder'))
+from dt_metagpt_adapter import get_proxy_token
+
+token = get_proxy_token()
+print(token)
+      `;
+      const out = execSync(`python3`, { input: script, encoding: 'utf8' }).trim();
+      expect(out).toBe('real-secure-token');
+    });
   });
 });
