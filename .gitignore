@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+.venv/
+venv/
+env/
+dist/
+build/
+
+# IDE and System Files
+.DS_Store
+.localized
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Python Cache & Testing
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+nosetests.xml
+shelve.out
+
+# API Keys, Tokens & Credentials (CRITICAL for Security)
+*.env
+*.env.local
+*.env.*
+auth.json
+config.toml
+credentials.json
+.git-credentials
+
+# Temporary & Local Runtime Agent Files
+dt-briefs/
+brief-*.txt
+result.json
+.agent_memory.json
+*.log

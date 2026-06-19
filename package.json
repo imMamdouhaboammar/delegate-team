@@ -1,0 +1,23 @@
+{
+  "name": "delegate-team",
+  "version": "1.0.0",
+  "description": "Unified Multi-Backend Developer Agent Dispatch & CLI suite",
+  "type": "module",
+  "main": "bin/cli.mjs",
+  "bin": {
+    "dt": "./bin/cli.mjs",
+    "delegate-team": "./bin/cli.mjs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 0"
+  },
+  "keywords": [
+    "delegate",
+    "vertex-coder",
+    "agent",
+    "routing",
+    "cli"
+  ],
+  "author": "",
+  "license": "ISC"
+}
