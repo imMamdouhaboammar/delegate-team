@@ -37,3 +37,6 @@ venv.bak/
 *-brief.md
 result.json
 .agent_memory.json
+
+# Documentation
+docs/
