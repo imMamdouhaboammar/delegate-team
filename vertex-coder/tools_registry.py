@@ -164,8 +164,8 @@ class MCPProcessClient:
 def list_global_skills() -> str:
     """Lists all available global agent skills on your macOS and their descriptions."""
     paths = [
-        os.path.expanduser("~/.agents/skills"),
-        os.path.expanduser("~/.gemini/config/skills")
+        os.environ.get("DT_SKILLS_PATH_1", os.path.expanduser("~/.agents/skills")),
+        os.environ.get("DT_SKILLS_PATH_2", os.path.expanduser("~/.gemini/config/skills"))
     ]
     skills = {}
     for p in paths:
@@ -205,8 +205,8 @@ def use_global_skill(skill_name: str, task: str) -> str:
     """
     print(f"\n[Tool Execution] use_global_skill(skill_name='{skill_name}', task_len={len(task)})")
     paths_to_check = [
-        os.path.expanduser(f"~/.agents/skills/{skill_name}/SKILL.md"),
-        os.path.expanduser(f"~/.gemini/config/skills/{skill_name}/SKILL.md")
+        os.environ.get("DT_SKILLS_PATH_1", os.path.expanduser("~/.agents/skills")) + f"/{skill_name}/SKILL.md",
+        os.environ.get("DT_SKILLS_PATH_2", os.path.expanduser("~/.gemini/config/skills")) + f"/{skill_name}/SKILL.md"
     ]
     skill_content = ""
     for path in paths_to_check:
@@ -257,8 +257,8 @@ def load_superpower_skill(skill_name: str) -> str:
     """
     print(f"\n[Tool Execution] load_superpower_skill(skill_name='{skill_name}')")
     paths_to_check = [
-        os.path.expanduser(f"~/.agents/skills/{skill_name}/SKILL.md"),
-        os.path.expanduser(f"~/.gemini/config/skills/{skill_name}/SKILL.md")
+        os.environ.get("DT_SKILLS_PATH_1", os.path.expanduser("~/.agents/skills")) + f"/{skill_name}/SKILL.md",
+        os.environ.get("DT_SKILLS_PATH_2", os.path.expanduser("~/.gemini/config/skills")) + f"/{skill_name}/SKILL.md"
     ]
     skill_content = ""
     for path in paths_to_check:
@@ -649,7 +649,7 @@ class ToolsRegistry:
         self.mcp_tools_map = {} # Maps dynamic tool names to (client, original_name)
         
     def load_mcp_servers(self, server_names: list = None):
-        config_path = os.path.expanduser("~/.gemini/antigravity/mcp_config.json")
+        config_path = os.environ.get("DT_MCP_CONFIG_PATH", os.path.expanduser("~/.gemini/antigravity/mcp_config.json"))
         if not os.path.exists(config_path):
             return
             

@@ -26,9 +26,12 @@ Building and executing agentic workflows in production or local environments is 
 ```text
 .
 ├── package.json               # Package setup & CLI global mappings
-├── bin/
-│   ├── cli.mjs                # Pure Node.js CLI Entry Point
-│   └── proxy.mjs              # LLM Gateway Proxy Server
+├── src/                       # TypeScript Source Code
+│   ├── cli.ts                 # CLI Entry Point
+│   ├── commands/              # CLI Commands (run, setup)
+│   ├── proxy/                 # LLM Gateway Proxy Server
+│   └── ...
+├── dist/                      # Compiled JS outputs
 ├── delegate-team/             # Master coordinator logic (Relay, routers, guidelines)
 │   ├── SKILL.md               # Unified orchestrator instructions
 │   └── scripts/               # Core routing, relay & fallback systems

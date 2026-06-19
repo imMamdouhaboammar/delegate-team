@@ -34,8 +34,8 @@ def load_skill_instructions(skill_names: list) -> str:
     
     loaded_skills_content = []
     paths = [
-        os.path.expanduser("~/.agents/skills"),
-        os.path.expanduser("~/.gemini/config/skills")
+        os.environ.get("DT_SKILLS_PATH_1", os.path.expanduser("~/.agents/skills")),
+        os.environ.get("DT_SKILLS_PATH_2", os.path.expanduser("~/.gemini/config/skills"))
     ]
     
     for skill_name in skill_names:
