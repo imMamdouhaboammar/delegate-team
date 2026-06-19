@@ -540,9 +540,14 @@ def run_command(command: str) -> str:
         command: The shell command to run.
     """
     print(f"\\n[Tool Execution] run_command(command='{command}')")
-    denylist = ["rm -rf /", "mkfs", "dd if="]
-    if any(bad in command for bad in denylist):
-        return "Error: Command rejected by denylist."
+    denylist_prefixes = [
+        "rm -rf", "find . -delete", "git clean", "chmod", "chown", 
+        "mkfs", "dd ", "reboot", "shutdown", "halt", "poweroff", 
+        "mv /", "cp /"
+    ]
+    command_lower = command.strip().lower()
+    if any(command_lower.startswith(bad) or (f" {bad}" in command_lower) for bad in denylist_prefixes):
+        return "Error: Command rejected by denylist due to security policies."
 
     import shlex
     try:

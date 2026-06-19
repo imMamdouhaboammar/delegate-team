@@ -3,7 +3,7 @@
 # ═╩╝╚═╝╩═╝╚═╝╚═╝╩ ╩ ╩ ╚═╝   ╩ ╚═╝╩ ╩╩ ╩
 # Unified Developer Agent Dispatch Suite & CLI
 
-`dt` (Delegate Team) is a powerful, zero-dependency, pure Node.js CLI tool that acts as a **Master Orchestrator** for developer agent tasks. It allows you to take any coding task, automatically route it to the optimal backend AI agent, execute it directly in your local workspace, and automatically manage **seamless, multi-backend failover** if any agent fails.
+`dt` (Delegate Team) is a powerful, lightweight TypeScript CLI tool that acts as a **Master Orchestrator** for developer agent tasks. It allows you to take any coding task, automatically route it to the optimal backend AI agent, execute it directly in your local workspace, and automatically manage **seamless, multi-backend failover** if any agent fails.
 
 ---
 

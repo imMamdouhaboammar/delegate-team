@@ -1,8 +1,9 @@
+#!/usr/bin/env node
 import { Command } from 'commander';
 import { runCheck } from './commands/check.js';
 import { runLinkSkill, runSetup, runAuth, runGcpEnable, runVertexProvision } from './commands/setup.js';
 import { runDispatch, runVertex } from './commands/run.js';
-import { runMetaGPTRouter } from '../delegate-team/scripts/metagpt-router.mjs';
+import { runMetaGPTRouter } from './commands/metagpt.js';
 import { runServe } from './proxy/server.js';
 import fs from 'node:fs';
 import { join } from 'node:path';
@@ -28,15 +29,17 @@ program
   .command('check')
   .alias('status')
   .description('Scan health, configs, and credential status of all backends')
-  .action(() => {
-    runCheck();
+  .option('--strict', 'Exit with code 1 if no backends are fully ready')
+  .action((options) => {
+    runCheck(options.strict);
   });
 
 program
   .command('doctor')
   .description('Alias for check command')
-  .action(() => {
-    runCheck();
+  .option('--strict', 'Exit with code 1 if no backends are fully ready')
+  .action((options) => {
+    runCheck(options.strict);
   });
 
 program

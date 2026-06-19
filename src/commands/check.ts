@@ -5,7 +5,7 @@ import { C, runCmd } from '../utils/index.js';
 import { spawnSync } from 'node:child_process';
 import { VERTEX_VENV_PYTHON } from '../config/index.js';
 
-export function runCheck() {
+export function runCheck(strict: boolean = false) {
   console.log(`\n${C.bold}${C.cyan}🔍 Scanning Backend Systems Health & Authentication Status...${C.reset}\n`);
 
   const results = [];
@@ -77,10 +77,17 @@ export function runCheck() {
   });
 
   // Display beautiful formatted table
-  console.log(`${C.bold}${"Backend".padEnd(15)} | ${"Binary / SDK SDK".padEnd(23)} | ${"Config / Credentials".padEnd(45)} | Status${C.reset}`);
+  console.log(`${C.bold}${"Backend".padEnd(15)} | ${"Binary / SDK".padEnd(23)} | ${"Config / Credentials".padEnd(45)} | Status${C.reset}`);
   console.log("-".repeat(95));
   for (const row of results) {
     console.log(`${C.bold}${C.cyan}${row.backend.padEnd(15)}${C.reset} | ${row.binary.padEnd(23)} | ${row.auth.padEnd(45)} | ${row.status}`);
   }
   console.log("\n");
+
+  if (strict) {
+    const anyReady = results.some(r => r.status.includes('READY ✅'));
+    if (!anyReady) {
+      process.exit(1);
+    }
+  }
 }

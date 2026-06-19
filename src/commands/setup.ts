@@ -75,6 +75,7 @@ export async function runSetup() {
   });
 
   const ask = (query: string): Promise<string> => new Promise(resolve => rl.question(query, resolve));
+  const proxyToken = "dt-local-" + randomBytes(8).toString('hex');
 
   // --- STEP 1: Local Virtual Environment Setup ---
   console.log(`${C.bold}📦 [Step 1/6] Setting up Python Virtual Environment...${C.reset}`);
@@ -211,7 +212,7 @@ export async function runSetup() {
     const configData = {
       project_id: selectedProjectId,
       location: "us-central1",
-      proxy_token: "dt-local-" + randomBytes(8).toString('hex')
+      proxy_token: proxyToken
     };
     writeFileSync(configPath, JSON.stringify(configData, null, 2), "utf8");
 
@@ -235,7 +236,7 @@ export async function runSetup() {
   const configData = {
     project_id: selectedProjectId,
     location: "us-central1",
-    proxy_token: "dt-local-" + randomBytes(8).toString('hex')
+    proxy_token: proxyToken
   };
   writeFileSync(configPath, JSON.stringify(configData, null, 2), "utf8");
   console.log(`  ${C.green}💾 Written configuration to: ${C.dim}${configPath}${C.reset}`);
@@ -249,7 +250,7 @@ export async function runSetup() {
   const metagptConfigContent = `llm:
   api_type: "openai"
   base_url: "http://127.0.0.1:3000/v1"
-  api_key: "dt-local"
+  api_key: "${proxyToken}"
   model: "google/gemini-3.1-pro-custom-tools"
 `;
   writeFileSync(metagptConfigPath, metagptConfigContent, "utf8");
@@ -278,18 +279,22 @@ Thank you for using dt / delegate-team!
 export async function runAuth() {
   console.log(`\n${C.bold}${C.cyan}🔐 Authenticating with Google Cloud...${C.reset}`);
   console.log(`  ${C.dim}Opening browser for user authentication...${C.reset}`);
-  spawnSync("gcloud", ["auth", "login"], { stdio: "inherit" });
+  const loginProc = spawnSync("gcloud", ["auth", "login"], { stdio: "inherit" });
+  if (loginProc.status !== 0) throw new Error("gcloud auth login failed");
   console.log(`\n  ${C.dim}Opening browser for application-default credentials (ADC) authentication...${C.reset}`);
-  spawnSync("gcloud", ["auth", "application-default", "login"], { stdio: "inherit" });
+  const adcProc = spawnSync("gcloud", ["auth", "application-default", "login"], { stdio: "inherit" });
+  if (adcProc.status !== 0) throw new Error("gcloud auth application-default login failed");
   console.log(`  ${C.green}✅ Google Cloud authentication completed.${C.reset}\n`);
 }
 
 export async function runGcpEnable(projectId: string) {
   console.log(`\n${C.bold}${C.cyan}⚙️  Enabling APIs in project '${projectId}'...${C.reset}`);
   console.log(`  ${C.dim}Enabling Vertex AI API...${C.reset}`);
-  spawnSync("gcloud", ["services", "enable", "aiplatform.googleapis.com", "--project", projectId], { stdio: "inherit" });
+  const aiProc = spawnSync("gcloud", ["services", "enable", "aiplatform.googleapis.com", "--project", projectId], { stdio: "inherit" });
+  if (aiProc.status !== 0) throw new Error("Failed to enable aiplatform.googleapis.com");
   console.log(`  ${C.dim}Enabling Dialogflow API...${C.reset}`);
-  spawnSync("gcloud", ["services", "enable", "dialogflow.googleapis.com", "--project", projectId], { stdio: "inherit" });
+  const dfProc = spawnSync("gcloud", ["services", "enable", "dialogflow.googleapis.com", "--project", projectId], { stdio: "inherit" });
+  if (dfProc.status !== 0) throw new Error("Failed to enable dialogflow.googleapis.com");
   console.log(`  ${C.green}✅ GCP APIs enabled successfully.${C.reset}\n`);
 }
 
@@ -315,6 +320,7 @@ export async function runVertexProvision() {
     console.log(`  ${C.green}✅ Vertex AI Agent provisioned successfully.${C.reset}\n`);
   } else {
     console.error(`  ${C.red}❌ Failed to provision Vertex AI Agent.${C.reset}\n`);
+    throw new Error("Vertex AI Agent provisioning failed");
   }
 }
 

@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-export async function runMetaGPTRouter(prompt) {
+export async function runMetaGPTRouter(prompt: string): Promise<number> {
   const venvDir = join(__dirname, "..", "..", "vertex-coder", ".venv");
   const pythonPath = join(venvDir, "bin", "python3");
   const metagptCliPath = join(venvDir, "bin", "metagpt");
@@ -20,13 +20,13 @@ export async function runMetaGPTRouter(prompt) {
       env: { ...process.env }
     });
 
-    child.on("error", (err) => {
+    child.on("error", (err: Error) => {
       console.error(`\n❌ Failed to launch MetaGPT: ${err.message}`);
       console.error(`Did you run 'dt setup' to install metagpt in the virtual environment?`);
       resolve(1);
     });
 
-    child.on("close", (code) => {
+    child.on("close", (code: number | null) => {
       if (code === 0) {
         console.log(`\n✅ MetaGPT software company completed its work.`);
       } else {

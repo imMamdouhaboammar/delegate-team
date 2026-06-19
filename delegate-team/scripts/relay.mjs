@@ -1061,6 +1061,7 @@ async function dispatch(be, opts, brief, run) {
   const maxAttempts = Math.max(1, opts.maxRetries + 1);
 
   let last;
+  const beforeFiles = gitTouchedFiles(opts.cd);
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     last = await runOnce(be, opts, stdinData, env, run);
 
@@ -1104,9 +1105,16 @@ async function dispatch(be, opts, brief, run) {
   if (!be.onStdoutLine) appendFileSync(run.eventsPath, last.stdoutBuf, "utf8");
   const finalMessage = be.extractFinalMessage(last.stdoutBuf, run);
   
-  let touchedFiles = gitTouchedFiles(opts.cd);
+  let currentFiles = gitTouchedFiles(opts.cd);
+  let touchedFiles = null;
+  if (currentFiles !== null && beforeFiles !== null) {
+    touchedFiles = currentFiles.filter(f => !beforeFiles.includes(f));
+  } else if (currentFiles !== null) {
+    touchedFiles = currentFiles;
+  }
+
   let status = last.code === 0 ? "completed" : "failed";
-  if (last.code === 0 && touchedFiles && touchedFiles.length === 0) {
+  if (!opts.readOnly && last.code === 0 && touchedFiles !== null && touchedFiles.length === 0) {
     status = "failed"; // Dud detection
     last.code = 1; // Make sure the script reflects the failure
   }

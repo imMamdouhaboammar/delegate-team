@@ -269,7 +269,8 @@ function mapModel(backend: string, originalModel: string, useVertex = false): st
     }
     
     if (originalModel.includes("/")) return originalModel;
-    return "google/gemini-3.5-flash";
+    console.warn(`[PROXY] Warning: OpenRouter model "${originalModel}" missing provider slash. Keeping as-is, but it may fail.`);
+    return originalModel;
   }
 
   if (backend === "openai") {
@@ -460,13 +461,32 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
                 try {
                   const parsed = JSON.parse(dataContent);
                   if (isAnthropic) {
-                    const text = parsed.choices?.[0]?.delta?.content || "";
-                    if (text) {
+                    const delta = parsed.choices?.[0]?.delta || {};
+                    if (delta.content) {
                       res.write(`event: content_block_delta\ndata: ${JSON.stringify({
                         type: "content_block_delta",
                         index: 0,
-                        delta: { type: "text_delta", text }
+                        delta: { type: "text_delta", text: delta.content }
                       })}\n\n`);
+                    }
+                    if (delta.tool_calls && delta.tool_calls.length > 0) {
+                      for (const tc of delta.tool_calls) {
+                        const tcIndex = (tc.index || 0) + 1; // offset by 1 because 0 is text block
+                        if (tc.function?.name) {
+                          res.write(`event: content_block_start\ndata: ${JSON.stringify({
+                            type: "content_block_start",
+                            index: tcIndex,
+                            content_block: { type: "tool_use", id: tc.id || "call_" + Date.now(), name: tc.function.name, input: {} }
+                          })}\n\n`);
+                        }
+                        if (tc.function?.arguments) {
+                          res.write(`event: content_block_delta\ndata: ${JSON.stringify({
+                            type: "content_block_delta",
+                            index: tcIndex,
+                            delta: { type: "input_json_delta", partial_json: tc.function.arguments }
+                          })}\n\n`);
+                        }
+                      }
                     }
                   } else {
                     res.write(`data: ${JSON.stringify(parsed)}\n\n`);
