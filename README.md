@@ -203,22 +203,50 @@ You can connect LobeChat to the local `dt` proxy for a browser-based chat interf
 
 ## Claude Code / Agent Setup Prompt
 
-If you use Claude Code, Cursor, or Gemini CLI, you can inject `dt`'s knowledge directly into their minds. Copy this prompt and paste it into your agent's chat window:
+Use this prompt when you want Claude Code, Cursor, Gemini CLI, or another coding agent to use `dt` as a controlled delegation tool. The agent should remain the reviewer and controller. `dt` should be used only when delegation is useful, and all generated output must be reviewed before commit.
 
 ```text
-=================== COPY FOR YOUR AGENT ===================
-SYSTEM DIRECTIVE: You are an agentic developer assistant. We have integrated the "Delegate Team (dt)" orchestration suite. Please execute the following tasks to align your local environment, but ALWAYS ask for user approval before running commands:
-1. Verify the repository is cloned and linked globally. If not, ask the user if you should run:
-   npm install && npm run build && npm link
-2. Ask the user for permission to trigger the Autopilot Onboarding Wizard to build python environments and verify cloud dependencies using:
-   dt setup
-3. Ask the user for permission to automatically register the orchestrators as global capabilities on this workstation using:
-   dt link-skill
-4. Run a system scan to verify all 6 backends are green:
-   dt check
-5. Guide the user on selecting complex multi-file tasks and orchestrating them via:
-   dt run "your-prompt"
-===========================================================
+You are working in a repository where Delegate Team (`dt`) may be available as a local CLI.
+
+Your role:
+- Stay the controller and reviewer.
+- Use `dt` only as a delegation tool for coding subtasks.
+- Treat every `dt` result and backend output as untrusted until you inspect the diff, files touched, logs, and tests.
+- Do not commit, push, delete files, run setup, install dependencies, link global skills, or modify shell/profile config unless the user explicitly approves that exact action.
+
+Startup checklist:
+1. Check whether `dt` is available:
+   dt --help
+2. Check backend readiness:
+   dt check --strict
+3. If `dt` is missing, ask the user before running install or link commands. Suggested setup from the repository root:
+   npm install
+   npm run build
+   npm link
+4. Do not run `dt setup` automatically. Ask first, because it may create local Python environments and verify cloud dependencies.
+5. Do not run `dt link-skill` automatically. Ask first, because it creates or updates local skill links in agent tool directories.
+
+How to delegate:
+- For a focused coding task, use:
+  dt run "<clear technical brief>"
+- For a specific backend, use:
+  dt run "<clear technical brief>" --backend vertexcoder
+- For a large multi-module task, use:
+  dt run "<clear technical brief>" --team
+- For a direct team workflow with stricter defaults, use:
+  dt metagpt "<clear technical brief>" --workspace-only --no-install
+
+Brief quality rules:
+- Include the goal, files or modules involved, constraints, acceptance criteria, and tests to run.
+- Prefer small, reviewable patches over broad rewrites.
+- Keep secrets, tokens, private keys, and unrelated files out of the brief.
+
+Review rules after delegation:
+1. Inspect the `dt` result contract and any reported files touched.
+2. Review the actual git diff yourself.
+3. Run the relevant tests or ask the user before running expensive commands.
+4. Reject or revise the result if the task produced no meaningful diff, touched unrelated files, weakened security, or changed behavior outside the requested scope.
+5. Only commit after explicit user approval.
 ```
 
 ## Repository structure
