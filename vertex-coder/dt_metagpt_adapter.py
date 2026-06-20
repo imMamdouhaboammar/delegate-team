@@ -10,9 +10,20 @@ from pathlib import Path
 
 ROLE_BACKEND_MAP = {
     "architect": "opencode",
-    "coder": "vertexcoder",
+    "coder": "codex",
     "ui-implementer": "minimax",
     "reviewer": "opencode"
+}
+
+# Per-role instructions so the pipeline actually decomposes the work instead of
+# every role re-doing the whole task. The architect plans (no code), the coder
+# writes the real deliverable, the ui-implementer handles frontend (or no-ops),
+# the reviewer verifies/fixes.
+ROLE_GUIDANCE = {
+    "architect": "Produce a concise implementation plan: list exactly which files to create or modify and the key design decisions. DO NOT write the implementation code yourself — planning only. Write your plan to a file named plan.md in the project root (this is your single required output).",
+    "coder": "Implement the architect's plan now (read plan.md). Create/modify the actual code files. This is the PRIMARY writing role — produce the real, working deliverable.",
+    "ui-implementer": "Implement any UI/frontend portions of the task. If the task has no UI/frontend component, make NO changes and simply state that no UI work is needed.",
+    "reviewer": "Review the implemented files against the task for correctness and completeness. Fix any real issues in place. Record your verdict by appending a short review note to plan.md (this guarantees your review is saved even when no code changes are needed).",
 }
 
 def load_role_routing():
@@ -80,71 +91,103 @@ def main():
     
     dt_cli = os.environ.get("DT_CLI_PATH", "dt")
     
+    import re as _re
+
+    _BOOKKEEPING = {".metagpt_dt_config.json", ".dt_aggregation_contract.json", "result.json", "plan.md"}
+
+    def git_changed(root):
+        """Cumulative deliverable = files changed vs the committed baseline,
+        excluding the adapter's own bookkeeping files. Robust across roles: it
+        captures in-place edits and prior-role output that per-role relay diffs
+        miss (relay diffs reset their baseline each invocation)."""
+        try:
+            out = subprocess.run(
+                ["git", "status", "--porcelain", "-uall"],
+                cwd=root, capture_output=True, text=True,
+            ).stdout
+        except Exception:
+            return []
+        files = []
+        for line in out.splitlines():
+            path = line[3:].strip()
+            if path and path not in _BOOKKEEPING:
+                files.append(path)
+        return files
+
     executed_roles = []
-    all_success = True
     all_files_touched = set()
     handoff_context = ""
-    
+
     for role, backend in routing.items():
         print(f"\n[DT MetaGPT Adapter] === Executing Role: {role} via Backend: {backend} ===")
-        role_prompt = f"Role: {role}. Task: {prompt}"
+        guidance = ROLE_GUIDANCE.get(role, "")
+        role_prompt = (
+            f"You are the {role.upper()} in a multi-role engineering pipeline.\n"
+            f"{guidance}\n\nOVERALL TASK:\n{prompt}"
+        )
         if handoff_context:
-            role_prompt += f"\n\nContext from previous roles:\n{handoff_context}"
-            
+            role_prompt += f"\n\nContext handed off from previous roles:\n{handoff_context}"
+
         cmd = [dt_cli, "run", role_prompt, "--backend", backend]
-        
-        # Pass guardrails
-        if os.environ.get("DT_PLAN_ONLY") == "true":
-            # For non-metagpt backends we might not have a --plan-only flag natively, but we can pass env
-            pass
-            
         env = os.environ.copy()
-        env["DT_CAN_CALL_METAGPT"] = "false" # Prevent recursive MetaGPT calls
-        env["METAGPT_CONFIG"] = config_path # Use the generated config
-        
-        print(f"[DT MetaGPT Adapter] Executing: {' '.join(cmd)}")
-        result = subprocess.run(cmd, env=env)
-        
-        # Read result.json to aggregate files_touched and summary for handoff
-        result_json_path = os.path.join(workspace_root, "result.json")
-        role_files = []
+        env["DT_CAN_CALL_METAGPT"] = "false"  # Prevent recursive MetaGPT calls
+        env["METAGPT_CONFIG"] = config_path
+
+        print(f"[DT MetaGPT Adapter] Dispatching {role} → {backend} (with failover ring)…")
+        result = subprocess.run(cmd, env=env, capture_output=True, text=True)
+        sys.stdout.write(result.stdout or "")
+        sys.stderr.write(result.stderr or "")
+
+        # Best-effort handoff: load the relay's result.json (its path is printed as
+        # "result: <path>") and read the CORRECT key (finalMessage) for the report.
         role_summary = ""
-        if os.path.exists(result_json_path):
+        combined = (result.stdout or "") + (result.stderr or "")
+        m = _re.search(r"result:\s*(\S+result\.json)", combined)
+        if m and os.path.exists(m.group(1)):
             try:
-                with open(result_json_path, "r", encoding="utf-8") as f:
-                    res_data = json.load(f)
-                    if "files_touched" in res_data:
-                        role_files = res_data["files_touched"]
-                        for file in role_files:
-                            all_files_touched.add(file)
-                    if "summary" in res_data:
-                        role_summary = res_data["summary"]
-            except Exception as e:
-                print(f"[DT MetaGPT Adapter] Warning: Could not parse result.json for role {role}: {e}")
-                
-        handoff_context += f"\n--- {role.upper()} ---\nFiles touched: {role_files}\nSummary: {role_summary}\n"
-        
+                with open(m.group(1), "r", encoding="utf-8") as f:
+                    rd = json.load(f)
+                role_summary = rd.get("finalMessage") or ""
+            except Exception:
+                pass
+
+        # Cumulative deliverable so far (computed by the adapter, not per-role relay).
+        all_files_touched = set(git_changed(workspace_root))
+
         executed_roles.append({
             "role": role,
             "backend": backend,
-            "status": "success" if result.returncode == 0 else "failed"
+            "returncode": result.returncode,
+            "cumulative_files": len(all_files_touched),
         })
-        
+        handoff_context += (
+            f"\n--- {role.upper()} (backend={backend}, exit={result.returncode}) ---\n"
+            f"Deliverable files so far: {sorted(all_files_touched)}\n"
+            f"Report: {role_summary[:1500]}\n"
+        )
+
+        # Do NOT halt on a single role's nonzero exit. Non-writing roles
+        # (architect/reviewer) legitimately produce no new files, and dt run has
+        # already walked the full failover ring for this role. The pipeline only
+        # fails if NOTHING was produced by the end.
         if result.returncode != 0:
-            all_success = False
-            print(f"[DT MetaGPT Adapter] Role {role} failed. Halting pipeline.")
-            break
-        
-    # Create an aggregation contract
+            print(f"[DT MetaGPT Adapter] Role {role} exited {result.returncode} "
+                  f"(continuing; {len(all_files_touched)} deliverable file(s) so far).")
+
+    produced = sorted(all_files_touched)
+    all_success = len(produced) > 0
+
     contract_path = os.path.join(workspace_root, ".dt_aggregation_contract.json")
     contract = {
         "status": "success" if all_success else "failed",
         "roles_executed": executed_roles,
-        "files_touched": list(all_files_touched)
+        "files_touched": produced,
     }
     with open(contract_path, "w") as f:
         json.dump(contract, f, indent=2)
-        
+
+    print(f"\n[DT MetaGPT Adapter] Pipeline {'SUCCESS' if all_success else 'FAILED'} — "
+          f"{len(produced)} deliverable file(s): {produced}")
     print(f"[DT MetaGPT Adapter] Generated aggregation contract: {contract_path}")
     sys.exit(0 if all_success else 1)
 

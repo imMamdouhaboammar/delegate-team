@@ -849,18 +849,6 @@ class ToolsRegistry:
         ))
 
         gemini_tools.append(types.FunctionDeclaration(
-            name="run_command",
-            description="Executes a terminal command from an allowlist.",
-            parameters_json_schema={
-                "type": "object",
-                "properties": {
-                    "command": {"type": "string", "description": "The shell command to run."}
-                },
-                "required": ["command"]
-            }
-        ))
-        
-        gemini_tools.append(types.FunctionDeclaration(
             name="grep_search",
             description="Searches for a specific regular expression pattern or string query within files under a path.",
             parameters_json_schema={

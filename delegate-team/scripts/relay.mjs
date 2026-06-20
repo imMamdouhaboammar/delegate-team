@@ -555,7 +555,7 @@ const openrouterBackend = {
   name: "openrouter",
   bin: "opencode",
   schema: "delegate-team.openrouter.result.v1",
-  defaultModel: "openrouter/anthropic/claude-sonnet-latest",
+  defaultModel: "openrouter/~anthropic/claude-sonnet-latest",
 
   extraOpts: {},
 
@@ -578,7 +578,7 @@ const openrouterBackend = {
 
   buildArgv(opts, _run) {
     const model = opts.model.includes("/") ? opts.model : `openrouter/${opts.model}`;
-    return ["run", "--pure", "-m", model, "--format", "json"];
+    return ["run", "--pure", "--dir", opts.cd || process.cwd(), "-m", model, "--format", "json"];
   },
 
   buildStdin(brief, opts) {
@@ -661,7 +661,7 @@ const opencodeBackend = {
 
   buildArgv(opts, _run) {
     const model = (opts.model || this.defaultModel).includes("/") ? (opts.model || this.defaultModel) : `opencode-go/${opts.model || this.defaultModel}`;
-    return ["run", "--pure", "-m", model, "--format", "json"];
+    return ["run", "--pure", "--dir", opts.cd || process.cwd(), "-m", model, "--format", "json"];
   },
 
   buildStdin(brief, opts) {
@@ -1113,10 +1113,24 @@ async function dispatch(be, opts, brief, run) {
     touchedFiles = currentFiles;
   }
 
+  const originalExit = last.code;
   let status = last.code === 0 ? "completed" : "failed";
+
+  // A backend that actually wrote files did real work even if it exited non-zero
+  // (e.g. a post-write gate/lint/build failed). Treat that as completed so the
+  // failover ring does NOT re-run an already-done task on another backend — the
+  // orchestrator reviews the diff and re-runs the gates itself. Matches the
+  // documented "completed AND touchedFiles>0" success contract.
+  const wroteFiles = !opts.readOnly && touchedFiles !== null && touchedFiles.length > 0;
+  if (status === "failed" && wroteFiles) {
+    status = "completed";
+    last.code = 0;
+  }
+
+  // Dud detection: exit 0 but nothing changed = nothing was actually done.
   if (!opts.readOnly && last.code === 0 && touchedFiles !== null && touchedFiles.length === 0) {
-    status = "failed"; // Dud detection
-    last.code = 1; // Make sure the script reflects the failure
+    status = "failed";
+    last.code = 1;
   }
 
   const result = makeResult({
@@ -1124,7 +1138,9 @@ async function dispatch(be, opts, brief, run) {
     exitCode: last.code,
     finalMessage,
     touchedFiles: touchedFiles,
-    ...(last.code === 0 ? {} : { stderrTail: last.stderrTail.slice(-20) }),
+    // Keep stderr visible for review even when we flip a file-writing run to
+    // completed, so the orchestrator can see which post-write gate failed.
+    ...(originalExit === 0 ? {} : { stderrTail: last.stderrTail.slice(-20) }),
     ...last.extra,
   });
   printSummary(result, run.resultPath, be.summaryLabel(version));

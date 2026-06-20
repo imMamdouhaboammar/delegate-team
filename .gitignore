@@ -44,3 +44,7 @@ result.json
 
 # Documentation
 docs/
+
+# Python
+__pycache__/
+*.pyc

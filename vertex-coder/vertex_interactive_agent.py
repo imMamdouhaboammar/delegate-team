@@ -70,8 +70,21 @@ def load_skill_instructions(skill_names: list) -> str:
     return ""
 
 def run_interactive_agent(prompt: str, model_name: str = "gemini-3.1-pro-custom-tools", skills: list = None):
-    # Determine the target project and location
-    target_project = os.environ.get("VERTEX_CODER_PROJECT", project_id)
+    # Determine the target project and location. Fall back to the active gcloud
+    # project when no env/config value is set so standalone `dt vx interactive`
+    # runs don't crash building HttpOptions with a None x-goog-user-project header.
+    target_project = os.environ.get("VERTEX_CODER_PROJECT") or project_id
+    if not target_project:
+        try:
+            import subprocess
+            proj = subprocess.run(
+                ["gcloud", "config", "get-value", "project"],
+                capture_output=True, text=True,
+            ).stdout.strip()
+            if proj and proj != "(unset)":
+                target_project = proj
+        except Exception:
+            target_project = None
     target_location = os.environ.get("VERTEX_CODER_LOCATION", location)
     
     # Map friendly model names to model registry names
@@ -117,9 +130,7 @@ def run_interactive_agent(prompt: str, model_name: str = "gemini-3.1-pro-custom-
         location=target_location,
         credentials=creds,
         http_options=types.HttpOptions(
-            headers={
-                "x-goog-user-project": target_project,
-            }
+            headers={"x-goog-user-project": target_project} if target_project else {}
         )
     )
     
@@ -315,9 +326,14 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--skills", nargs="+", default=[], help="Specialized skills to pre-load.")
     
     args = parser.parse_args()
-    
+
+    # "-" is the stdin sentinel used by the relay (it pipes the brief on stdin to
+    # keep large briefs out of argv). Read the actual prompt from stdin in that case.
+    if args.prompt == "-":
+        args.prompt = sys.stdin.read().strip()
+
     if not args.prompt:
         parser.print_help()
         sys.exit(1)
-        
+
     run_interactive_agent(args.prompt, args.model, args.skills)
