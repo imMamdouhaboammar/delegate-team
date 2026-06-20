@@ -746,7 +746,7 @@ const vertexcoderBackend = {
     return "python3";
   },
   schema: "delegate-team.vertexcoder.result.v1",
-  defaultModel: "gemini-3.5-flash",
+  defaultModel: "gemini-3.1-pro-custom-tools",
 
   extraOpts: {
     vertexProject: null, // Resolved dynamically at runtime
@@ -784,7 +784,8 @@ const vertexcoderBackend = {
   },
 
   // Uses opencode-router scoring engine (no account state) to pick model tier.
-  // score > 5 → gemini-3.1-pro (deep reasoning), else → gemini-3.5-flash (fast)
+  // score > 5 → gemini-3.1-pro-custom-tools (deep reasoning + tool registry),
+  // else → gemini-3.5-flash (fast). Custom-tools is the installed tool-aware model.
   resolveRouting(opts, brief) {
     if (opts.model && opts.model !== this.defaultModel) return;
     const routerPath = join(dirname(new URL(import.meta.url).pathname), "opencode-router.mjs");
@@ -794,7 +795,7 @@ const vertexcoderBackend = {
         input: brief, encoding: "utf8", timeout: 8_000,
       });
       const decision = JSON.parse(raw.trim());
-      opts.model = decision.score > 5 ? "gemini-3.1-pro" : "gemini-3.5-flash";
+      opts.model = decision.score > 5 ? "gemini-3.1-pro-custom-tools" : "gemini-3.5-flash";
       process.stderr.write(`\nvertexcoder-router → score=${decision.score} → ${opts.model}\n\n`);
     } catch { opts.model = opts.model || this.defaultModel; }
   },
