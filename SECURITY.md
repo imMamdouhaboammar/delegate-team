@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-Currently, the `main` branch (and the latest npm release) is the only supported version for security updates.
+Currently, the `master` branch (and the latest npm release) is the only supported version for security updates.
 
 ## Reporting a Vulnerability
 

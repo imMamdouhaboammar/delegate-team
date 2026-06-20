@@ -37,6 +37,10 @@ venv.bak/
 *-brief.md
 result.json
 .agent_memory.json
+.metagpt_dt_config.json
+.dt_aggregation_contract.json
+.dt_traces/
+.dt_team/
 
 # Documentation
 docs/

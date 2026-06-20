@@ -362,6 +362,13 @@ def write_file(file_path: str, content: str) -> str:
         content: The text content to write to the file.
     """
     print(f"\n[Tool Execution] write_file(file_path='{file_path}', content_len={len(content)})")
+    if os.environ.get("DT_PLAN_ONLY") == "true" or os.environ.get("DT_DRY_RUN") == "true":
+        print(" -> Blocked: Dry run or plan-only mode active.")
+        return "Blocked by guardrail: write_file is not allowed in --plan-only or --dry-run mode."
+    if os.environ.get("DT_APPROVE_WRITE") == "true" and os.environ.get("DT_WRITE_APPROVED") != "true":
+        print(" -> Blocked: Write approval required.")
+        return "Blocked by guardrail: Human approval is required to write files. Tell the user you are waiting for approval, then set DT_WRITE_APPROVED=true."
+
     try:
         file_path = resolve_safe_path(file_path)
         parent_dir = os.path.dirname(file_path)
@@ -443,6 +450,13 @@ def line_replace(file_path: str, first_replaced_line: int, last_replaced_line: i
     """
     import re
     print(f"\n[Tool Execution] line_replace(file_path='{file_path}', range=[{first_replaced_line}, {last_replaced_line}])")
+    if os.environ.get("DT_PLAN_ONLY") == "true" or os.environ.get("DT_DRY_RUN") == "true":
+        print(" -> Blocked: Dry run or plan-only mode active.")
+        return "Blocked by guardrail: line_replace is not allowed in --plan-only or --dry-run mode."
+    if os.environ.get("DT_APPROVE_WRITE") == "true" and os.environ.get("DT_WRITE_APPROVED") != "true":
+        print(" -> Blocked: Write approval required.")
+        return "Blocked by guardrail: Human approval is required to replace lines. Tell the user you are waiting for approval, then set DT_WRITE_APPROVED=true."
+
     try:
         file_path = resolve_safe_path(file_path)
         if not os.path.exists(file_path):

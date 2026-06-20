@@ -1,82 +1,75 @@
-# ╔╦╗╔═╗╦  ╔═╗╔═╗╔═╗╔╦╗╔═╗  ╔╦╗╔═╗╔═╗╔╦╗
-#  ║║║╣ ║  ║╣ ║ ╦╠═╣ ║ ║╣    ║ ║╣ ╠═╣║║║
-# ═╩╝╚═╝╩═╝╚═╝╚═╝╩ ╩ ╩ ╚═╝   ╩ ╚═╝╩ ╩╩ ╩
-# Unified Developer Agent Dispatch Suite & CLI
+# Delegate Team (`dt`)
 
-Every great developer reaches a breaking point with AI coding tools. 
+![CI](https://github.com/imMamdouhaboammar/delegate-team/actions/workflows/ci.yml/badge.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+![Node](https://img.shields.io/badge/Node.js-18%2B-green.svg)
 
-You hand a complex task to your favorite AI agent. It starts strong, but then hits a rate limit and crashes. You retry, but this time it ingests your entire repository, burning millions of tokens for a three-line fix. Or worse, you spend hours fighting Python virtual environments and API keys just to get a multi-agent framework running. 
+`dt` is a local CLI that lets Claude Code delegate coding tasks to specialized agent backends.
 
-The promise of AI engineering is automation, but the reality is often fragile, expensive, and chaotic.
+It can route a task to VertexCoder, Codex, MiniMax, OpenCode, Gemini, or a MetaGPT-style team workflow, while keeping Claude Code or the human as the final reviewer.
 
-**Enter `dt` (Delegate Team).**
+The promise of AI engineering is automation, but the reality is often fragile, expensive, and chaotic. You hand a complex task to an AI agent, it hits a rate limit, or ingests irrelevant files burning millions of tokens. `dt` solves this by acting as a Policy Gateway and Delegation Runtime.
 
-`dt` isn't just another AI wrapper. It is a powerful, lightweight TypeScript CLI designed as a **Policy Gateway and Delegation Runtime**. Imagine having a seasoned engineering manager that sits between you (or your primary AI assistant like Claude Code) and a team of specialized AI agents. `dt` routes the task, enforces budgets, handles failovers gracefully, and ensures your environment is perfectly configured—all while keeping you in total control.
+## What `dt` is
 
----
+- A local delegation gateway for AI coding agents
+- A routing layer between Claude Code and multiple coding backends
+- A policy layer for budgets, workspace boundaries, failover, and review
+- A MetaGPT-style team runner for complex tasks
 
-## 📖 The Story of the 4-Layer Architecture
+## What `dt` is not
 
-Unlike standard tools that just "support MetaGPT" or fire prompts at an API, `dt` introduces a **Claude-supervised delegation runtime**. Think of it as a corporate hierarchy for AI:
+- It is not a replacement for Claude Code
+- It does not commit code automatically
+- It does not guarantee every backend is available
+- It does not make untrusted agent output safe without review
 
-1. **The Controller (Claude Code / You)**: Writes the technical brief, supervises the overall execution, and holds final commit authority.
-2. **The Policy Gateway (`dt`)**: Enforces token budgets, selects operational modes, and prevents excessive agency. It's the shield protecting your codebase.
-3. **The Team Orchestrator (MetaGPT)**: Breaks down the monolithic task into specialized roles—Architect, Coder, Reviewer.
-4. **The Workers (Backend Models)**: VertexCoder, Codex, MiniMax, Gemini, and OpenCode execute their specific roles based on their unique capabilities.
+## Core Features
 
-**Dive deeper into our core lore:**
+| Feature | Description |
+|---|---|
+| **Failover Ring** | `dt` attempts best-effort fallback across configured backends. If another backend is available, `dt` can retry the task automatically. |
+| **Lean Token Protocol** | A targeted, compact contract. The routing engine minimizes file ingestion size, feeding only the context that actually matters. |
+| **Autopilot Setup** | `dt setup` creates local Python virtual environments and checks cloud credentials. |
+| **Dynamic Auth** | Zero hardcoded keys. `dt` queries your active local sessions and safely stores configurations locally. |
+| **Skill Linker** | Instantly injects `dt`'s orchestrators directly into local Claude Code and Gemini CLI paths. |
+
+## Architecture
+
+Unlike standard tools that just "support MetaGPT" or fire prompts at an API, `dt` introduces a **supervised delegation runtime**:
+
+```text
+User
+  ↓
+Claude Code
+  ↓ brief / review
+dt Policy Gateway
+  ↓ route
+Single backend OR Team mode
+  ↓
+VertexCoder / Codex / MiniMax / OpenCode / Gemini
+  ↓
+result contract
+  ↓
+Claude Code review
+  ↓
+human-approved commit
+```
+
 - 📜 [Delegation Protocol](./DELEGATION_PROTOCOL.md): Strict boundaries, untrusted output handling, and security policies.
 - 🔀 [Role Routing](./ROLE_ROUTING.md): How MetaGPT roles are dynamically mapped to specific models via capability tags.
 - 🕵️ [Trace Schema](./TRACE_SCHEMA.md): JSON schema to prevent circular delegation, control depth, and avoid cost explosions.
 
----
+## Requirements
 
-## 🐉 Slaying the Dragons of AI Engineering (Features)
+- Node.js 18+
+- npm
+- Python 3.10+
+- Optional: gcloud CLI for VertexCoder
+- Optional: provider credentials for configured backends
 
-Building and executing agentic workflows locally is fraught with peril. Here is how `dt` slays the most common dragons:
+## Quick start
 
-| The Threat | The `dt` Weapon |
-|---|---|
-| **The 429 Dragon (Rate Limits & Outages)** <br> Relying on a single provider breaks your workflow when APIs go down. | **🔄 Best-Effort Failover Ring** <br> `dt` forms an unbreakable shield. If a model fails, it sequentially routes the task: `vertexcoder` ➡️ `codex` ➡️ `minimax` ➡️ `opencode` ➡️ `gemini` ➡️ `SELF`. You never stop coding. |
-| **The Token Glutton (Skyrocketing Costs)** <br> Ingesting irrelevant files wastes millions of tokens. | **⚡ Lean Token Protocol (LEANBRIEF)** <br> A targeted, compact contract. The routing engine minimizes file ingestion size, feeding only the context that actually matters. |
-| **The Environment Labyrinth (Setup Nightmares)** <br> Virtualenvs, SDKs, and deep dependencies are a headache. | **🚀 Autopilot Setup Wizard (`dt setup`)** <br> A fully automated onboarding wizard that magically creates isolated virtual environments, installs PIP packages, and dynamically configures cloud authentication. |
-| **The Security Breach (Hardcoded Keys)** <br> Leaving keys or developer emails in Git history is fatal. | **🔒 100% Dynamic Authentication Fallbacks** <br> Zero hardcoded keys. `dt` queries your active local `gcloud` sessions and safely stores configurations in `~/.config/dt/config.json`. |
-| **The Sandbox Trap (Limited Skills)** <br> Standard terminal agents are trapped and lack multi-file power. | **🔗 Skill Linker (`dt link-skill`)** <br> Instantly injects `dt`'s orchestrators directly into local Claude Code and Gemini CLI paths as high-performance global capabilities. |
-
----
-
-## 🏰 The Citadel Structure (Repository)
-
-Your command center is organized for maximum efficiency:
-
-```text
-.
-├── package.json               # Package setup & CLI global mappings
-├── src/                       # TypeScript Source Code
-│   ├── cli.ts                 # CLI Entry Point
-│   ├── commands/              # CLI Commands (run, setup)
-│   ├── proxy/                 # LLM Gateway Proxy Server
-│   └── ...
-├── dist/                      # Compiled JS outputs
-├── delegate-team/             # Master coordinator logic (Relay, routers, guidelines)
-│   ├── SKILL.md               # Unified orchestrator instructions
-│   └── scripts/               # Core routing, relay & fallback systems
-├── vertex-coder/              # Premium Vertex AI agent (Python scripts, tools, and virtualenv)
-│   ├── SKILL.md               # VertexCoder execution directives
-│   ├── vertex_direct_coder.py # Direct single-file coding agent
-│   └── vertex_interactive_agent.py # Autonomous multi-file developer loop
-├── LICENSE                    # MIT Permissive License
-└── README.md                  # Beautiful developer documentation (This file)
-```
-
----
-
-## ⚔️ Arming Yourself (Installation & Setup)
-
-Ready to take command? Here is how to forge your tools.
-
-### 1. Clone & Link Globally
-Install `dt` globally on your workstation to summon it from any directory:
 ```bash
 # Clone the repository
 git clone https://github.com/imMamdouhaboammar/delegate-team.git
@@ -88,106 +81,129 @@ npm run build
 
 # Link the package globally
 npm link
-```
-*The `dt` command is now bound to your terminal!*
 
-### 2. Run Autopilot Setup
-Don't waste time configuring Python. Let the wizard build your isolated virtual environments and align your cloud credentials:
-```bash
-dt setup
-```
-
-### 3. Register Global Skills
-Empower your existing AI assistants (like Claude Code and Gemini CLI) with `dt`'s full arsenal:
-```bash
-dt link-skill
-```
-
----
-
-## 📜 The Spellbook (CLI Commands & Usage)
-
-### 🔍 Failsafe Health Check
-Ensure your armor is intact. Scan configurations, API keys, and credential readiness across all 6 backends:
-```bash
+# Verify installation
+dt --help
 dt check
 ```
 
-### 🎯 Smart Multi-Backend Dispatch
-Cast a complex task. The OpenCode Complexity Router analyzes it and selects the optimal backend, complete with automated failover:
+## Full setup
+
+```bash
+# Run the autopilot setup to build Python environments and configure cloud dependencies
+dt setup
+
+# Check backend readiness
+dt check --strict
+
+# Link dt skills to local agents
+dt link-skill
+```
+
+> **Warning:** `dt link-skill` creates or updates local skill links in your agent tool directories. Review the target paths before using it on a shared workstation.
+
+## Commands
+
+### Which command should I use?
+
+| Use case | Command |
+|---|---|
+| Small focused fix | `dt run "fix the auth bug"` |
+| Force one backend | `dt run "..." --backend vertexcoder` |
+| Large multi-module task | `dt run "..." --team` |
+| Direct team workflow | `dt metagpt "..." --workspace-only --no-install` |
+| Check setup | `dt check --strict` |
+
+### Smart Multi-Backend Dispatch
+Cast a complex task. The routing analyzes it and selects the optimal backend, complete with automated failover.
 ```bash
 dt run "Write a pytest suite in test_auth.py checking JWT login boundaries"
 ```
 
-### ⚡ Direct Vertex AI Coder (Single File)
-Strike with precision. Modify or create a single file at warp-speed:
+### Direct Vertex AI Coder (Single File)
+Modify or create a single file:
 ```bash
 dt vx direct index.html "Update the hero title to a premium dark gradient design"
 ```
 
-### 🤖 Interactive Vertex AI Agent (Autonomous Multi-File)
-Summon an autonomous entity. Let it write code, install packages, run tests, and self-correct over multiple files:
+### Interactive Vertex AI Agent (Autonomous Multi-File)
+Summon an autonomous entity to write code, install packages, run tests, and self-correct over multiple files:
 ```bash
 dt vx interactive "Implement a complete Express.js backend with modular JWT authorization"
 ```
 
-### 🏢 MetaGPT AI Software Company (Multi-Agent Workflow)
+## Backend readiness
 
-> [!NOTE]
-> **Status:** `dt` is building a Claude-supervised MetaGPT delegation runtime. Current MetaGPT support launches a policy-aware adapter and role map. Full per-role backend execution is under active development.
+Run:
+
+```bash
+dt check --strict
+```
+
+Backends may show:
+- ready
+- missing credentials
+- missing binary
+- not configured
+
+## Security model
+
+- `dt` is local-first
+- Agent output is treated as untrusted until reviewed
+- Claude Code or the human keeps final commit authority
+- File tools are restricted to the workspace
+- Dependency installation is blocked unless explicitly enabled
+- The local proxy binds to `127.0.0.1` and requires a token
+- Do not expose `dt serve` to a public network
+
+For more details, see [SECURITY.md](./SECURITY.md).
+
+## Team mode
+
+> **Status:** `dt` currently provides a MetaGPT-style team adapter. It runs specialized roles through `dt` backends, such as architect, coder, UI implementer, and reviewer. This is not yet a full upstream MetaGPT integration. It is a controlled `dt` team runtime inspired by MetaGPT-style role orchestration.
 
 When the task is monumental, summon an entire company. While `dt run` focuses on execution, `dt metagpt` spins up an Architect, Product Manager, Engineer, and QA.
 ```bash
-# Launch a full AI software company for complex architectures
 dt metagpt "Build a complete multiplayer snake game using websockets"
 ```
 
-**Guardrails for the Automata:**
-Because a full company acts with high autonomy, `dt` provides strict magical barriers:
+Because a full company acts with high autonomy, `dt` provides strict barriers:
 - `--plan-only`: Draft the architecture without writing code.
 - `--approve-write`: Require your final human seal of approval before writing to disk.
 - `--workspace-only`: Sandbox the team strictly to the current workspace root.
 - `--no-install`: Forbid the installation of package dependencies.
 - `--dry-run`: Simulate the entire workflow safely.
 
----
+## Local proxy
 
-## 🔮 The Portal (LLM Gateway Proxy)
-
-> [!WARNING]
-> The proxy server is a portal designed strictly for local development. Do not expose it to the wild public network without implementing proper authentication and TLS.
-
-Start a highly optimized local LLM Gateway Proxy server on port `3000` to connect tools like Cursor or VS Code directly to `dt`:
+Start a local LLM Gateway Proxy server on port `3000` to connect tools directly to `dt`:
 ```bash
 dt serve 3000
 ```
 
-### 🌌 Ultra-Premium UI (LobeChat Integration)
-For the ultimate visual experience, pair `dt` with **LobeChat**. It acts as a stunning command bridge while `dt` powers the backend.
+### Optional LobeChat integration
+You can connect LobeChat to the local `dt` proxy for a browser-based chat interface.
 
-**To open the portal via Docker:**
-1. Ignite the `dt` proxy server:
+1. Start the `dt` proxy server:
    ```bash
    dt serve 3000
    ```
-2. Launch the LobeChat Docker container, pointing its API URL to your local `dt` instance:
+2. Open `~/.config/dt/config.json`, copy `proxy_token`, and use it as `OPENAI_API_KEY`.
+3. Launch the LobeChat Docker container, pointing its API URL to your local `dt` instance:
    ```bash
    docker run -d -p 3210:3210 \
-     -e OPENAI_API_KEY=dt-local \
-     -e PROXY_TOKEN=dt-local \
+     -e OPENAI_API_KEY="<your-dt-proxy-token>" \
+     -e PROXY_TOKEN="<your-dt-proxy-token>" \
      -e OPENAI_PROXY_URL=http://host.docker.internal:3000/v1 \
      -e ACCESS_CODE= \
      --name lobe-chat \
      lobehub/lobe-chat
    ```
-   > **Note:** The `dt` proxy server requires the token from `~/.config/dt/config.json`. We use `dt-local` in this example for simplicity.
-3. Journey to `http://localhost:3210` in your browser. You now command a multi-backend agent dispatcher through an ultra-premium interface.
+4. Journey to `http://localhost:3210` in your browser.
 
----
+## Claude Code / Agent Setup Prompt
 
-## 🤝 Summoning Your Agent (Prompt Injection)
-
-If you use Claude Code, Cursor, or Gemini CLI, you can inject `dt`'s knowledge directly into their minds. Copy this incantation and paste it into your agent's chat window:
+If you use Claude Code, Cursor, or Gemini CLI, you can inject `dt`'s knowledge directly into their minds. Copy this prompt and paste it into your agent's chat window:
 
 ```text
 =================== COPY FOR YOUR AGENT ===================
@@ -205,19 +221,69 @@ SYSTEM DIRECTIVE: You are an agentic developer assistant. We have integrated the
 ===========================================================
 ```
 
----
+## Repository structure
 
-## 🏕️ Join the Fellowship (Contributing)
+```text
+.
+├── package.json               # Package setup & CLI global mappings
+├── src/                       # TypeScript Source Code
+│   ├── cli.ts                 # CLI Entry Point
+│   ├── commands/              # CLI Commands (run, setup)
+│   ├── proxy/                 # LLM Gateway Proxy Server
+│   └── ...
+├── dist/                      # Generated after npm run build, not committed
+├── delegate-team/             # Master coordinator logic (Relay, routers, guidelines)
+│   ├── SKILL.md               # Unified orchestrator instructions
+│   └── scripts/               # Core routing, relay & fallback systems
+├── vertex-coder/              # Python agent code. Local .venv is created by dt setup
+│   ├── SKILL.md               # VertexCoder execution directives
+│   ├── vertex_direct_coder.py # Direct single-file coding agent
+│   └── vertex_interactive_agent.py # Autonomous multi-file developer loop
+├── LICENSE                    # MIT Permissive License
+└── README.md                  # Developer documentation
+```
+
+## Current limitations
+
+- Team mode is MetaGPT-style, not a full upstream MetaGPT runtime
+- Some backends require local tools or credentials
+- Team artifacts are still evolving
+- Human approval queue is planned but not fully implemented
+- Security controls are local policy gates, not a sandboxed VM
+
+## Roadmap
+
+- Real team artifact handoff between roles
+- Human approval queue
+- Stronger role-to-backend contracts
+- More security regression tests
+- npm package release
+- Optional upstream MetaGPT compatibility
+
+## Contributing
 
 We welcome fellow developers to expand the orchestration power of `dt`!
+
+Before opening a PR:
+```bash
+npm run typecheck
+npm run build
+npm test
+dt check
+```
+
+Security-sensitive changes should include tests for:
+- workspace boundary
+- command allowlist
+- proxy auth
+- dependency install gates
+
 1. Fork the Project.
 2. Create your Feature Branch (`git checkout -b feature/EpicEnhancement`).
 3. Commit your Changes (`git commit -m 'Add an EpicEnhancement'`).
 4. Push to the Branch (`git push origin feature/EpicEnhancement`).
 5. Open a Pull Request.
 
----
+## License
 
-## 📜 The Covenant (License)
-
-Distributed under the MIT License. See `LICENSE` for more information. Let's build the future, together.
+Distributed under the MIT License. See `LICENSE` for more information.

@@ -63,7 +63,8 @@ export async function runMetaGPTRouter(prompt: string, options: any = {}): Promi
       DT_MAX_ROLES: trace.budget.max_roles.toString(),
       DT_MAX_TOKENS: trace.budget.max_tokens_total.toString(),
       DT_EXECUTION_DEPTH: trace.depth_control.current_depth.toString(),
-      DT_CAN_CALL_METAGPT: trace.depth_control.can_call_metagpt.toString()
+      DT_CAN_CALL_METAGPT: trace.depth_control.can_call_metagpt.toString(),
+      DT_CLI_PATH: process.argv[1] || process.argv[0]
     };
 
     const child = spawn(pythonPath, metagptArgs, {

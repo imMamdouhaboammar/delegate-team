@@ -78,13 +78,20 @@ def main():
     print(f"[DT MetaGPT Adapter] Generated dynamic MetaGPT config pointing to DT Proxy: {config_path}")
     print("[DT MetaGPT Adapter] Bootstrapping team orchestrator with per-role execution...")
     
+    dt_cli = os.environ.get("DT_CLI_PATH", "dt")
+    
     executed_roles = []
     all_success = True
+    all_files_touched = set()
+    handoff_context = ""
     
     for role, backend in routing.items():
         print(f"\n[DT MetaGPT Adapter] === Executing Role: {role} via Backend: {backend} ===")
         role_prompt = f"Role: {role}. Task: {prompt}"
-        cmd = ["dt", "run", role_prompt, "--backend", backend]
+        if handoff_context:
+            role_prompt += f"\n\nContext from previous roles:\n{handoff_context}"
+            
+        cmd = [dt_cli, "run", role_prompt, "--backend", backend]
         
         # Pass guardrails
         if os.environ.get("DT_PLAN_ONLY") == "true":
@@ -97,6 +104,25 @@ def main():
         
         print(f"[DT MetaGPT Adapter] Executing: {' '.join(cmd)}")
         result = subprocess.run(cmd, env=env)
+        
+        # Read result.json to aggregate files_touched and summary for handoff
+        result_json_path = os.path.join(workspace_root, "result.json")
+        role_files = []
+        role_summary = ""
+        if os.path.exists(result_json_path):
+            try:
+                with open(result_json_path, "r", encoding="utf-8") as f:
+                    res_data = json.load(f)
+                    if "files_touched" in res_data:
+                        role_files = res_data["files_touched"]
+                        for file in role_files:
+                            all_files_touched.add(file)
+                    if "summary" in res_data:
+                        role_summary = res_data["summary"]
+            except Exception as e:
+                print(f"[DT MetaGPT Adapter] Warning: Could not parse result.json for role {role}: {e}")
+                
+        handoff_context += f"\n--- {role.upper()} ---\nFiles touched: {role_files}\nSummary: {role_summary}\n"
         
         executed_roles.append({
             "role": role,
@@ -114,7 +140,7 @@ def main():
     contract = {
         "status": "success" if all_success else "failed",
         "roles_executed": executed_roles,
-        "files_touched": ["unknown - see workspace"]
+        "files_touched": list(all_files_touched)
     }
     with open(contract_path, "w") as f:
         json.dump(contract, f, indent=2)
