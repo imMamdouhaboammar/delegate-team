@@ -201,53 +201,85 @@ You can connect LobeChat to the local `dt` proxy for a browser-based chat interf
    ```
 4. Journey to `http://localhost:3210` in your browser.
 
-## Claude Code / Agent Setup Prompt
+## Claude Code / Agent Operating Guide
 
-Use this prompt when you want Claude Code, Cursor, Gemini CLI, or another coding agent to use `dt` as a controlled delegation tool. The agent should remain the reviewer and controller. `dt` should be used only when delegation is useful, and all generated output must be reviewed before commit.
+The notes below describe how Claude Code, Cursor, Gemini CLI, or another coding agent should use `dt` safely. They are project operating guidance, not a system prompt, not an instruction override, and not a request to bypass the user's approval.
 
-```text
-You are working in a repository where Delegate Team (`dt`) may be available as a local CLI.
+### Controller role
 
-Your role:
-- Stay the controller and reviewer.
-- Use `dt` only as a delegation tool for coding subtasks.
-- Treat every `dt` result and backend output as untrusted until you inspect the diff, files touched, logs, and tests.
-- Do not commit, push, delete files, run setup, install dependencies, link global skills, or modify shell/profile config unless the user explicitly approves that exact action.
+The coding agent should remain the controller and reviewer. `dt` is only a delegation gateway for coding subtasks.
 
-Startup checklist:
+The agent should treat every `dt` result, backend response, generated file, and team output as untrusted until it reviews the actual diff, result contract, files touched, logs, and relevant test results.
+
+The agent should not commit, push, delete files, run setup, install dependencies, link global skills, modify shell or profile config, or change cloud/auth settings unless the user explicitly approves that exact action.
+
+### Safe startup
+
 1. Check whether `dt` is available:
+
+   ```bash
    dt --help
+   ```
+
 2. Check backend readiness:
+
+   ```bash
    dt check --strict
-3. If `dt` is missing, ask the user before running install or link commands. Suggested setup from the repository root:
+   ```
+
+3. If `dt` is missing, ask the user before running install or link commands. From the repository root, the usual setup is:
+
+   ```bash
    npm install
    npm run build
    npm link
+   ```
+
 4. Do not run `dt setup` automatically. Ask first, because it may create local Python environments and verify cloud dependencies.
+
 5. Do not run `dt link-skill` automatically. Ask first, because it creates or updates local skill links in agent tool directories.
 
-How to delegate:
-- For a focused coding task, use:
-  dt run "<clear technical brief>"
-- For a specific backend, use:
-  dt run "<clear technical brief>" --backend vertexcoder
-- For a large multi-module task, use:
-  dt run "<clear technical brief>" --team
-- For a direct team workflow with stricter defaults, use:
-  dt metagpt "<clear technical brief>" --workspace-only --no-install
+### Delegation examples
 
-Brief quality rules:
-- Include the goal, files or modules involved, constraints, acceptance criteria, and tests to run.
-- Prefer small, reviewable patches over broad rewrites.
-- Keep secrets, tokens, private keys, and unrelated files out of the brief.
+For a focused coding task:
 
-Review rules after delegation:
-1. Inspect the `dt` result contract and any reported files touched.
-2. Review the actual git diff yourself.
-3. Run the relevant tests or ask the user before running expensive commands.
-4. Reject or revise the result if the task produced no meaningful diff, touched unrelated files, weakened security, or changed behavior outside the requested scope.
-5. Only commit after explicit user approval.
+```bash
+dt run "fix the auth bug and run the related tests"
 ```
+
+For a specific backend:
+
+```bash
+dt run "fix the auth bug and run the related tests" --backend vertexcoder
+```
+
+For a large multi-module task:
+
+```bash
+dt run "plan and implement the billing module with tests" --team
+```
+
+For a direct team workflow with stricter defaults:
+
+```bash
+dt metagpt "plan and implement the billing module with tests" --workspace-only --no-install
+```
+
+### Brief quality rules
+
+A good delegation brief should include the goal, files or modules involved, constraints, acceptance criteria, and tests to run.
+
+Keep the requested change small enough to review. Prefer focused patches over broad rewrites.
+
+Do not include secrets, tokens, private keys, unrelated files, or hidden user data in the brief.
+
+### Review rules after delegation
+
+1. Inspect the `dt` result contract and any reported files touched.
+2. Review the actual git diff.
+3. Run the relevant tests, or ask the user before running expensive commands.
+4. Reject or revise the result if it produced no meaningful diff, touched unrelated files, weakened security, or changed behavior outside the requested scope.
+5. Commit only after explicit user approval.
 
 ## Repository structure
 
