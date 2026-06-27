@@ -968,6 +968,15 @@ function runOnce(be, opts, stdinData, env, run) {
     let watchdogTimer = null;
     let silentCount = 0;
 
+    // Silent-output watchdog. Defaults to 60s interval x 2 = 120s, but both are
+    // env-configurable so long-running agent tasks (e.g. a full pytest run that
+    // emits nothing for minutes) are not killed mid-work:
+    //   RELAY_WATCHDOG_INTERVAL_MS  — poll interval (default 60000)
+    //   RELAY_WATCHDOG_MAX_SILENT   — silent intervals before SIGKILL (default 2)
+    const watchdogIntervalMs = Number(process.env.RELAY_WATCHDOG_INTERVAL_MS) || 60000;
+    const watchdogMaxSilent = Number(process.env.RELAY_WATCHDOG_MAX_SILENT) || 2;
+    const watchdogSilentSecs = Math.round((watchdogIntervalMs * watchdogMaxSilent) / 1000);
+
     const resetWatchdog = () => {
       silentCount = 0;
     };
@@ -978,12 +987,12 @@ function runOnce(be, opts, stdinData, env, run) {
 
     watchdogTimer = setInterval(() => {
       silentCount++;
-      if (silentCount >= 2) {
-        process.stderr.write(`\\nrelay: watchdog triggered (120s silent). Killing process...\\n`);
+      if (silentCount >= watchdogMaxSilent) {
+        process.stderr.write(`\\nrelay: watchdog triggered (${watchdogSilentSecs}s silent). Killing process...\\n`);
         child.kill("SIGKILL");
         clearWatchdog();
       }
-    }, 60000);
+    }, watchdogIntervalMs);
 
     child.stdout.on("data", (chunk) => {
       resetWatchdog();
