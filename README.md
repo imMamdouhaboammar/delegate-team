@@ -146,6 +146,11 @@ Backends may show:
 - missing binary
 - not configured
 
+If a backend shows missing credentials/binary, see
+[AGENT_ACCESS_GUIDE.md](./AGENT_ACCESS_GUIDE.md) — the controlling agent should walk
+the user through granting access (Codex, MiniMax, GLM, OpenCode, OpenRouter, Gemini,
+Vertex AI) rather than silently skipping the backend.
+
 ## Security model
 
 - `dt` is local-first
