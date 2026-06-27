@@ -31,23 +31,22 @@ describe('Fallback Ring', () => {
 
   it('should route to fallback backend if first backend fails', () => {
     const spawnSyncMock = cp.spawnSync as any;
-    
-    // 1st attempt: opencode -> fails
-    // 2nd attempt: codex -> succeeds
+
+    // FALLBACK_RING['opencode'] = [opencode, vertexcoder, codex, minimax, gemini]
+    // 1st attempt: opencode    -> fails
+    // 2nd attempt: vertexcoder -> fails (preferred fallback everywhere, tried before codex)
+    // 3rd attempt: codex       -> succeeds
     spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
       // Mock router
       if (args.some(a => a.includes('opencode-router.mjs'))) {
         return { status: 0, stdout: '{"score": 2}' }; // routes to opencode
       }
-      
+
       // Mock relay
-      if (args.includes('--backend') && args.includes('opencode')) {
-        return { status: 1 }; // fail
-      }
       if (args.includes('--backend') && args.includes('codex')) {
         return { status: 0 }; // success
       }
-      return { status: 1 };
+      return { status: 1 }; // opencode and vertexcoder both fail
     });
 
     runDispatch(undefined, { backend: 'opencode', brief: 'test.txt' });
@@ -55,10 +54,11 @@ describe('Fallback Ring', () => {
     // Assert that spawnSync was called multiple times, eventually succeeding with codex
     const calls = spawnSyncMock.mock.calls;
     const relayCalls = calls.filter((c: any) => c[1].some((arg: string) => arg.includes('relay.mjs')));
-    
-    expect(relayCalls.length).toBe(2);
+
+    expect(relayCalls.length).toBe(3);
     expect(relayCalls[0][1]).toContain('opencode');
-    expect(relayCalls[1][1]).toContain('codex');
+    expect(relayCalls[1][1]).toContain('vertexcoder');
+    expect(relayCalls[2][1]).toContain('codex');
   });
 
   it('should exit 1 if all backends fail', () => {
