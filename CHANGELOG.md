@@ -3,6 +3,119 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.5.0] — 2026-06-30
+
+### Added — Bundled `agent-kernel` v0.0.5 (memory + governance layer)
+
+delegate-team now ships with **`agent-kernel` as a first-class component** — a
+local-first memory + governance kernel for AI coding agents. This adds the
+"strong memory tool" the supersystem was missing.
+
+**New `agent-kernel/` directory** (vendored from
+`@mamdouh/agent-kernel v0.0.5`):
+
+- `agent-kernel/dist/cli.mjs` — single ~85 KB ESM binary (`agent-kernel`, `ak`)
+- `agent-kernel/SKILL.md` — Skills.sh manifest (kebab-case `agent-kernel`)
+- `agent-kernel/install.sh` — idempotent local installer
+- `agent-kernel/wrapper.sh` — bash shim with PATH-fallback chain
+- `agent-kernel/MEMORY.md` — how delegate-team uses it
+- `agent-kernel/VERSION` — pinned to 0.0.5
+- `agent-kernel/docs/` — 8 architecture + protocol docs (ARCHITECTURE, MEMORY_PROTOCOL,
+  EPISODIC_MEMORY, MCP_SERVER, STRICT_MODE, JSON_FIRST_STORAGE, INTEGRATIONS)
+- `agent-kernel/examples/` — CI guard workflow + sample memory rules + sample episode
+- `agent-kernel/develpment/` — backlog + epics + milestones + sprint plan + machine-readable `backlog.json`
+- `agent-kernel/LICENSE`, `agent-kernel/README.md` — MIT, upstream README verbatim
+
+**Capability additions**:
+
+- **JSON-first shared memory** at `~/.agent-kernel/source/memories/*.json`
+  (rules / preferences / workflows / project-notes / skills) — one source, all agents
+- **Episodic memory archive** at `~/.agent-kernel/episodes/` — searchable across sessions
+- **Approval inbox** at `~/.agent-kernel/inbox/{pending,approved,rejected}/` —
+  agents propose rules, only kernel publishes
+- **Compiled instruction files** for every agent:
+  `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/00-agent-kernel.mdc`,
+  `.agents/agents.md`, `GEMINI.md`
+- **Hooks**: Claude `PreToolUse` + `PostToolUse`, git `pre-commit`, optional CI guard
+- **MCP tools**: `agent_kernel_search_episodes`, `agent_kernel_read_episode`,
+  `agent_kernel_capture_episode`, `agent_kernel_sync_episodes`
+- **Deterministic policy guard** — blocks dangerous `rm -rf`, curl|sh,
+  force-push to main/master, secret leaks, plus any rule you add
+- **Cross-agent compatibility**: Claude Code, Codex, Cursor, OpenCode, Antigravity,
+  Gemini CLI, Windsurf, Copilot, and 60+ via Skills.sh
+
+**Orchestrator integration**:
+
+- New **MEMORY path** in `orchestrator/scripts/orchestrate.sh` routing — second
+  priority in the verdict algorithm (after RESEARCH). Detected via:
+  - `remember this`, `save this rule`, `memorize`, `long-term memory`
+  - `what did we do`, `last time`, `past episode`, `recall`, `search memory`
+  - `add to memory`, `store in memory`, `agent-kernel`, `ak`
+- Memory stage added to the chain (runs alongside the main verdict path,
+  never overrides it)
+- 4 new routing test cases added to `orchestrator-tests` CI job
+
+**Installer integration**:
+
+- New `./install.sh --kernel` flag — installs just agent-kernel
+- `./install.sh --all` now includes kernel by default (11 components total,
+  was 10)
+- `./install.sh --verify` reports agent-kernel state + memory home path
+- Uninstaller removes only symlinks we added — your `~/.agent-kernel/`
+  memories are preserved
+
+**Marketplace + Skills.sh integration**:
+
+- Added 9th plugin entry `delegate-team-agent-kernel` to
+  `.claude-plugin/marketplace.json` (version 2.5.0)
+- Added `agent-kernel` to `.claude-plugin/plugin.json` skills list
+- Added new `agent-kernel` featured skill to `skills.sh.json`
+- Added new "Companion frameworks" grouping containing `agent-kernel`
+- New `integrations/agent-kernel.md` guide (5th integration doc)
+
+**Compatibility (zero breaking changes)**:
+
+- All existing install paths continue to work unchanged
+- `install.sh` without `--kernel` skips the kernel entirely — opt-in
+- The vendored CLI at `agent-kernel/dist/cli.mjs` is the source of truth
+- Wrapper falls through to global `agent-kernel` if user prefers
+- No npm dependency added (vendored binary = zero install footprint)
+- Storage layout fully backward compatible with v0.0.1 (auto-migrates)
+- All 8 existing orchestrator routing tests still pass
+
+**Verified locally**:
+
+- `node agent-kernel/dist/cli.mjs --version` → `0.0.5`
+- `node agent-kernel/dist/cli.mjs --help` → full command list
+- 4 new routing tests pass: memory + recall paths
+- 8 existing routing tests still pass (no regressions)
+- `npm run build` → exits 0
+- `npm run typecheck` → exits 0
+- `npm pack --dry-run` → clean
+- `bash -n` passes for all 3 install scripts
+- JSON validates for all 4 manifest files
+
+## [2.4.1] — 2026-06-30
+
+### Documentation — Distributed badge layout
+
+Replaced the 23-badge stacked hero with a distributed layout:
+
+**Hero (top)**: 6 small flat-square badges in a single line
+- npm version · License · Stars · Last commit · CI status · Open Source MIT
+
+**Inline at relevant sections**:
+- 📦 Install → install-size + weekly downloads
+- 🧩 Components table → language + status badges per row
+- 🤝 Contributing → stars/issues/PRs/contributors/code-size/top-language
+- 🏗️ Architecture → Runtime compatibility (Node/TS/Python/Bash)
+- 📊 Project health (NEW section) → 3 CI workflow status badges with explanations
+
+All badges use `style=flat-square` (smaller, cleaner) instead of
+`for-the-badge` (heavier). Total badge count dropped from 23 to 32
+but only **6** are visible in the hero (vs all 23), making the top
+of the README breathable and not "cheap UI".
+
 ## [2.4.0] — 2026-06-30
 
 ### Documentation — Polished README badge bar

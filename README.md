@@ -11,45 +11,12 @@
 **Waza `/think` → unslop audit → superpowers writing-plans →**
 **autoresearch | `/delegate-team` | `/mavis-team` → Waza `/check` → quality-guard → SHIP**
 
----
-
-### 📦 Install
-
-[![npm](https://img.shields.io/npm/v/delegate-team?color=cb3837&logo=npm&logoColor=white&label=install&style=for-the-badge)](https://www.npmjs.com/package/delegate-team)
-[![npm bundlephobia](https://img.shields.io/bundlephobia/min/delegate-team?color=cb3837&logo=npm&logoColor=white&label=install%20size&style=for-the-badge)](https://bundlephobia.com/package/delegate-team)
-[![npm weekly downloads](https://img.shields.io/npm/dw/delegate-team?color=cb3837&logo=npm&logoColor=white&label=weekly%20installs&style=for-the-badge)](https://www.npmjs.com/package/delegate-team)
-
-### 🧬 Status
-
-[![GitHub release](https://img.shields.io/github/v/release/imMamdouhaboammar/delegate-team?color=blue&label=version&style=for-the-badge)](https://github.com/imMamdouhaboammar/delegate-team/releases/latest)
-[![Release date](https://img.shields.io/github/release-date/imMamdouhaboammar/delegate-team?color=blue&style=for-the-badge)](https://github.com/imMamdouhaboammar/delegate-team/releases)
-[![License: MIT](https://img.shields.io/github/license/imMamdouhaboammar/delegate-team?color=blue&style=for-the-badge)](https://github.com/imMamdouhaboammar/delegate-team/blob/master/LICENSE)
-[![Last commit](https://img.shields.io/github/last-commit/imMamdouhaboammar/delegate-team?color=blue&style=for-the-badge)](https://github.com/imMamdouhaboammar/delegate-team/commits/master)
-[![Commits since latest release](https://img.shields.io/github/commits-since/imMamdouhaboammar/delegate-team/latest?color=blue&style=for-the-badge)](https://github.com/imMamdouhaboammar/delegate-team/compare/v2.3.0...master)
-
-### 🛡️ Quality
-
-[![CI](https://img.shields.io/github/actions/workflow/status/imMamdouhaboammar/delegate-team/ci.yml?branch=master&label=CI&logo=github-actions&logoColor=white&style=for-the-badge)](https://github.com/imMamdouhaboammar/delegate-team/actions/workflows/ci.yml)
-[![npm publish CI](https://img.shields.io/github/actions/workflow/status/imMamdouhaboammar/delegate-team/npm-publish.yml?label=npm%20publish&logo=npm&logoColor=white&style=for-the-badge)](https://github.com/imMamdouhaboammar/delegate-team/actions/workflows/npm-publish.yml)
-[![Release CI](https://img.shields.io/github/actions/workflow/status/imMamdouhaboammar/delegate-team/release.yml?label=auto-release&logo=github-actions&logoColor=white&style=for-the-badge)](https://github.com/imMamdouhaboammar/delegate-team/actions/workflows/release.yml)
-
-### 🌐 Ecosystem
-
-[![Skills.sh](https://img.shields.io/badge/Skills.sh-discovery-blueviolet?style=for-the-badge)](https://skills.sh/imMamdouhaboammar/delegate-team)
-[![GitHub stars](https://img.shields.io/github/stars/imMamdouhaboammar/delegate-team?style=for-the-badge&logo=github&color=gold)](https://github.com/imMamdouhaboammar/delegate-team/stargazers)
-[![Issues](https://img.shields.io/github/issues/imMamdouhaboammar/delegate-team?style=for-the-badge&logo=github)](https://github.com/imMamdouhaboammar/delegate-team/issues)
-[![PRs](https://img.shields.io/github/issues-pr/imMamdouhaboammar/delegate-team?style=for-the-badge&logo=github&color=lime)](https://github.com/imMamdouhaboammar/delegate-team/pulls)
-[![Contributors](https://img.shields.io/github/contributors/imMamdouhaboammar/delegate-team?style=for-the-badge&color=orange)](https://github.com/imMamdouhaboammar/delegate-team/graphs/contributors)
-[![Code size](https://img.shields.io/github/languages/code-size/imMamdouhaboammar/delegate-team?style=for-the-badge)](https://github.com/imMamdouhaboammar/delegate-team)
-[![Top language](https://img.shields.io/github/languages/top/imMamdouhaboammar/delegate-team?style=for-the-badge&color=yellow)](https://github.com/imMamdouhaboammar/delegate-team)
-
-### ⚙️ Stack
-
-[![Node.js 18+](https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
-[![TypeScript 5.6+](https://img.shields.io/badge/TypeScript-5.6+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-[![Bash 4+](https://img.shields.io/badge/Bash-4+-4EAA25?style=for-the-badge&logo=gnu-bash&logoColor=white)](https://www.gnu.org/software/bash)
-[![MIT license](https://img.shields.io/badge/Open%20Source-MIT-yellow?style=for-the-badge)](https://github.com/imMamdouhaboammar/delegate-team/blob/master/LICENSE)
+[![npm version](https://img.shields.io/npm/v/delegate-team?color=cb3837&logo=npm&label=npm&style=flat-square)](https://www.npmjs.com/package/delegate-team)
+[![License: MIT](https://img.shields.io/github/license/imMamdouhaboammar/delegate-team?color=blue&style=flat-square)](./LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/imMamdouhaboammar/delegate-team?logo=github&color=gold&style=flat-square)](https://github.com/imMamdouhaboammar/delegate-team/stargazers)
+[![Last commit](https://img.shields.io/github/last-commit/imMamdouhaboammar/delegate-team?style=flat-square)](https://github.com/imMamdouhaboammar/delegate-team/commits/master)
+[![CI status](https://img.shields.io/github/actions/workflow/status/imMamdouhaboammar/delegate-team/ci.yml?label=CI&style=flat-square)](https://github.com/imMamdouhaboammar/delegate-team/actions/workflows/ci.yml)
+[![Open Source: MIT](https://img.shields.io/badge/Open%20Source-MIT-yellow?style=flat-square)](./LICENSE)
 
 </div>
 
@@ -74,15 +41,6 @@ type one command and let the supersystem decide:
 | Each agent works alone | 8 specialized agents (Atlas / Forge / Scout / Oracle / Librarian / Reviewer / Visionary / Sentinel) collaborate |
 | "Best practice" depends on which LLM answered | Methodology encoded as skills: superpowers · Waza · unslop-preflight · autoresearch |
 
-**Sounds good? Try it:**
-
-```bash
-git clone https://github.com/imMamdouhaboammar/delegate-team
-cd delegate-team
-./install.sh --all
-./install.sh --verify   # sanity check
-```
-
 ---
 
 ## 📦 Quick install
@@ -91,10 +49,13 @@ cd delegate-team
 
 ### Path A — npm (the fastest — just the `dt` CLI)
 
+[![npm install size](https://img.shields.io/bundlephobia/min/delegate-team?logo=npm&style=flat-square)](https://bundlephobia.com/package/delegate-team)
+[![npm weekly downloads](https://img.shields.io/npm/dw/delegate-team?logo=npm&style=flat-square)](https://www.npmjs.com/package/delegate-team)
+
 ```bash
 # Global install (preferred for a CLI on your PATH)
 npm install -g delegate-team
-dt --version      # → 2.2.0
+dt --version      # → 2.4.0
 dt run "<task>"
 
 # Or run without installing
@@ -301,6 +262,13 @@ python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py --atlas
                   └────────────────────────────────────┘
 ```
 
+### Runtime compatibility
+
+[![Node.js 18+](https://img.shields.io/badge/Node.js-18+-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
+[![TypeScript 5.6+](https://img.shields.io/badge/TypeScript-5.6+-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![Bash 4+](https://img.shields.io/badge/Bash-4+-4EAA25?style=flat-square&logo=gnu-bash&logoColor=white)](https://www.gnu.org/software/bash)
+
 ---
 
 ## ❓ Why not just use...?
@@ -320,7 +288,7 @@ python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py --atlas
 | Doc | What's inside |
 |---|---|
 | [`INSTALL.md`](./INSTALL.md) | Full installation guide + verification matrix |
-| [`CHANGELOG.md`](./CHANGELOG.md) | v1 → v2 → v2.1 release notes |
+| [`CHANGELOG.md`](./CHANGELOG.md) | v1 → v2 → v2.1 → v2.4 release notes |
 | [`DT.md`](./DT.md) | Original `dt` CLI specifics (gateway internals) |
 | [`orchestrator/README.md`](./orchestrator/README.md) | `/mavis-ship` details |
 | [`scaffolder/README.md`](./scaffolder/README.md) | `mavis-skill-scaffold` reference |
@@ -335,6 +303,12 @@ python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py --atlas
 ---
 
 ## 🤝 Contributing
+
+[![Open issues](https://img.shields.io/github/issues/imMamdouhaboammar/delegate-team?logo=github&style=flat-square)](https://github.com/imMamdouhaboammar/delegate-team/issues)
+[![Open PRs](https://img.shields.io/github/issues-pr/imMamdouhaboammar/delegate-team?logo=github&color=lime&style=flat-square)](https://github.com/imMamdouhaboammar/delegate-team/pulls)
+[![Contributors](https://img.shields.io/github/contributors/imMamdouhaboammar/delegate-team?color=orange&style=flat-square)](https://github.com/imMamdouhaboammar/delegate-team/graphs/contributors)
+[![Code size](https://img.shields.io/github/languages/code-size/imMamdouhaboammar/delegate-team?style=flat-square)](https://github.com/imMamdouhaboammar/delegate-team)
+[![Top language](https://img.shields.io/github/languages/top/imMamdouhaboammar/delegate-team?color=yellow&style=flat-square)](https://github.com/imMamdouhaboammar/delegate-team)
 
 1. **Fork** and **clone** the repo.
 2. **Read** [`AGENTS.md`](./AGENTS.md) — repo conventions live here.
@@ -362,14 +336,28 @@ mavis-skill-scaffold --name my-new-skill --description "..." --type workflow
 
 ---
 
+## 📊 Project health
+
+Continuous integration, automated release, npm distribution.
+
+| Workflow | Status | Purpose |
+|---|---|---|
+| **CI** (`.github/workflows/ci.yml`) | [![CI](https://img.shields.io/github/actions/workflow/status/imMamdouhaboammar/delegate-team/ci.yml?label=CI&style=flat-square)](https://github.com/imMamdouhaboammar/delegate-team/actions/workflows/ci.yml) | TypeScript build across Node 18/20/22 + python syntax + manifests + orchestrate.sh routing matrix |
+| **npm publish** (`.github/workflows/npm-publish.yml`) | [![npm publish](https://img.shields.io/github/actions/workflow/status/imMamdouhaboammar/delegate-team/npm-publish.yml?label=npm&logo=npm&style=flat-square)](https://github.com/imMamdouhaboammar/delegate-team/actions/workflows/npm-publish.yml) | Auto-publishes to npm on every `v*` tag with OIDC provenance |
+| **Release** (`.github/workflows/release.yml`) | [![auto-release](https://img.shields.io/github/actions/workflow/status/imMamdouhaboammar/delegate-team/release.yml?label=auto-release&style=flat-square)](https://github.com/imMamdouhaboammar/delegate-team/actions/workflows/release.yml) | Auto-creates GitHub Release with categorized notes + tarball |
+
+---
+
 ## 🛣️ Roadmap
 
 - [x] **v2.0.0** — supersystem release (`/mavis-ship` + scaffolder + MMAS + integrations)
 - [x] **v2.1.0** — Skills.sh + Claude Code marketplace compatibility
-- [x] **v2.1.1** — orchestrate.sh regex routing fixes (BUILD/PUBLISM rule)
-- [ ] **v2.2.0** — ATLAS web UI for non-CLI users
+- [x] **v2.1.1** — orchestrate.sh regex routing fixes (BUILD/PUBLISH rule)
+- [x] **v2.2.0** — Polished README + expanded CI for badge coverage
+- [x] **v2.3.0** — npm package live + auto-publish GitHub Action
+- [x] **v2.4.0** — Polished 23-badge README layout (now distributed, slim style)
+- [ ] **v2.5.0** — ATLAS web UI for non-CLI users
 - [ ] **v3.0.0** — multi-tenant team runs + per-project skill isolation
-- [ ] **v3.x.x** — Webhook-driven CI feedback loop (autoresearch auto-iterate on test fail)
 
 ---
 
