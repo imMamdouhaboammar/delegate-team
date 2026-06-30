@@ -232,7 +232,6 @@ while true; do
     FINAL_REPORT+="Agent summaries:\n"
 
     for agent in $(jq -r '.agents[].name' "$BOULDER"); do
-      local summary_file
       summary_file=$(jq -r ".agents[] | select(.name == \"$agent\") | .summary_file" "$BOULDER")
       FINAL_REPORT+="\n--- $agent ---\n"
       if [[ -f "$summary_file" ]]; then

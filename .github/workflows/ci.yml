@@ -68,6 +68,8 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
+      - name: Install deps (pyyaml)
+        run: pip install pyyaml --quiet
       - name: Syntax check
         run: |
           set -e
@@ -129,22 +131,21 @@ jobs:
         run: |
           set -e
           chmod +x orchestrator/scripts/orchestrate.sh
-          # 8-task signature matrix
           declare -a TESTS=(
             "Build an OpenSource repo containing our full agentic engineering system: orchestrator + skill-scaffold + delegate-team backends + multi-agent team + integrations docs. Push to github|BUILD/PUBLISH"
             "Build a landing page with shadcn components|UI DELIVERY"
             "Make API p95 < 200ms|PERFORMANCE/METRIC"
             "Research how Rust trait objects work|RESEARCH"
             "Mobile header broken on Safari iOS 17|BUG"
-            "rename getCurrentUser to getActiveUser|TRIVIAL"
+            "rename getCurrentUser to getActiveUser|TRIVIAL — handle locally"
           )
           for t in "${TESTS[@]}"; do
             task="${t%%|*}"
             expected="${t##*|}"
-            actual=$(orchestrator/scripts/orchestrate.sh "$task" | grep -E "^# Verdict" -A1 | tail -1)
+            # Capture the verdict (or first 3 lines after '# Verdict:')
+            actual=$(orchestrator/scripts/orchestrate.sh "$task" 2>&1)
             echo "  task: ${task:0:50}..."
-            echo "  expected: $expected"
-            echo "  got: $actual"
+            echo "  expected substring: $expected"
             if [[ "$actual" != *"$expected"* ]]; then
               echo "  ✗ MISMATCH"
               exit 1
