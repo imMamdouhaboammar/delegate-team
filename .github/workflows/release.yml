@@ -96,30 +96,30 @@ jobs:
         id: body
         shell: bash
         run: |
-          cat > /tmp/release-body.md << EOF
-          ## 🛠️ delegate-team ${{ steps.tag.outputs.name }}
-
-          Auto-generated from commits + PR labels between \`${{ steps.baseline.outputs.name }}\` and \`${{ steps.tag.outputs.name }}\`.
-
-          ---
-
-          ${{ steps.notes.outputs.notes }}
-
-          ---
-
-          ### 📥 Install / upgrade
-
-          \`\`\`bash
-          npm install -g delegate-team@latest
-          dt --version   # confirms upgrade
-          \`\`\`
-
-          ### 🔗 See also
-
-          - [Full CHANGELOG](https://github.com/imMamdouhaboammar/delegate-team/blob/master/CHANGELOG.md)
-          - [npm registry](https://www.npmjs.com/package/delegate-team)
-          EOF
-          echo "body=$(cat /tmp/release-body.md)" >> "$GITHUB_OUTPUT"
+          {
+            echo "## 🛠️ delegate-team ${{ steps.tag.outputs.name }}"
+            echo ""
+            echo "Auto-generated from commits + PR labels between \`${{ steps.baseline.outputs.name }}\` and \`${{ steps.tag.outputs.name }}\`."
+            echo ""
+            echo "---"
+            echo ""
+            echo "${{ steps.notes.outputs.notes }}"
+            echo ""
+            echo "---"
+            echo ""
+            echo "### 📥 Install / upgrade"
+            echo ""
+            echo '```bash'
+            echo "npm install -g delegate-team@latest"
+            echo "dt --version   # confirms upgrade"
+            echo '```'
+            echo ""
+            echo "### 🔗 See also"
+            echo ""
+            echo "- [Full CHANGELOG](https://github.com/imMamdouhaboammar/delegate-team/blob/master/CHANGELOG.md)"
+            echo "- [npm registry](https://www.npmjs.com/package/delegate-team)"
+          } > /tmp/release-body.md
+          echo "body written ($(wc -c < /tmp/release-body.md) bytes)"
 
       - name: Create release (idempotent — skip if already exists)
         id: create_release
@@ -142,12 +142,15 @@ jobs:
               if (e.status !== 404) throw e;
             }
 
+            const fs = require('fs');
+            const body = fs.readFileSync('/tmp/release-body.md', 'utf8');
+
             const { data } = await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
               tag_name: TAG,
               name: `🛠️ ${TAG} — auto release`,
-              body: process.env.RELEASE_BODY,
+              body: body,
               draft: false,
               prerelease: false,
               generate_release_notes: false,  // we already wrote them
@@ -156,8 +159,6 @@ jobs:
             core.setOutput('upload_url', data.upload_url);
             core.setOutput('body', data.body);
             core.info(`Created release: ${data.html_url}`);
-        env:
-          RELEASE_BODY: ${{ steps.body.outputs.body }}
 
   attach-assets:
     name: Attach source tarball
