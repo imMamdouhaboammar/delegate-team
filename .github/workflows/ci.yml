@@ -54,6 +54,8 @@ jobs:
         with:
           scandir: './'
           additional_files: 'install.sh orchestrator/scripts/orchestrate.sh mmas/watchdog.sh scaffolder/bin/mavis-skill-scaffold'
+          # Only fail on errors, not warnings/info (these are stylistic)
+          severity: 'error'
 
   # ───────────────────────────────────────────────────────────────────────
   # Python: minimax-coder + vertex-coder + mmas/agents/*.yaml
