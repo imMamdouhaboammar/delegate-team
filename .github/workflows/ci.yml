@@ -79,6 +79,71 @@ jobs:
           python -m py_compile vertex-coder/*.py
           python -m py_compile minimax-coder/*.py
           python -m py_compile mmas/spawn-team.py mmas/hash-edit.py
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Bundlephobia regression guard — BundlePhobia recently migrated from
+  # webpack to Rspack. Rspack treats `new URL('../package.json',
+  # import.meta.url)` in source as an asset reference and tries to bundle
+  # package.json as a JSON asset — but Rspack requires chunk assets to
+  # have a `.bundle` suffix, so it fails with:
+  #   "Found an asset without the `.bundle` suffix. A loader customization
+  #    might be needed to recognize this asset type<HASH>.json"
+  # Source MUST use fileURLToPath + dirname + join instead.
+  # See v2.5.1 release notes.
+  # ───────────────────────────────────────────────────────────────────────
+  bundlephobia-guard:
+    name: Bundlephobia regression guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install + build
+        run: |
+          set -e
+          npm ci
+          npm run build
+      - name: cli.js runs and reports correct version
+        run: |
+          set -e
+          chmod +x dist/cli.js
+          V=$(node dist/cli.js --version)
+          echo "  --version: $V"
+          if [ -z "$V" ]; then
+            echo "  ✗ --version returned empty"
+            exit 1
+          fi
+          echo "  ✓ cli.js --version reads package.json correctly"
+      - name: Assert no bundler-unsafe new URL('../package.json') in dist
+        run: |
+          set -e
+          # The pattern `new URL("../package.json", import.meta.url)` triggers
+          # BundlePhobia's Rspack to try to bundle package.json as an asset,
+          # which fails the .bundle suffix check.
+          if grep -E 'new URL\(["'"'"']\.\./package\.json["'"'"'],\s*import\.meta\.url\)' dist/cli.js; then
+            echo "  ✗ FOUND bundler-unsafe pattern: new URL('../package.json', import.meta.url)"
+            echo "  BundlePhobia's Rspack bundler will fail with"
+            echo "  'Found an asset without the `.bundle` suffix' error."
+            echo "  Use fileURLToPath + dirname + join instead."
+            exit 1
+          fi
+          echo "  ✓ dist/cli.js uses fileURLToPath + dirname + join (Rspack-safe)"
+      - name: Assert no extra .json files in npm pack
+        run: |
+          set -e
+          # Only package.json should be a .json in the tarball. Any extra
+          # .json file is a candidate for BundlePhobia to choke on.
+          PACK_JSONS=$(npm pack --dry-run 2>&1 | grep -oE '\S+\.json' | sort -u)
+          echo "  .json files in pack:"
+          echo "$PACK_JSONS" | sed 's/^/    /'
+          COUNT=$(echo "$PACK_JSONS" | wc -l | tr -d ' ')
+          if [ "$COUNT" -ne 1 ]; then
+            echo "  ✗ expected exactly 1 .json file (package.json), got $COUNT"
+            exit 1
+          fi
+          if [ "$(echo "$PACK_JSONS" | head -1)" != "package.json" ]; then
+            echo "  ✗ unexpected .json file in tarball"
+            exit 1
+          fi
+          echo "  ✓ tarball contains only package.json as .json asset"
       - name: YAML lint (mmas/agents)
         run: |
           python -c "
