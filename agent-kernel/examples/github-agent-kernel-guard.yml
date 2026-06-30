@@ -1,0 +1,23 @@
+name: Agent Kernel Guard
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Agent Kernel from repository path
+        run: npm install -g .
+      - name: Initialize Agent Kernel in CI home
+        run: agent-kernel init
+      - name: Run guard
+        run: agent-kernel guard

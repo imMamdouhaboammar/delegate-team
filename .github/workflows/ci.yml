@@ -45,7 +45,8 @@ jobs:
         run: |
           set -e
           for f in install.sh orchestrator/scripts/orchestrate.sh \
-                   mmas/watchdog.sh scaffolder/bin/mavis-skill-scaffold; do
+                   mmas/watchdog.sh scaffolder/bin/mavis-skill-scaffold \
+                   agent-kernel/install.sh agent-kernel/wrapper.sh; do
             echo "checking $f"
             bash -n "$f"
           done
@@ -53,7 +54,7 @@ jobs:
         uses: ludeeus/action-shellcheck@master
         with:
           scandir: './'
-          additional_files: 'install.sh orchestrator/scripts/orchestrate.sh mmas/watchdog.sh scaffolder/bin/mavis-skill-scaffold'
+          additional_files: 'install.sh orchestrator/scripts/orchestrate.sh mmas/watchdog.sh scaffolder/bin/mavis-skill-scaffold agent-kernel/install.sh agent-kernel/wrapper.sh'
           # Only fail on errors, not warnings/info (these are stylistic)
           severity: 'error'
 
@@ -128,11 +129,13 @@ jobs:
           python3 /tmp/check_frontmatter.py \
               SKILL.md orchestrator/SKILL.md scaffolder/SKILL.md \
               mmas/SKILL.md god-agent/SKILL.md minimax-coder/SKILL.md \
-              vertex-coder/SKILL.md integrations/unslop/SKILL.md
+              vertex-coder/SKILL.md integrations/unslop/SKILL.md \
+              agent-kernel/SKILL.md
       - name: orchestrate.sh routing assertions
         run: |
           set -e
           chmod +x orchestrator/scripts/orchestrate.sh
+          # 10-task signature matrix (8 original + 2 new for agent-kernel MEMORY path)
           declare -a TESTS=(
             "Build an OpenSource repo containing our full agentic engineering system: orchestrator + skill-scaffold + delegate-team backends + multi-agent team + integrations docs. Push to github|BUILD/PUBLISH"
             "Build a landing page with shadcn components|UI DELIVERY"
@@ -140,6 +143,8 @@ jobs:
             "Research how Rust trait objects work|RESEARCH"
             "Mobile header broken on Safari iOS 17|BUG"
             "rename getCurrentUser to getActiveUser|TRIVIAL — handle locally"
+            "remember this: never add SQLite fallback to Supabase projects|MEMORY path"
+            "what did we do about the stripe webhook last time|MEMORY path"
           )
           for t in "${TESTS[@]}"; do
             task="${t%%|*}"
@@ -168,13 +173,33 @@ jobs:
           test -f SKILL.md || { echo "root SKILL.md missing"; exit 1; }
           head -1 SKILL.md | grep -q '^---$' || { echo "no frontmatter"; exit 1; }
           echo "  ✓ root SKILL.md present + frontmatter"
+      - name: agent-kernel/SKILL.md
+        run: |
+          test -f agent-kernel/SKILL.md || { echo "agent-kernel/SKILL.md missing"; exit 1; }
+          head -1 agent-kernel/SKILL.md | grep -q '^---$' || { echo "no frontmatter"; exit 1; }
+          grep -q 'name: agent-kernel' agent-kernel/SKILL.md || { echo "name not agent-kernel"; exit 1; }
+          echo "  ✓ agent-kernel/SKILL.md present + frontmatter + name"
+      - name: agent-kernel vendored CLI
+        run: |
+          test -f agent-kernel/dist/cli.mjs || { echo "vendored cli.mjs missing"; exit 1; }
+          chmod +x agent-kernel/dist/cli.mjs
+          node agent-kernel/dist/cli.mjs --version
+          echo "  ✓ vendored cli.mjs runs and reports version"
       - name: marketplace.json
         run: |
           test -f .claude-plugin/marketplace.json
           python -m json.tool < .claude-plugin/marketplace.json > /dev/null
+          python -c "import json; d=json.load(open('.claude-plugin/marketplace.json')); \
+              assert any(p['name']=='delegate-team-agent-kernel' for p in d['plugins']), \
+              'kernel plugin missing'; \
+              print('  ✓ marketplace.json has kernel plugin')"
           echo "  ✓ marketplace.json valid"
       - name: skills.sh.json
         run: |
           test -f skills.sh.json
           python -c "import json; d=json.load(open('skills.sh.json')); assert 'groupings' in d"
+          python -c "import json; d=json.load(open('skills.sh.json')); \
+              all_skills = [s for g in d['groupings'] for s in g['skills']]; \
+              assert 'agent-kernel' in all_skills, 'agent-kernel not in any grouping'; \
+              print('  ✓ skills.sh.json includes agent-kernel')"
           echo "  ✓ skills.sh.json valid + has groupings"

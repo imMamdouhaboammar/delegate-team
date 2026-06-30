@@ -37,8 +37,9 @@
     },
     {
       "title": "Companion frameworks",
-      "description": "Methodology + UI quality + metric-driven iteration layers that compose under mavis-ship.",
+      "description": "Methodology + UI quality + metric-driven iteration + memory layers that compose under mavis-ship.",
       "skills": [
+        "agent-kernel",
         "superpowers",
         "waza",
         "unslop-preflight",
@@ -49,7 +50,8 @@
   "featured": [
     "delegate-team",
     "mavis-ship",
-    "dt"
+    "dt",
+    "agent-kernel"
   ],
   "metadata": {
     "repository": "https://github.com/imMamdouhaboammar/delegate-team",
@@ -65,7 +67,9 @@
       "claude-code",
       "codex",
       "miniMax",
-      "gemini"
+      "gemini",
+      "memory",
+      "agent-kernel"
     ]
   }
 }

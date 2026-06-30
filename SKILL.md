@@ -40,13 +40,14 @@ When a Claude Code agent loads this skill, it treats every incoming task as
 potentially runnable through the supersystem and applies the orchestrator's
 routing logic before deciding what to do.
 
-## Components wired (six)
+## Components wired (seven)
 
 | Component | Path | Function |
 |---|---|---|
 | `orchestrator/` | `./orchestrator/` | `/mavis-ship` skill + regex router |
 | `scaffolder/` | `./scaffolder/` | `mavis-skill-scaffold` generator CLI |
 | `mmas/` | `./mmas/` | Multi-agent team framework (8 agents + watchdog) |
+| `agent-kernel/` | `./agent-kernel/` | Local-first memory + governance layer (vendored v0.0.5) |
 | `god-agent/` | `./god-agent/` | Codex + opencode delegation backend |
 | `minimax-coder/` | `./minimax-coder/` | MiniMax-M3 via `mmx` CLI backend |
 | `vertex-coder/` | `./vertex-coder/` | Gemini backend |
@@ -56,6 +57,7 @@ routing logic before deciding what to do.
 
 | Framework | What it adds |
 |---|---|
+| **agent-kernel** | Local-first memory + governance layer — shared rules, episodic recall, approval inbox, deterministic guard (now bundled in `agent-kernel/`) |
 | **superpowers** | Methodology — brainstorm-first hard gate, TDD, review |
 | **Waza** | Entry-point skills — /think /check /hunt /ui ... |
 | **unslop-preflight** | UI quality gate — 23 gates block generic slop |
@@ -102,14 +104,15 @@ Detection signals (regex scoring 0-3):
 ```bash
 git clone https://github.com/imMamdouhaboammar/delegate-team
 cd delegate-team
-./install.sh --all            # Everything
+./install.sh --all            # Everything (incl. agent-kernel v0.0.5)
 ./install.sh --orchestrator   # Just /mavis-ship
 ./install.sh --mmas           # Just the multi-agent framework
+./install.sh --kernel         # Just agent-kernel (memory + governance)
 ./install.sh --integrations   # Just companion frameworks
 ./install.sh --verify         # Check what's installed
 ```
 
-`./install.sh --verify` returns green for all 10 components.
+`./install.sh --verify` returns green for all 11 components.
 
 Verify on Skills.sh:
 
@@ -124,6 +127,7 @@ npx skills list               # Should show: delegate-team
 - `orchestrator/SKILL.md` — /mavis-ship specific skill
 - `scaffolder/SKILL.md` — mavis-skill-scaffold specific skill
 - `mmas/SKILL.md` — multi-agent team specific skill
+- `agent-kernel/SKILL.md` — agent-kernel (memory + governance) specific skill
 - `god-agent/SKILL.md` — Codex + opencode backend
 - `minimax-coder/SKILL.md` — MiniMax backend
 - `vertex-coder/SKILL.md` — Gemini backend

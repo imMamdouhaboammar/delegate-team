@@ -9,6 +9,13 @@
 #   - Build/publish/release tasks now have a dedicated BUILD path that overrides
 #     accidental UI/multimatch scores
 #   - All regexes use simpler bash-safe patterns (no \b word boundaries)
+#
+# v2.5.0 — added memory stage (agent-kernel):
+#   - 'remember' / 'save this rule' / 'long-term memory' → search agent-kernel memory
+#   - 'what did we do' / 'past episode' / 'recall' → search agent-kernel episodes
+#   - When memory scores >=2, prepend `agent-kernel memory search` + `episode search`
+#     to the chain, and append `episode add` at the end
+#   - Memory stage is a side-effect, not a verdict path — never overrides the main verdict
 
 set -euo pipefail
 
@@ -32,6 +39,7 @@ score_mmas=0
 score_check=0
 score_qguard=0
 score_research=0
+score_memory=0
 
 has() {
     # has "<delimited regex>" "<text>"
@@ -181,6 +189,33 @@ elif (has "parallel" "$n" || has "concurrent" "$n") && \
 fi
 
 # ----------------------------------------------------------------------
+# Memory stage (agent-kernel) — side-effect, never overrides verdict
+# ----------------------------------------------------------------------
+# Detect explicit memory commands first
+if has "remember " "$n" || has "remember this" "$n" || has "save this rule" "$n" || \
+   has "save this memory" "$n" || has "memorize " "$n" || has "memorise " "$n" || \
+   has "long-term memory" "$n" || has "long term memory" "$n" || \
+   has "add to memory" "$n" || has "store in memory" "$n"; then
+    score_memory=5
+elif has "what did we" "$n" || has "what did i" "$n" || has "last time we" "$n" || \
+     has "past episode" "$n" || has "past conversation" "$n" || \
+     has "recall " "$n" || has "search memory" "$n" || \
+     has "search past" "$n" || has "search episodes" "$n"; then
+    score_memory=4
+elif has "memory " "$n" || has " episode " "$n" || has " episodes " "$n" || \
+     has "approval inbox" "$n" || has "approve this rule" "$n" || \
+     has "propose a rule" "$n" || has "agent-kernel" "$n" || has "ak " "$n"; then
+    score_memory=3
+elif has "remember" "$n" || has "rule" "$n" || has "policy" "$n" || \
+     has "standard" "$n" || has "convention" "$n"; then
+    # Subtle signals — only trigger if user explicitly asks about persistent state
+    if has "always " "$n" || has "from now on" "$n" || has "going forward" "$n" || \
+       has "every time " "$n" || has "never " "$n"; then
+        score_memory=2
+    fi
+fi
+
+# ----------------------------------------------------------------------
 # Derived stages
 # ----------------------------------------------------------------------
 if (( score_think >= 2 )); then
@@ -225,6 +260,7 @@ append() {
 
 append "/think (Waza)"                       "$score_think"
 append "/read + /learn (Waza)"               "$score_research"
+append "agent-kernel memory + episode"       "$score_memory"
 append "systematic-debugging (superpowers)"  "$score_systematic"
 append "unslop audit (UI gate)"              "$score_unslop"
 append "writing-plans (superpowers)"         "$score_writing"
@@ -257,13 +293,14 @@ echo "# Verdict:"
 
 # Verdict priority:
 # 1. RESEARCH (highest — overrides all)
-# 2. BUILD/PUBLISH (override for publish/release tasks — wins over MMAS!)
-# 3. PERFORMANCE/METRIC (autoresearch loop)
-# 4. UI DELIVERY (unslop BLOCKING)
-# 5. MULTI-AGENT TEAM (MMAS)
-# 6. BUG (systematic-debugging)
-# 7. FEATURE (/delegate-team)
-# 8. Default full chain
+# 2. MEMORY (agent-kernel — second-highest; pure memory tasks)
+# 3. BUILD/PUBLISH (override for publish/release tasks — wins over MMAS!)
+# 4. PERFORMANCE/METRIC (autoresearch loop)
+# 5. UI DELIVERY (unslop BLOCKING)
+# 6. MULTI-AGENT TEAM (MMAS)
+# 7. BUG (systematic-debugging)
+# 8. FEATURE (/delegate-team)
+# 9. Default full chain
 is_build_publish=false
 if has "publish" "$n" || has "release" "$n" || has " ship " "$n" || has "push " "$n" || \
    has "deploy" "$n" || has "launch" "$n" || has "package it" "$n" || \
@@ -276,6 +313,8 @@ fi
 
 if (( score_research >= 4 )); then
     echo "RESEARCH path — /read + /learn, no code."
+elif (( score_memory >= 4 )); then
+    echo "MEMORY path — agent-kernel remember / episode add / search."
 elif [ "$is_build_publish" = true ] && (( score_unslop == 0 )); then
     echo "BUILD/PUBLISH path — /delegate-team with minimax-coder default. (build + delivery, not UI)"
 elif (( score_autoresearch >= 3 )); then

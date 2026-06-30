@@ -7,6 +7,7 @@
 #   ./install.sh --orchestrator     # /mavis-ship skill
 #   ./install.sh --scaffolder       # mavis-skill-scaffold CLI
 #   ./install.sh --mmas             # Multi-agent team framework
+#   ./install.sh --kernel           # agent-kernel (memory + governance layer)
 #   ./install.sh --integrations     # superpowers + Waza + unslop + autoresearch
 #   ./install.sh --dt               # Build the dt CLI
 #   ./install.sh --verify           # Verify what's installed without changes
@@ -115,6 +116,16 @@ install_mmas() {
     ok "MMAS installed. Run: python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py --atlas"
 }
 
+install_kernel() {
+    log "Installing agent-kernel/ → ~/.agent-kernel/ (memory + governance)..."
+    if [ -x "$ROOT/agent-kernel/install.sh" ]; then
+        bash "$ROOT/agent-kernel/install.sh"
+    else
+        warn "agent-kernel/install.sh missing — skipping"
+        return 1
+    fi
+}
+
 install_integrations() {
     log "Installing companion frameworks..."
 
@@ -162,6 +173,10 @@ verify() {
     command -v mavis-skill-scaffold >/dev/null && echo "yes" || echo "no"
     printf '%-40s ' "MMAS framework:"
     [ -e "$HOME/.mavis/agents/mavis/multi-agent/spawn-team.py" ] && echo "installed" || echo "missing"
+    printf '%-40s ' "agent-kernel CLI:"
+    command -v agent-kernel >/dev/null && echo "yes ($(command -v agent-kernel))" || echo "no (run: ./install.sh --kernel)"
+    printf '%-40s ' "agent-kernel memory home:"
+    [ -d "$HOME/.agent-kernel" ] && echo "yes" || echo "no (run: agent-kernel init --sync)"
     printf '%-40s ' "Waza skills:"
     [ -d "$HOME/.claude/skills/think" ] && echo "installed" || echo "missing"
     printf '%-40s ' "unslop CLI:"
@@ -182,26 +197,36 @@ uninstall() {
     mavis-trash "$HOME/.mavis/skills/skill-scaffold" 2>/dev/null || true
     mavis-trash "$HOME/.mavis/bin/mavis-skill-scaffold" 2>/dev/null || true
     mavis-trash "$HOME/.mavis/agents/mavis/multi-agent" 2>/dev/null || true
-    ok "Uninstall complete. Note: companion frameworks (Waza/unslop/superpowers/autoresearch) installed via their own installers — uninstall them separately."
+    # agent-kernel: only remove the symlinks we created in ~/.local/bin / ~/bin
+    for bindir in "$HOME/.local/bin" "$HOME/bin"; do
+        for cmd in agent-kernel ak; do
+            target="$bindir/$cmd"
+            if [ -L "$target" ] && readlink "$target" | grep -q "delegate-team.*agent-kernel"; then
+                rm -f "$target"
+            fi
+        done
+    done
+    ok "Uninstall complete. Note: companion frameworks (Waza/unslop/superpowers/autoresearch/agent-kernel) installed via their own installers — uninstall them separately. Your ~/.agent-kernel/ memories are kept (run agent-kernel doctor to inspect)."
 }
 
 # ---- main ----
 
 main() {
-    local do_dt=0 do_orch=0 do_scaff=0 do_mmas=0 do_intg=0 do_verify=0 do_uninst=0
+    local do_dt=0 do_orch=0 do_scaff=0 do_mmas=0 do_kernel=0 do_intg=0 do_verify=0 do_uninst=0
 
     if [ $# -eq 0 ]; then
         # Auto-detect
-        do_dt=1; do_orch=1; do_scaff=1; do_mmas=1; do_intg=1
+        do_dt=1; do_orch=1; do_scaff=1; do_mmas=1; do_kernel=1; do_intg=1
     fi
 
     while [ $# -gt 0 ]; do
         case "$1" in
-            --all)         do_dt=1; do_orch=1; do_scaff=1; do_mmas=1; do_intg=1 ;;
+            --all)         do_dt=1; do_orch=1; do_scaff=1; do_mmas=1; do_kernel=1; do_intg=1 ;;
             --dt)          do_dt=1 ;;
             --orchestrator) do_orch=1 ;;
             --scaffolder)  do_scaff=1 ;;
             --mmas)        do_mmas=1 ;;
+            --kernel)      do_kernel=1 ;;
             --integrations) do_intg=1 ;;
             --verify)      do_verify=1 ;;
             --uninstall)   do_uninst=1 ;;
@@ -222,12 +247,13 @@ main() {
     [ "$do_orch"   = 1 ] && install_orchestrator
     [ "$do_scaff"  = 1 ] && install_scaffolder
     [ "$do_mmas"   = 1 ] && install_mmas
+    [ "$do_kernel" = 1 ] && install_kernel
     [ "$do_intg"   = 1 ] && install_integrations
 
     echo
     verify
     echo
-    ok "Install done. Try: /mavis-ship \"<your task>\""
+    ok "Install done. Try: /mavis-ship \"<your task>\" or agent-kernel remember \"<rule>\" --publish"
 }
 
 main "$@"

@@ -105,6 +105,7 @@ After install, every component is idempotent and verifiable.
 | **`/mavis-ship`** | [`orchestrator/`](./orchestrator/) | ![Bash](https://img.shields.io/badge/Bash-4+-4EAA25?style=flat-square) | ![Stable](https://img.shields.io/badge/stable-success?style=flat-square) | Single-command orchestrator with regex routing |
 | **Skill scaffolder** | [`scaffolder/`](./scaffolder/) | ![Bash](https://img.shields.io/badge/Bash-4+-4EAA25?style=flat-square) | ![Stable](https://img.shields.io/badge/stable-success?style=flat-square) | `mavis-skill-scaffold` generator |
 | **MMAS** | [`mmas/`](./mmas/) | ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square) | ![Beta](https://img.shields.io/badge/beta-yellow?style=flat-square) | 8-agent multi-agent team framework |
+| **🆕 agent-kernel** | [`agent-kernel/`](./agent-kernel/) | ![Node.js](https://img.shields.io/badge/Node-18+-339933?style=flat-square) | ![Stable](https://img.shields.io/badge/stable-success?style=flat-square) | Memory + governance — shared rules, episodic recall, approval inbox |
 | **God Agent** | [`god-agent/`](./god-agent/) | ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square) | ![Stable](https://img.shields.io/badge/stable-success?style=flat-square) | Codex + opencode dispatcher |
 | **MiniMax Coder** | [`minimax-coder/`](./minimax-coder/) | ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square) | ![Stable](https://img.shields.io/badge/stable-success?style=flat-square) | MiniMax via `mmx` CLI |
 | **Vertex Coder** | [`vertex-coder/`](./vertex-coder/) | ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square) | ![Stable](https://img.shields.io/badge/stable-success?style=flat-square) | Gemini via google-genai |
@@ -114,6 +115,7 @@ After install, every component is idempotent and verifiable.
 
 | Framework | Stars | What it adds |
 |---|---|---|
+| 🆕 **[agent-kernel](./integrations/agent-kernel.md)** | ![Bundled](https://img.shields.io/badge/bundled-2.5.0-success?style=flat-square) | Memory + governance layer — vendored v0.0.5, opt-in via `--kernel` |
 | [superpowers](https://github.com/obra/superpowers) | ![242k](https://img.shields.io/github/stars/obra/superpowers?style=flat-square&color=yellow) | Methodology — 14 skills, brainstorm-first hard gate |
 | [Waza](https://github.com/tw93/Waza) | ![6.1k](https://img.shields.io/github/stars/tw93/Waza?style=flat-square&color=yellow) | Entry-point — 8 habits-engineering skills |
 | [unslop-preflight](https://github.com/imMamdouhaboammar/unslop-preflight) | ![New](https://img.shields.io/badge/new-ff69b4?style=flat-square) | UI quality gate — 23 reasoning gates |
@@ -137,6 +139,11 @@ right stages.
                 └─────────────┬───────────────────┘
                               │
                 ┌─────────────▼───────────────────┐
+                │  🆕 agent-kernel memory search │  recall past rules +
+                │  ─────────────────────────────  │  episodes relevant to task
+                └─────────────┬───────────────────┘
+                              │
+                ┌─────────────▼───────────────────┐
                 │  unslop audit (BLOCKING)        │  score ≥70 to proceed
                 │  ─────────────────────────────  │  for UI tasks only
                 └─────────────┬───────────────────┘
@@ -157,13 +164,19 @@ right stages.
        ┌──▼──────────────────▼────────────────────▼────────┐
        │  Waza /check  →  quality-guard (Mavis)  → SHIP   │
        │  review + 5-layer pre-delivery check             │
-       └──────────────────────────────────────────────────┘
+       └──────────────────────┬───────────────────────────┘
+                              │
+                ┌─────────────▼───────────────────┐
+                │  🆕 agent-kernel episode add    │  capture outcome for
+                │  ─────────────────────────────  │  future sessions to recall
+                └─────────────────────────────────┘
 ```
 
 **Routing logic** (live in [`orchestrator/scripts/orchestrate.sh`](./orchestrator/scripts/orchestrate.sh)):
 
 | Task signature | Route |
 |---|---|
+| Memory / remember / recall / past episodes | 🆕 **agent-kernel** (shared rules + episodic search) |
 | Has measurable metric (e.g. "p95 < 200ms") | autoresearch loop |
 | UI task (frontend, page, modal, shadcn) | unslop BLOCKING → /delegate-team |
 | Multi-agent signals (squad, spawn team, swarm) | /mavis-team MMAS |

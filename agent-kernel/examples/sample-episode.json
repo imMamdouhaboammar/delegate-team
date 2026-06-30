@@ -1,0 +1,15 @@
+{
+  "id": "episode_example_supabase_auth",
+  "type": "episode",
+  "title": "Supabase auth fallback decision",
+  "summary": "We rejected local SQLite fallback for a production Supabase app.",
+  "agent": "manual",
+  "project": "example",
+  "sourcePath": "",
+  "sourceHash": "example",
+  "text": "During the session, we decided that Supabase production apps must not include a local SQLite fallback. The reason was data consistency and avoiding fake persistence that hides production issues.",
+  "tags": ["supabase", "database", "decision"],
+  "createdAt": "2026-06-30T00:00:00.000Z",
+  "updatedAt": "2026-06-30T00:00:00.000Z",
+  "version": 1
+}
