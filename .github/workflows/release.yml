@@ -47,6 +47,13 @@ jobs:
           else
             echo "name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
           fi
+      - name: Expose tag for downstream jobs
+        id: tag-meta
+        shell: bash
+        run: |
+          TAG="${{ steps.tag.outputs.name }}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "tar_path=/tmp/delegate-team-${TAG}.tar.gz" >> "$GITHUB_OUTPUT"
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -174,19 +181,20 @@ jobs:
         id: tarball
         shell: bash
         run: |
-          git archive --prefix=delegate-team-${{ steps.tag.outputs.name }}/ \
+          TAG="${{ needs.create-release.outputs.tag }}"
+          git archive --prefix=delegate-team-${TAG}/ \
               --format=tar.gz \
-              -o /tmp/delegate-team-${{ steps.tag.outputs.name }}.tar.gz \
-              ${{ steps.tag.outputs.name }}
-          echo "path=/tmp/delegate-team-${{ steps.tag.outputs.name }}.tar.gz" >> "$GITHUB_OUTPUT"
-          ls -la "${{ steps.tarball.outputs.path }}"
+              -o /tmp/delegate-team-${TAG}.tar.gz \
+              "${TAG}"
+          ls -la "/tmp/delegate-team-${TAG}.tar.gz"
+          echo "path=/tmp/delegate-team-${TAG}.tar.gz" >> "$GITHUB_OUTPUT"
 
       - name: Upload tarball to release
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
           asset_path: ${{ steps.tarball.outputs.path }}
-          asset_name: delegate-team-${{ steps.tag.outputs.name }}.tar.gz
+          asset_name: delegate-team-${{ needs.create-release.outputs.tag }}.tar.gz
           asset_content_type: application/gzip
 
   update-latest:
@@ -198,9 +206,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const TAG = '${{ steps.tag.outputs.name }}';
-            // Get the most recently created release that is *newer* than this one
-            // (if any). If so, don't override.
+            const TAG = '${{ needs.create-release.outputs.tag }}';
             try {
               const { data: latest } = await github.rest.repos.getLatestRelease({
                 owner: context.repo.owner,
