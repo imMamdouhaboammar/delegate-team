@@ -30,6 +30,10 @@ permissions:
   contents: write
   id-token: write
 
+env:
+  # Available to all jobs below (replaces the broken ${{ needs.create-release.outputs.tag }})
+  TARGET_TAG: ${{ inputs.tag || github.ref_name }}
+
 jobs:
   create-release:
     name: Auto-create GitHub Release
@@ -181,20 +185,23 @@ jobs:
         id: tarball
         shell: bash
         run: |
-          TAG="${{ needs.create-release.outputs.tag }}"
-          git archive --prefix=delegate-team-${TAG}/ \
+          TAG="${TARGET_TAG}"
+          if [ -z "$TAG" ]; then
+            echo "::error::TARGET_TAG env var is empty"; exit 1
+          fi
+          git archive --prefix="delegate-team-${TAG}/" \
               --format=tar.gz \
-              -o /tmp/delegate-team-${TAG}.tar.gz \
+              -o "/tmp/delegate-team-${TAG}.tar.gz" \
               "${TAG}"
-          ls -la "/tmp/delegate-team-${TAG}.tar.gz"
           echo "path=/tmp/delegate-team-${TAG}.tar.gz" >> "$GITHUB_OUTPUT"
+          echo "size: $(stat -c %s /tmp/delegate-team-${TAG}.tar.gz) bytes"
 
       - name: Upload tarball to release
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
           asset_path: ${{ steps.tarball.outputs.path }}
-          asset_name: delegate-team-${{ needs.create-release.outputs.tag }}.tar.gz
+          asset_name: delegate-team-${TARGET_TAG}.tar.gz
           asset_content_type: application/gzip
 
   update-latest:
@@ -204,9 +211,11 @@ jobs:
     steps:
       - name: Re-mark as Latest (if multiple releases exist)
         uses: actions/github-script@v7
+        env:
+          TAG: ${{ env.TARGET_TAG }}
         with:
           script: |
-            const TAG = '${{ needs.create-release.outputs.tag }}';
+            const TAG = process.env.TAG;
             try {
               const { data: latest } = await github.rest.repos.getLatestRelease({
                 owner: context.repo.owner,
