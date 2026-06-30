@@ -104,24 +104,27 @@ jobs:
       - name: SKILL.md frontmatter check
         run: |
           set -e
-          for f in SKILL.md orchestrator/SKILL.md scaffolder/SKILL.md \
-                   mmas/SKILL.md god-agent/SKILL.md minimax-coder/SKILL.md \
-                   vertex-coder/SKILL.md integrations/unslop/SKILL.md; do
-            if [ -f "$f" ]; then
-              echo "checking $f"
-              python -c "
-import re, sys
-text = open('$f').read()
-m = re.match(r'---\n(.*?)\n---', text, re.DOTALL)
-if not m:
-    sys.exit('  no YAML frontmatter')
-fm = m.group(1)
-if 'name:' not in fm: sys.exit('  no name')
-if 'description:' not in fm: sys.exit('  no description')
-print('  ok')
-"
-            fi
-          done
+          cat > /tmp/check_frontmatter.py << 'PYEOF'
+          import re, sys
+          for path in sys.argv[1:]:
+              try:
+                  text = open(path).read()
+              except FileNotFoundError:
+                  continue
+              m = re.match(r'---\n(.*?)\n---', text, re.DOTALL)
+              if not m:
+                  sys.exit(f'  no YAML frontmatter in {path}')
+              fm = m.group(1)
+              if 'name:' not in fm:
+                  sys.exit(f'  no name in {path}')
+              if 'description:' not in fm:
+                  sys.exit(f'  no description in {path}')
+              print(f'  ok {path}')
+          PYEOF
+          python3 /tmp/check_frontmatter.py \
+              SKILL.md orchestrator/SKILL.md scaffolder/SKILL.md \
+              mmas/SKILL.md god-agent/SKILL.md minimax-coder/SKILL.md \
+              vertex-coder/SKILL.md integrations/unslop/SKILL.md
       - name: orchestrate.sh routing assertions
         run: |
           set -e
