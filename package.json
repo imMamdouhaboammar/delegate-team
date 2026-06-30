@@ -1,6 +1,6 @@
 {
   "name": "delegate-team",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Unified Multi-Backend Developer Agent Dispatch & CLI suite",
   "type": "module",
   "main": "dist/cli.js",
