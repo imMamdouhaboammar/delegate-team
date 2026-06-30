@@ -9,6 +9,11 @@ coverage/
 # Build
 dist/
 
+# Exceptions: agent-kernel ships a pre-built CLI that CI verifies as a
+# manifest check. Keep the vendored binary tracked despite the root dist/.
+!agent-kernel/dist/
+!agent-kernel/dist/**
+
 # Env files
 .env
 .env.local

@@ -131,7 +131,12 @@ jobs:
           set -e
           # Only package.json should be a .json in the tarball. Any extra
           # .json file is a candidate for BundlePhobia to choke on.
-          PACK_JSONS=$(npm pack --dry-run 2>&1 | grep -oE '\S+\.json' | sort -u)
+          # Filter to `npm notice` lines only — the prepack script
+          # (`npm run build` -> `tsup`) prints e.g.
+          #   `CLI Using tsconfig: tsconfig.json`
+          # to stderr; without filtering, that banner is matched by
+          # `grep -oE '\S+\.json'` and the test falsely fails.
+          PACK_JSONS=$(npm pack --dry-run 2>&1 | grep '^npm notice' | grep -oE '\S+\.json' | sort -u)
           echo "  .json files in pack:"
           echo "$PACK_JSONS" | sed 's/^/    /'
           COUNT=$(echo "$PACK_JSONS" | wc -l | tr -d ' ')
