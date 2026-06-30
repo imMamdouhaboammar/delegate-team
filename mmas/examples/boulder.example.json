@@ -1,0 +1,65 @@
+{
+  "task_id": "task-20260630-123456-abc123",
+  "task": "Build an OAuth2 PKCE flow with tests and security review",
+  "created_at": "2026-06-30T12:34:56Z",
+  "boss_session": "mvs_5d0134a6f1f640bea01f0606cdc3c16f",
+  "status": "running",
+  "agents": [
+    {
+      "name": "atlas",
+      "model": "MiniMax-M3",
+      "backend": "minimax-coder",
+      "pid": 12345,
+      "status": "done",
+      "started_at": "2026-06-30T12:34:57Z",
+      "completed_at": "2026-06-30T12:38:12Z",
+      "last_activity": "2026-06-30T12:38:12Z",
+      "exit_code": 0,
+      "summary_file": "/Users/mamdouhaboammar/.mavis/multi-agent/tasks/task-20260630-123456-abc123/logs/atlas.summary",
+      "log_file": "/Users/mamdouhaboammar/.mavis/multi-agent/tasks/task-20260630-123456-abc123/logs/atlas.log"
+    },
+    {
+      "name": "forge",
+      "model": "MiniMax-M3",
+      "backend": "minimax-coder",
+      "pid": 12346,
+      "status": "running",
+      "started_at": "2026-06-30T12:34:57Z",
+      "last_activity": "2026-06-30T12:39:01Z",
+      "exit_code": null,
+      "summary_file": "/Users/mamdouhaboammar/.mavis/multi-agent/tasks/task-20260630-123456-abc123/logs/forge.summary",
+      "log_file": "/Users/mamdouhaboammar/.mavis/multi-agent/tasks/task-20260630-123456-abc123/logs/forge.log"
+    },
+    {
+      "name": "scout",
+      "model": "MiniMax-M2.7-highspeed",
+      "backend": "minimax-coder",
+      "pid": 12347,
+      "status": "done",
+      "started_at": "2026-06-30T12:34:57Z",
+      "completed_at": "2026-06-30T12:36:45Z",
+      "last_activity": "2026-06-30T12:36:45Z",
+      "exit_code": 0,
+      "summary_file": "/Users/mamdouhaboammar/.mavis/multi-agent/tasks/task-20260630-123456-abc123/logs/scout.summary",
+      "log_file": "/Users/mamdouhaboammar/.mavis/multi-agent/tasks/task-20260630-123456-abc123/logs/scout.log"
+    }
+  ],
+  "watchdog_pid": 12350,
+  "events": [
+    {
+      "at": "2026-06-30T12:34:56Z",
+      "type": "spawn",
+      "detail": "Task started: Build an OAuth2 PKCE flow with tests and security review"
+    },
+    {
+      "at": "2026-06-30T12:34:58Z",
+      "type": "watchdog_started",
+      "detail": "Watchdog PID 12350, interval 30s"
+    },
+    {
+      "at": "2026-06-30T12:36:45Z",
+      "type": "agent_completed",
+      "detail": "scout finished in 108s"
+    }
+  ]
+}

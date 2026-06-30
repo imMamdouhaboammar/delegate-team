@@ -1,0 +1,68 @@
+# CHANGELOG
+
+All notable changes to this project are documented here.
+Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## [2.0.0] — 2026-06-30
+
+### Added — supersystem release
+
+This release expands the repo from a single CLI (`dt`) into a **complete agentic
+engineering supersystem**. The original `dt` gateway is preserved unchanged.
+
+#### New components
+
+- **`orchestrator/`** — `/mavis-ship` skill and `orchestrate.sh` CLI.
+  The single-command orchestrator that runs the full chain
+  (`/think` → `unslop audit` → `writing-plans` → `autoresearch` or `/delegate-team` or
+  `/mavis-team` → `/check` → `quality-guard`).
+  Symlinked to `~/.claude/skills/mavis-ship/` and `~/.claude/commands/mavis-ship.md` on install.
+
+- **`scaffolder/`** — `mavis-skill-scaffold` CLI + skill manifest.
+  Generates properly-structured Mavis skill directories in one shot.
+  Source: 538-line bash script. Installed to `~/.mavis/bin/mavis-skill-scaffold`.
+
+- **`mmas/`** — Multi-agent team framework. Eight specialized agents
+  (Atlas, Forge, Scout, Oracle, Librarian, Reviewer, Visionary, Sentinel) +
+  `spawn-team.py` orchestrator + `watchdog.sh` 30s polling loop +
+  `hash-edit.py` LINE#HASH content-hash validated editor.
+  Installed to `~/.mavis/agents/mavis/multi-agent/`.
+
+- **`integrations/`** — Four companion frameworks with one-page install guides:
+  - `superpowers.md` — obra/superpowers (242k⭐): 14 methodology skills + SessionStart hook
+  - `waza.md` — tw93/Waza (6.1k⭐): 8 habits-engineering skills
+  - `unslop-preflight.md` — 23 reasoning gates that block generic UI slop
+  - `autoresearch.md` — Karpathy's metric-driven iteration loop
+
+- **`install.sh`** — One-command bootstrap, idempotent, supports selective install.
+
+#### Updated
+
+- **`README.md`** — Top-level README rewritten as supersystem overview. Existing `dt` content
+  moved to a section within, with full migration to `DT.md`.
+- **`package.json`** + **`tsconfig.json`** — unchanged (the `dt` CLI binary).
+- **`.gitignore`** — added Python + MMAS-runtime patterns.
+
+### Compatibility
+
+- The `dt` CLI gateway is **unchanged**. Existing users who only want `dt` are unaffected.
+- All new components are additive.
+
+### Upgrade from v1
+
+```bash
+git pull origin master
+cd delegate-team
+./install.sh --orchestrator --scaffolder --mmas --integrations
+./install.sh --verify
+```
+
+## [1.0.0] — 2026-06-29
+
+Initial public release of `dt` — local CLI gateway for AI coding agent delegation.
+
+- Backend matrix: Codex, OpenCode, MiniMax, Gemini, MetaGPT-style team
+- Failover ring across configured backends
+- Lean Token Protocol for context-size-minimized routing
+- Autopilot setup with venv + credential checks
+- Skill linker for Claude Code + Gemini CLI

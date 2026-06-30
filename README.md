@@ -1,19 +1,50 @@
-# Delegate Team (`dt`)
+# Delegate Team (`dt`) — supersystem v2
 
 ![CI](https://github.com/imMamdouhaboammar/delegate-team/actions/workflows/ci.yml/badge.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Node](https://img.shields.io/badge/Node.js-18%2B-green.svg)
 
-`dt` is a local CLI that lets Claude Code delegate coding tasks to specialized agent backends.
+> **The complete agentic engineering supersystem.** One open-source repo. Six components.
+> Three routing layers. One `/mavis-ship` command that orchestrates them all.
 
-It can route a task to VertexCoder, Codex, MiniMax, OpenCode, Gemini, or a MetaGPT-style team workflow, while keeping Claude Code or the human as the final reviewer.
+| Component | Folder | Purpose | Install |
+|---|---|---|---|
+| **`dt` CLI** (gateway) | `src/`, `dist/` | Routes Claude Code tasks to backend agents | `npm install && npm run build` |
+| **`/mavis-ship` orchestrator** | `orchestrator/` | Single command that drives every stage of a task | `./install.sh --orchestrator` |
+| **Skill scaffolder** | `scaffolder/` | Generate Mavis skills with proper structure | `./install.sh --scaffolder` |
+| **Multi-agent team (MMAS)** | `mmas/` | Boss mode: spawn Atlas + Forge + Scout + 5 more specialized agents | `./install.sh --mmas` |
+| **Companion frameworks** | `integrations/` | superpowers, Waza, unslop-preflight, autoresearch | `./install.sh --integrations` |
 
-The promise of AI engineering is automation, but the reality is often fragile, expensive, and chaotic. You hand a complex task to an AI agent, it hits a rate limit, or ingests irrelevant files burning millions of tokens. `dt` solves this by acting as a Policy Gateway and Delegation Runtime.
+**One-command setup** (everything):
+
+```bash
+git clone https://github.com/imMamdouhaboammar/delegate-team
+cd delegate-team
+./install.sh --all
+```
+
+After install: type `/mavis-ship "<task>"` (or `dt run "<task>"`) in any session.
+
+---
+
+## Quick links
+
+- [`orchestrator/README.md`](./orchestrator/README.md) — `/mavis-ship` skill + orchestrate.sh
+- [`scaffolder/README.md`](./scaffolder/README.md) — `mavis-skill-scaffold` CLI
+- [`mmas/README.md`](./mmas/README.md) — multi-agent team framework
+- [`integrations/README.md`](./integrations/README.md) — companion frameworks
+- [`DT.md`](./DT.md) — `dt` CLI specifics (the original delegation gateway)
+- [`INSTALL.md`](./INSTALL.md) — full install guide
+- [`CHANGELOG.md`](./CHANGELOG.md) — release notes
+
+---
 
 ## What `dt` is
 
+`dt` is the delegation gateway inside the supersystem. It routes Claude Code tasks to backend coder agents (the `dt` CLI is the original product; the orchestrator, scaffolder, MMAS, and integrations were built on top). For `dt`-specific docs see [`DT.md`](./DT.md).
+
 - A local delegation gateway for AI coding agents
-- A routing layer between Claude Code and multiple coding backends
+- A routing layer between Claude Code and multiple backend coder agents
 - A policy layer for budgets, workspace boundaries, failover, and review
 - A MetaGPT-style team runner for complex tasks
 

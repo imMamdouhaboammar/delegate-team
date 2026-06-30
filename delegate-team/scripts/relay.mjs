@@ -517,7 +517,25 @@ const minimaxBackend = {
     const cred = loadDotenv(credPath) || {};
     if (!cred.ANTHROPIC_API_KEY) fail(`${credPath} has no ANTHROPIC_API_KEY`);
     if (!cred.ANTHROPIC_BASE_URL) cred.ANTHROPIC_BASE_URL = "https://api.minimax.io/anthropic";
-    return { ...process.env, ...cred };
+
+    // Clean ALL Google Cloud / Vertex AI / Anthropic Vertex variables to force direct Anthropic / MiniMax API routing
+    const cleanEnv = { ...process.env };
+    for (const key of Object.keys(cleanEnv)) {
+      const upperKey = key.toUpperCase();
+      if (
+        upperKey.includes("GOOGLE") ||
+        upperKey.includes("VERTEX") ||
+        upperKey.includes("CLOUD") ||
+        upperKey.includes("GCP") ||
+        upperKey.includes("GENAI")
+      ) {
+        delete cleanEnv[key];
+      }
+    }
+
+    cleanEnv.CLAUDE_PROVIDER = "anthropic";
+
+    return { ...cleanEnv, ...cred };
   },
 
   buildArgv(opts, _run) {

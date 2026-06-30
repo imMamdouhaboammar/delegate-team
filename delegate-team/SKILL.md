@@ -312,7 +312,7 @@ Each task must write NEW files only — never append to shared hot files.
 | Backend | Binary | Auth |
 |---------|--------|------|
 | codex | `codex --version` | `codex login` + `~/.codex-delegate/config.toml` (clean home, no MCP) |
-| minimax | `claude --version` | `~/.minimax/.env` (chmod 600) with ANTHROPIC_BASE_URL + ANTHROPIC_API_KEY |
+| minimax | `claude --version` | `~/.minimax/.env` (chmod 600) with ANTHROPIC_BASE_URL + ANTHROPIC_API_KEY (automatically unsets/cleans all Google/Vertex/GCP/GenAI environment variables to enforce direct routing) |
 | opencode | `opencode --version` | `~/.local/share/opencode/auth.json` (opencode-go API key) |
 | vertexcoder | `/…/.venv/bin/python3 --version` + script exists | `gcloud auth` active account with Vertex AI access on `<your-gcp-project-id>` |
 | gemini | `gemini --version` | `~/.gemini/.env` with GOOGLE_GENAI_USE_VERTEXAI, GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION |

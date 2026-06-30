@@ -1,0 +1,14 @@
+# God Agent — Premium Multi-Model Coding Dispatcher
+#
+# Routes heavy coding tasks to the highest-quality available model:
+#   - codex-gpt-5.5-high / codex-gpt-5.4-high    (via `codex exec`)
+#   - opencode-glm-5.2-max                       (via `opencode run`)
+#   - opencode-qwen-max                          (via `opencode run`)
+#   - opencode-kimi-k2.7-code-max                (via `opencode run`)
+#   - minimax-m3-high-thinking                   (via `opencode run`)
+#
+# Two modes mirror vertex-coder:
+#   - god_agent_direct.py       single-file, fast, codex/opencode
+#   - god_agent_interactive.py  multi-file autonomous, opencode only
+#
+# No new Python dependencies — shells out to existing CLI tools.

@@ -48,3 +48,18 @@ docs/
 # Python
 __pycache__/
 *.pyc
+
+# MMAS runtime litter
+mmas/logs/
+mmas/__pycache__/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Editor
+.vscode/
+.idea/
+.DS_Store
