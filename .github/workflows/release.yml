@@ -48,23 +48,6 @@ jobs:
             echo "name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Fetch previous tag (for changelog baseline)
-        id: baseline
-        shell: bash
-        run: |
-          TAG="${{ steps.tag.outputs.name }}"
-          # Get the tag BEFORE this one (so we know what to summarize).
-          PREV=$(git tag --sort=-version:refname \
-              2>/dev/null | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
-              | awk -v t="$TAG" '$0 < t' \
-              | head -1)
-          if [ -z "$PREV" ]; then
-            # No prior tag — summarize the first 100 commits of the repo
-            PREV=""
-          fi
-          echo "name=${PREV}" >> "$GITHUB_OUTPUT"
-          echo "previous tag: ${PREV:-<none — full repo history>}"
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -75,14 +58,10 @@ jobs:
         shell: bash
         run: |
           TAG="${{ steps.tag.outputs.name }}"
-          # Get the tag BEFORE this one (so we know what to summarize).
           PREV=$(git tag --sort=-version:refname \
               2>/dev/null | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
               | awk -v t="$TAG" '$0 < t' \
               | head -1)
-          if [ -z "$PREV" ]; then
-            PREV=""
-          fi
           echo "name=${PREV}" >> "$GITHUB_OUTPUT"
           echo "previous tag: ${PREV:-<none — full repo history>}"
 
