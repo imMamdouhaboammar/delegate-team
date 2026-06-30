@@ -197,12 +197,35 @@ jobs:
           echo "size: $(stat -c %s /tmp/delegate-team-${TAG}.tar.gz) bytes"
 
       - name: Upload tarball to release
-        uses: actions/upload-release-asset@v1
+        uses: actions/github-script@v7
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ${{ steps.tarball.outputs.path }}
-          asset_name: delegate-team-${TARGET_TAG}.tar.gz
-          asset_content_type: application/gzip
+          script: |
+            const fs = require('fs');
+            const path = '/tmp/delegate-team-${TARGET_TAG}.tar.gz';
+            if (!fs.existsSync(path)) {
+              core.setFailed(`Tarball not found at ${path}`);
+              return;
+            }
+            const content = fs.readFileSync(path);
+            const TAG = process.env.TARGET_TAG;
+            // Find the release by tag and upload via octokit
+            const { data: release } = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: TAG,
+            });
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.id,
+              name: `delegate-team-${TAG}.tar.gz`,
+              data: content,
+              headers: {
+                'content-type': 'application/gzip',
+                'content-length': content.length,
+              },
+            });
+            core.info(`Uploaded delegate-team-${TAG}.tar.gz (${content.length} bytes) to release ${release.html_url}`);
 
   update-latest:
     name: Mark as Latest release
