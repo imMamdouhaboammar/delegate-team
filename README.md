@@ -11,10 +11,13 @@
 **Waza `/think` → unslop audit → superpowers writing-plans →**
 **autoresearch | `/delegate-team` | `/mavis-team` → Waza `/check` → quality-guard → SHIP**
 
+[![npm version](https://img.shields.io/npm/v/delegate-team?color=cb3837&logo=npm&label=npm&style=for-the-badge)](https://www.npmjs.com/package/delegate-team)
+[![npm downloads](https://img.shields.io/npm/dm/delegate-team?color=cb3837&logo=npm&style=for-the-badge)](https://www.npmjs.com/package/delegate-team)
 [![Version](https://img.shields.io/github/v/release/imMamdouhaboammar/delegate-team?color=blue&label=version&style=for-the-badge)](https://github.com/imMamdouhaboammar/delegate-team/releases)
 [![License: MIT](https://img.shields.io/github/license/imMamdouhaboammar/delegate-team?style=for-the-badge&color=blue)](https://github.com/imMamdouhaboammar/delegate-team/blob/master/LICENSE)
 [![Stars](https://img.shields.io/github/stars/imMamdouhaboammar/delegate-team?style=for-the-badge&logo=github)](https://github.com/imMamdouhaboammar/delegate-team/stargazers)
 [![CI](https://img.shields.io/github/actions/workflow/status/imMamdouhaboammar/delegate-team/ci.yml?branch=master&style=for-the-badge&label=CI)](https://github.com/imMamdouhaboammar/delegate-team/actions/workflows/ci.yml)
+[![npm publish](https://img.shields.io/github/actions/workflow/status/imMamdouhaboammar/delegate-team/npm-publish.yml?style=for-the-badge&label=npm%20publish&logo=npm)](https://github.com/imMamdouhaboammar/delegate-team/actions/workflows/npm-publish.yml)
 [![Skills.sh](https://img.shields.io/badge/dynamic/json?color=blueviolet&label=Skills.sh&query=%24.rank&url=https%3A%2F%2Fskills.sh%2Fapi%2Frank%2FimMamdouhaboammar%2Fdelegate-team&style=for-the-badge)](https://skills.sh/imMamdouhaboammar/delegate-team)
 [![Node](https://img.shields.io/badge/Node.js-18%2B-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
@@ -56,9 +59,23 @@ cd delegate-team
 
 ## 📦 Quick install
 
-**Three installation paths. Pick your favorite.**
+**Four installation paths. Pick your favorite.**
 
-### Path A — Skills.sh CLI (skill discovery + global install)
+### Path A — npm (the fastest — just the `dt` CLI)
+
+```bash
+# Global install (preferred for a CLI on your PATH)
+npm install -g delegate-team
+dt --version      # → 2.2.0
+dt run "<task>"
+
+# Or run without installing
+npx delegate-team --help
+```
+
+Releases auto-publish from the `npm-publish.yml` GitHub Action on every `v*` tag push.
+
+### Path B — Skills.sh CLI (skill discovery + global install)
 
 ```bash
 npx skills add imMamdouhaboammar/delegate-team -a claude-code -g -y
@@ -68,14 +85,14 @@ This installs all 8 sub-skills to your Claude Code (or any of 68 supported agent
 and makes `delegate-team`, `mavis-ship`, `mmas`, `skill-scaffold`, `dt`, etc.
 all invocable by name.
 
-### Path B — Claude Code marketplace (native plugin install)
+### Path C — Claude Code marketplace (native plugin install)
 
 ```bash
 /plugin marketplace add imMamdouhaboammar/delegate-team
 /plugin install delegate-team@delegate-team
 ```
 
-### Path C — Bootstrap script (everything, including companion frameworks)
+### Path D — Bootstrap script (everything, including companion frameworks)
 
 ```bash
 git clone https://github.com/imMamdouhaboammar/delegate-team

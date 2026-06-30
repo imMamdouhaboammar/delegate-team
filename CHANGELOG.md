@@ -3,6 +3,82 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.3.0] — 2026-06-30
+
+### Added — npm package + auto-publish workflow
+
+The npm package is now live. Users can install the `dt` CLI in one command:
+
+```bash
+npm install -g delegate-team
+# or
+npx delegate-team --help
+```
+
+#### GitHub ↔ npm mismatch resolved
+
+- **npm versions live**: 2.0.0, 2.1.0, 2.1.1, 2.2.0 — all published with
+  consistent `package.json` (the cleaned-up slim one introduced in this release).
+  dist-tag `latest` → 2.2.0.
+- **Previous mismatch**: the original `package.json`'s `files` whitelist included
+  `vertex-coder/`, which transitively pulled in `vertex-coder/.venv` (163 MB of
+  Python packages) into the npm tarball → 42.3 MB / 7,160 files. After cleanup,
+  tarball is 21.6 KB / 6 files.
+
+#### What changed in package.json
+
+- **`files` field** slimmed to: `["dist", "README.md", "LICENSE"]` (was: 9 entries
+  including `delegate-team/`, `vertex-coder/`, etc.)
+- **`description`** rewritten to reflect the supersystem (was: dt-CLI-specific)
+- **`engines.node`** `>=18` declared (was: undeclared)
+- **`publishConfig`** added: `access: public`, `tag: latest`
+  (no `provenance: true` — it requires OIDC which only GH Actions has; the
+  publish workflow sets `--provenance` explicitly via flag)
+- **`keywords`** expanded from 8 → 28 (mavis-ship, agentic-engineering,
+  superpowers, waza, unslop, etc.)
+- **`bin`** unchanged (`dt` + `delegate-team`)
+- **`author`** upgraded from string → object with `name`, `email`, `url`
+- **`repository.directory`** removed (single-package repo, not a workspace)
+
+#### Auto-publish — `.github/workflows/npm-publish.yml`
+
+New workflow that publishes to npm whenever a `v*` tag is pushed:
+
+```yaml
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      dry-run: ...
+```
+
+Steps:
+1. Checkout + setup Node 22 with `cache: npm`
+2. `npm ci`
+3. `npm run typecheck`
+4. `npm run build` (tsup → dist/cli.js)
+5. Validate pack dry-run (size sanity check)
+6. `npm publish --access public --provenance` (CI has OIDC for provenance)
+7. Verify via `npm view delegate-team version`
+8. `npm dist-tag add delegate-team@vX.Y.Z latest`
+
+Required secrets:
+- `NPM_TOKEN` — npm automation token (classic, read-write)
+
+Required permissions:
+- `id-token: write` — for npm provenance signing
+
+#### README updates
+
+Added 2 new badges to the badge bar:
+- `npm version` (red, npm logo, links to npmjs.com)
+- `npm downloads` (red, monthly)
+- `npm publish` (workflow status)
+
+Plus a new install path (Path A — npm) added to the install section, alongside
+the existing three.
+
 ## [2.2.0] — 2026-06-30
 
 ### Polished — README + CI expansion

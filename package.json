@@ -1,12 +1,12 @@
 {
   "name": "delegate-team",
-  "version": "2.2.0",
-  "description": "Unified Multi-Backend Developer Agent Dispatch & CLI suite",
+  "version": "2.3.0",
+  "description": "Agentic engineering supersystem. One CLI to run the full /mavis-ship chain — design + plan + execute (autoresearch / multi-model / multi-agent) + verify + ship. Bundles a `dt` delegation gateway that routes Claude Code tasks to backends (Codex, MiniMax via mmx, Gemini, MetaGPT), plus a complete orchestrator framework installable via `npx skills add`. Companion frameworks: superpowers, Waza, unslop-preflight, autoresearch.",
   "type": "module",
   "main": "dist/cli.js",
   "bin": {
-    "dt": "./dist/cli.js",
-    "delegate-team": "./dist/cli.js"
+    "dt": "dist/cli.js",
+    "delegate-team": "dist/cli.js"
   },
   "scripts": {
     "build": "tsup",
@@ -14,38 +14,66 @@
     "prepare": "npm run build",
     "dev": "tsup --watch",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "size": "npm pack --dry-run",
+    "publish:dry": "npm publish --dry-run --access public"
   },
   "files": [
     "dist",
-    "delegate-team",
-    "vertex-coder",
     "README.md",
-    "LICENSE",
-    "SECURITY.md",
-    "DELEGATION_PROTOCOL.md",
-    "ROLE_ROUTING.md",
-    "TRACE_SCHEMA.md"
+    "LICENSE"
   ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "tag": "latest"
+  },
   "keywords": [
     "delegate-team",
+    "mavis-ship",
     "ai",
     "agent",
-    "vertex-coder",
+    "agents",
+    "agentic-engineering",
+    "multi-agent",
+    "orchestration",
+    "mmas",
+    "cli",
+    "delegation",
+    "skills",
+    "skills-sh",
+    "autoresearch",
+    "superpowers",
+    "waza",
+    "unslop",
+    "claude-code",
+    "codex",
+    "cursor",
+    "minimax",
+    "mmx",
+    "vertex",
+    "gemini",
+    "metagpt",
     "llm",
     "routing",
-    "cli"
+    "mcp"
   ],
-  "author": "Mamdouh Aboammar",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/imMamdouhaboammar/delegate-team.git"
+  "author": {
+    "name": "Mamdouh Aboammar",
+    "email": "mamdouhfces1997@gmail.com",
+    "url": "https://github.com/imMamdouhaboammar"
   },
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/imMamdouhaboammar/delegate-team/issues"
   },
   "homepage": "https://github.com/imMamdouhaboammar/delegate-team#readme",
-  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/imMamdouhaboammar/delegate-team.git"
+  },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "tsup": "^8.5.1",

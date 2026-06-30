@@ -6,7 +6,7 @@
     "name": "Mamdouh Aboammar",
     "email": "mamdouhfces1997@gmail.com"
   },
-  "version": "2.2.0",
+  "version": "2.3.0",
   "homepage": "https://github.com/imMamdouhaboammar/delegate-team",
   "repository": "https://github.com/imMamdouhaboammar/delegate-team",
   "license": "MIT",
@@ -24,7 +24,7 @@
   "plugins": [
     {
       "name": "delegate-team",
-      "version": "2.2.0",
+      "version": "2.3.0",
       "description": "Main plugin — installs /mavis-ship orchestrator + mm multi-agent framework + skill-scaffolder + integrations on top of the dt gateway CLI.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team",
@@ -41,7 +41,7 @@
     },
     {
       "name": "dt",
-      "version": "2.2.0",
+      "version": "2.3.0",
       "description": "The original `dt` CLI — gates Claude Code tasks to backend coders (Codex, MiniMax, Gemini, MetaGPT) with policy + failover.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/src",
@@ -51,7 +51,7 @@
     },
     {
       "name": "delegate-team-orchestrator",
-      "version": "2.2.0",
+      "version": "2.3.0",
       "description": "The /mavis-ship orchestrator in isolation — single skill (no other components).",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/orchestrator",
@@ -63,7 +63,7 @@
     },
     {
       "name": "delegate-team-mmas",
-      "version": "2.2.0",
+      "version": "2.3.0",
       "description": "Multi-agent team framework — 8 specialized agents, spawn-team.py orchestrator, watchdog.sh, hash-edit.py.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/mmas",
@@ -75,7 +75,7 @@
     },
     {
       "name": "delegate-team-scaffolder",
-      "version": "2.2.0",
+      "version": "2.3.0",
       "description": "mavis-skill-scaffold — generate properly-structured Mavis skill directories in one shot.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/scaffolder",
@@ -87,7 +87,7 @@
     },
     {
       "name": "delegate-team-god-agent",
-      "version": "2.2.0",
+      "version": "2.3.0",
       "description": "God Agent — multi-CLI dispatcher for Codex (codex CLI) and opencode-routed models (qwen, kimi, glm).",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/god-agent",
@@ -99,7 +99,7 @@
     },
     {
       "name": "delegate-team-minimax-coder",
-      "version": "2.2.0",
+      "version": "2.3.0",
       "description": "MiniMax-Coder — MiniMax-M3 / M2.7 / M2.7-highspeed backend via the mmx CLI.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/minimax-coder",
@@ -111,7 +111,7 @@
     },
     {
       "name": "delegate-team-vertex-coder",
-      "version": "2.2.0",
+      "version": "2.3.0",
       "description": "Vertex-Coder — Gemini family backend via the google.genai SDK.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/vertex-coder",
