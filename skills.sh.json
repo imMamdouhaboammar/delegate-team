@@ -1,0 +1,71 @@
+{
+  "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+  "notGrouped": "bottom",
+  "groupings": [
+    {
+      "title": "Orchestration",
+      "description": "Single-command orchestrators that route natural-language tasks through the full engineering chain.",
+      "skills": [
+        "delegate-team",
+        "mavis-ship"
+      ]
+    },
+    {
+      "title": "Delegation backends",
+      "description": "Pluggable backend agents that do the actual work — Codex, MiniMax, Gemini, MetaGPT.",
+      "skills": [
+        "dt",
+        "god-agent",
+        "minimax-coder",
+        "vertex-coder",
+        "metagpt-runner"
+      ]
+    },
+    {
+      "title": "Multi-agent teams",
+      "description": "Boss-mode frameworks that spawn specialized agents (scout, oracle, librarian, reviewer, sentinel, visionary) in parallel.",
+      "skills": [
+        "mmas"
+      ]
+    },
+    {
+      "title": "Tooling",
+      "description": "Scaffolders and CLI generators for the supersystem itself.",
+      "skills": [
+        "skill-scaffold"
+      ]
+    },
+    {
+      "title": "Companion frameworks",
+      "description": "Methodology + UI quality + metric-driven iteration layers that compose under mavis-ship.",
+      "skills": [
+        "superpowers",
+        "waza",
+        "unslop-preflight",
+        "autoresearch"
+      ]
+    }
+  ],
+  "featured": [
+    "delegate-team",
+    "mavis-ship",
+    "dt"
+  ],
+  "metadata": {
+    "repository": "https://github.com/imMamdouhaboammar/delegate-team",
+    "license": "MIT",
+    "homepage": "https://delegate-team.dev",
+    "category": "developer-tools",
+    "tags": [
+      "agentic-engineering",
+      "delegation",
+      "orchestration",
+      "multi-agent",
+      "ai-coding",
+      "claude-code",
+      "codex",
+      "miniMax",
+      "gemini"
+    ]
+  }
+}

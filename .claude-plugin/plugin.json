@@ -1,0 +1,29 @@
+{
+  "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
+  "name": "delegate-team",
+  "version": "2.1.0",
+  "description": "Agentic engineering supersystem — install once, run /mavis-ship \"<task>\" or dt run \"<task>\" anywhere. Bundles the /mavis-ship orchestrator, multi-agent team framework, skill scaffolder, and four companion frameworks (superpowers, Waza, unslop-preflight, autoresearch) on top of the original dt gateway CLI.",
+  "author": {
+    "name": "Mamdouh Aboammar",
+    "email": "mamdouhfces1997@gmail.com"
+  },
+  "homepage": "https://github.com/imMamdouhaboammar/delegate-team",
+  "repository": "https://github.com/imMamdouhaboammar/delegate-team",
+  "license": "MIT",
+  "keywords": [
+    "agentic-engineering",
+    "delegation",
+    "orchestration",
+    "multi-agent",
+    "ai-coding",
+    "claude-code"
+  ],
+  "skills": [
+    "./orchestrator",
+    "./scaffolder",
+    "./mmas",
+    "./god-agent",
+    "./minimax-coder",
+    "./vertex-coder"
+  ]
+}
