@@ -55,14 +55,15 @@ jobs:
           TAG="${{ steps.tag.outputs.name }}"
           # Get the tag BEFORE this one (so we know what to summarize).
           PREV=$(git tag --sort=-version:refname \
-              | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+              2>/dev/null | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
               | awk -v t="$TAG" '$0 < t' \
               | head -1)
           if [ -z "$PREV" ]; then
-            PREV=$(git log -1 --format=%H "$TAG"~ 2>/dev/null || echo "")
+            # No prior tag — summarize the first 100 commits of the repo
+            PREV=""
           fi
-          echo "name=${PREV:-HEAD~100}" >> "$GITHUB_OUTPUT"
-          echo "previous tag was: ${PREV:-HEAD~100}"
+          echo "name=${PREV}" >> "$GITHUB_OUTPUT"
+          echo "previous tag: ${PREV:-<none — full repo history>}"
 
       - name: Checkout
         uses: actions/checkout@v4
