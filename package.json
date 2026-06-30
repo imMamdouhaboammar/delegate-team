@@ -1,7 +1,7 @@
 {
   "name": "delegate-team",
-  "version": "2.5.0",
-  "description": "Agentic engineering supersystem. One CLI to run the full /mavis-ship chain — design + plan + execute (autoresearch / multi-model / multi-agent) + verify + ship. Bundles a `dt` delegation gateway that routes Claude Code tasks to backends (Codex, MiniMax via mmx, Gemini, MetaGPT), plus a complete orchestrator framework installable via `npx skills add`. Companion frameworks: agent-kernel (vendored memory layer), superpowers, Waza, unslop-preflight, autoresearch.",
+  "version": "2.5.1",
+  "description": "Agentic engineering supersystem. One CLI to run the full /mavis-ship chain \u2014 design + plan + execute (autoresearch / multi-model / multi-agent) + verify + ship. Bundles a `dt` delegation gateway that routes Claude Code tasks to backends (Codex, MiniMax via mmx, Gemini, MetaGPT), plus a complete orchestrator framework installable via `npx skills add`. Companion frameworks: agent-kernel (vendored memory layer), superpowers, Waza, unslop-preflight, autoresearch.",
   "type": "module",
   "main": "dist/cli.js",
   "bin": {

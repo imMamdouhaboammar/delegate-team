@@ -6,10 +6,16 @@ import { runDispatch, runVertex } from './commands/run.js';
 import { runMetaGPTRouter } from './commands/metagpt.js';
 import { runServe } from './proxy/server.js';
 import fs from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-// Read version from package.json
-const packageJsonPath = new URL('../package.json', import.meta.url);
+// Read version from package.json — use fileURLToPath + dirname + join
+// (NOT `new URL('../package.json', import.meta.url)` — that pattern
+// makes Rspack/webpack treat package.json as an asset to bundle, which
+// breaks BundlePhobia's new Rspack-backed analyzer with a
+// "asset without `.bundle` suffix" error.)
+const here = dirname(fileURLToPath(import.meta.url));
+const packageJsonPath = join(here, '..', 'package.json');
 let version = '1.0.0';
 try {
   const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));

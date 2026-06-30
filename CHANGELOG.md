@@ -3,6 +3,41 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.5.1] — 2026-06-30
+
+### Fixed — BundlePhobia BuildError after Rspack migration
+
+BundlePhobia recently migrated from webpack to **Rspack** ("much faster results,
+better tree-shaking, accuracy and reliability"). Rspack's stricter default config
+detected `new URL('../package.json', import.meta.url)` in `src/cli.ts` as an asset
+reference and tried to bundle `package.json` as a JSON asset — but Rspack requires
+chunk assets to have a `.bundle` suffix, so it failed with:
+
+> `Found an asset without the \`.bundle\` suffix. A loader customization might be
+> needed to recognize this asset type7dd0ea9c059591ad.json`
+
+**Fix**: rewrite the package.json path lookup to use
+`fileURLToPath(import.meta.url)` + `dirname()` + `join()` — same runtime behaviour,
+no bundler-detectable `new URL(...)` asset pattern.
+
+```ts
+// Before — triggers Rspack asset bundling
+const packageJsonPath = new URL('../package.json', import.meta.url);
+
+// After — plain fs path construction
+const here = dirname(fileURLToPath(import.meta.url));
+const packageJsonPath = join(here, '..', 'package.json');
+```
+
+Verified locally:
+- `node dist/cli.js --version` → `2.5.1` (still reads from package.json)
+- `npm run typecheck` → clean
+- `npm test` → 25/25 tests pass
+- `npm pack --dry-run` → 22.4 kB / 6 files (no extra assets)
+- BundlePhobia stacktrace resolved (was the trigger for this patch)
+
+No breaking changes; pure patch release.
+
 ## [2.5.0] — 2026-06-30
 
 ### Added — Bundled `agent-kernel` v0.0.5 (memory + governance layer)
