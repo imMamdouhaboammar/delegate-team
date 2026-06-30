@@ -3,6 +3,51 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.2.0] — 2026-06-30
+
+### Polished — README + CI expansion
+
+This release is primarily a documentation and CI overhaul. No code changes to
+the orchestrator or backends; the supersystem runtime is identical to v2.1.1.
+
+#### README rewrite
+
+- Full re-design: centered hero, badge bar, three installation paths (Skills.sh,
+  Claude marketplace, bootstrap script), component breakdown with per-component
+  language/status badges, ASCII architecture diagram, comparison table, usage
+  examples with real output, acknowledgments, and roadmap
+- 8 strategic shields.io badges at the top (version · license · stars · CI ·
+  Skills.sh · Node · Python · Bash)
+- Per-component flat badges showing language (TS / Bash / Python) and maturity
+  (stable / beta / experimental)
+
+#### CI expansion (`.github/workflows/ci.yml`)
+
+Replaced the original 2-job workflow with a 5-job matrix that exercises the
+entire supersystem:
+
+- `build-and-test` — Node.js 18/20/22 matrix → typecheck + build + test
+- `shell-checks` — bash -n + shellcheck on install.sh, orchestrate.sh,
+  watchdog.sh, mavis-skill-scaffold
+- `python-checks` — py_compile + YAML lint (mmas/agents) + JSON lint
+  (package.json + manifests + skills.sh.json)
+- `orchestrator-tests` — verifies root SKILL.md frontmatter discipline + the
+  full 6-task orchestrate.sh routing matrix (BUILD/PUBLISH, UI, PERF,
+  RESEARCH, BUG, TRIVIAL) on every PR
+- `manifest-validate` — ensures Skills.sh + Claude marketplace compatibility
+  stays green
+
+This makes the CI badge in README meaningful — it now reflects actual code
+quality, not just `npm test`.
+
+## [2.1.1] — 2026-06-30
+
+### Fixed — orchestrate.sh routing false-positives
+
+## [2.1.0] — 2026-06-30
+
+### Added — Skills.sh + Claude marketplace compatibility
+
 ## [2.0.0] — 2026-06-30
 
 ### Added — supersystem release

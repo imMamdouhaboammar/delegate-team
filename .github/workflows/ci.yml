@@ -7,44 +7,168 @@ on:
     branches: [ main, master ]
 
 jobs:
+  # ───────────────────────────────────────────────────────────────────────
+  # dt CLI: Node.js matrix build + typecheck + test
+  # ───────────────────────────────────────────────────────────────────────
   build-and-test:
+    name: dt CLI (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
-
     strategy:
+      fail-fast: false
       matrix:
         node-version: [18.x, 20.x, 22.x]
-
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Typecheck
-      run: npm run typecheck
-      
-    - name: Build
-      run: npm run build
-      
-    - name: Test
-      run: npm test
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build
+        run: npm run build
+      - name: Test
+        run: npm test
 
-  python-checks:
+  # ───────────────────────────────────────────────────────────────────────
+  # Shell scripts: syntax + shellcheck
+  # ───────────────────────────────────────────────────────────────────────
+  shell-checks:
+    name: Shell scripts (install.sh / orchestrate.sh)
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-        
-    - name: Check syntax
-      run: |
-        python -m py_compile vertex-coder/*.py
+      - uses: actions/checkout@v4
+      - name: bash syntax check
+        run: |
+          set -e
+          for f in install.sh orchestrator/scripts/orchestrate.sh \
+                   mmas/watchdog.sh scaffolder/bin/mavis-skill-scaffold; do
+            echo "checking $f"
+            bash -n "$f"
+          done
+      - name: shellcheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: './'
+          additional_files: 'install.sh orchestrator/scripts/orchestrate.sh mmas/watchdog.sh scaffolder/bin/mavis-skill-scaffold'
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Python: minimax-coder + vertex-coder + mmas/agents/*.yaml
+  # ───────────────────────────────────────────────────────────────────────
+  python-checks:
+    name: Python (vertex-coder / minimax-coder / mmas)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Syntax check
+        run: |
+          set -e
+          python -m py_compile vertex-coder/*.py
+          python -m py_compile minimax-coder/*.py
+          python -m py_compile mmas/spawn-team.py mmas/hash-edit.py
+      - name: YAML lint (mmas/agents)
+        run: |
+          python -c "
+          import yaml, sys, glob
+          for f in glob.glob('mmas/agents/*.yaml'):
+              with open(f) as fh:
+                  yaml.safe_load(fh)
+              print(f'  ✓ {f}')
+          "
+      - name: JSON lint (.claude-plugin + skills.sh.json)
+        run: |
+          for f in package.json tsconfig.json .claude-plugin/plugin.json \
+                   .claude-plugin/marketplace.json skills.sh.json; do
+            echo "  ✓ $f"
+            python -m json.tool < "$f" > /dev/null
+          done
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Manifest discipline: SKILL.md frontmatter + orchestrate.sh routing test
+  # ───────────────────────────────────────────────────────────────────────
+  orchestrator-tests:
+    name: Orchestrator routing smoke tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: npm ci || true
+      - name: SKILL.md frontmatter check
+        run: |
+          set -e
+          for f in SKILL.md orchestrator/SKILL.md scaffolder/SKILL.md \
+                   mmas/SKILL.md god-agent/SKILL.md minimax-coder/SKILL.md \
+                   vertex-coder/SKILL.md integrations/unslop/SKILL.md; do
+            if [ -f "$f" ]; then
+              echo "checking $f"
+              python -c "
+import re, sys
+text = open('$f').read()
+m = re.match(r'---\n(.*?)\n---', text, re.DOTALL)
+if not m:
+    sys.exit('  no YAML frontmatter')
+fm = m.group(1)
+if 'name:' not in fm: sys.exit('  no name')
+if 'description:' not in fm: sys.exit('  no description')
+print('  ok')
+"
+            fi
+          done
+      - name: orchestrate.sh routing assertions
+        run: |
+          set -e
+          chmod +x orchestrator/scripts/orchestrate.sh
+          # 8-task signature matrix
+          declare -a TESTS=(
+            "Build an OpenSource repo containing our full agentic engineering system: orchestrator + skill-scaffold + delegate-team backends + multi-agent team + integrations docs. Push to github|BUILD/PUBLISH"
+            "Build a landing page with shadcn components|UI DELIVERY"
+            "Make API p95 < 200ms|PERFORMANCE/METRIC"
+            "Research how Rust trait objects work|RESEARCH"
+            "Mobile header broken on Safari iOS 17|BUG"
+            "rename getCurrentUser to getActiveUser|TRIVIAL"
+          )
+          for t in "${TESTS[@]}"; do
+            task="${t%%|*}"
+            expected="${t##*|}"
+            actual=$(orchestrator/scripts/orchestrate.sh "$task" | grep -E "^# Verdict" -A1 | tail -1)
+            echo "  task: ${task:0:50}..."
+            echo "  expected: $expected"
+            echo "  got: $actual"
+            if [[ "$actual" != *"$expected"* ]]; then
+              echo "  ✗ MISMATCH"
+              exit 1
+            fi
+            echo "  ✓"
+          done
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Skills.sh / Claude marketplace compatibility
+  # ───────────────────────────────────────────────────────────────────────
+  manifest-validate:
+    name: Plugin manifests (Claude marketplace + Skills.sh)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: SKILL.md at root
+        run: |
+          test -f SKILL.md || { echo "root SKILL.md missing"; exit 1; }
+          head -1 SKILL.md | grep -q '^---$' || { echo "no frontmatter"; exit 1; }
+          echo "  ✓ root SKILL.md present + frontmatter"
+      - name: marketplace.json
+        run: |
+          test -f .claude-plugin/marketplace.json
+          python -m json.tool < .claude-plugin/marketplace.json > /dev/null
+          echo "  ✓ marketplace.json valid"
+      - name: skills.sh.json
+        run: |
+          test -f skills.sh.json
+          python -c "import json; d=json.load(open('skills.sh.json')); assert 'groupings' in d"
+          echo "  ✓ skills.sh.json valid + has groupings"

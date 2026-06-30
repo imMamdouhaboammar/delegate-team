@@ -1,385 +1,358 @@
-# Delegate Team (`dt`) — supersystem v2
+<div align="center">
 
-![CI](https://github.com/imMamdouhaboammar/delegate-team/actions/workflows/ci.yml/badge.svg)
-![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![Node](https://img.shields.io/badge/Node.js-18%2B-green.svg)
+# 🛠️ delegate-team
 
-> **The complete agentic engineering supersystem.** One open-source repo. Six components.
-> Three routing layers. One `/mavis-ship` command that orchestrates them all.
+### *One command runs the full engineering chain.*
 
-| Component | Folder | Purpose | Install |
-|---|---|---|---|
-| **`dt` CLI** (gateway) | `src/`, `dist/` | Routes Claude Code tasks to backend agents | `npm install && npm run build` |
-| **`/mavis-ship` orchestrator** | `orchestrator/` | Single command that drives every stage of a task | `./install.sh --orchestrator` |
-| **Skill scaffolder** | `scaffolder/` | Generate Mavis skills with proper structure | `./install.sh --scaffolder` |
-| **Multi-agent team (MMAS)** | `mmas/` | Boss mode: spawn Atlas + Forge + Scout + 5 more specialized agents | `./install.sh --mmas` |
-| **Companion frameworks** | `integrations/` | superpowers, Waza, unslop-preflight, autoresearch | `./install.sh --integrations` |
+```text
+/mavis-ship "Make API p95 < 200ms"
+```
 
-**One-command setup** (everything):
+**Waza `/think` → unslop audit → superpowers writing-plans →**
+**autoresearch | `/delegate-team` | `/mavis-team` → Waza `/check` → quality-guard → SHIP**
+
+[![Version](https://img.shields.io/github/v/release/imMamdouhaboammar/delegate-team?color=blue&label=version&style=for-the-badge)](https://github.com/imMamdouhaboammar/delegate-team/releases)
+[![License: MIT](https://img.shields.io/github/license/imMamdouhaboammar/delegate-team?style=for-the-badge&color=blue)](https://github.com/imMamdouhaboammar/delegate-team/blob/master/LICENSE)
+[![Stars](https://img.shields.io/github/stars/imMamdouhaboammar/delegate-team?style=for-the-badge&logo=github)](https://github.com/imMamdouhaboammar/delegate-team/stargazers)
+[![CI](https://img.shields.io/github/actions/workflow/status/imMamdouhaboammar/delegate-team/ci.yml?branch=master&style=for-the-badge&label=CI)](https://github.com/imMamdouhaboammar/delegate-team/actions/workflows/ci.yml)
+[![Skills.sh](https://img.shields.io/badge/dynamic/json?color=blueviolet&label=Skills.sh&query=%24.rank&url=https%3A%2F%2Fskills.sh%2Fapi%2Frank%2FimMamdouhaboammar%2Fdelegate-team&style=for-the-badge)](https://skills.sh/imMamdouhaboammar/delegate-team)
+[![Node](https://img.shields.io/badge/Node.js-18%2B-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![Bash](https://img.shields.io/badge/Bash-4%2B-4EAA25?style=for-the-badge&logo=gnu-bash&logoColor=white)](https://www.gnu.org/software/bash/)
+
+</div>
+
+> **The complete agentic engineering supersystem.** One open-source repo. Six
+> components. Four routing layers. One **(`/mavis-ship "<task>")** command that
+> orchestrates them all. Built on top of superpowers, Waza, unslop-preflight,
+> and autoresearch. Designed to work with Claude Code, Codex, Cursor, Copilot,
+> Windsurf, Gemini CLI, OpenCode, and 60+ more coding agents via Skills.sh.
+
+---
+
+## ⚡ What is this?
+
+**delegate-team** is the bridge between a natural-language request and a
+multi-model, multi-stage engineering pipeline. Instead of picking tools by hand,
+type one command and let the supersystem decide:
+
+| Without delegate-team | With delegate-team |
+|---|---|
+| Pick a model → craft a prompt → wait → review → fix the prompt → repeat | `/mavis-ship "X"` and watch the chain run |
+| Architect **or** implement **or** review per turn | Brainstorm → plan → TDD → execute → verify → ship |
+| Each agent works alone | 8 specialized agents (Atlas / Forge / Scout / Oracle / Librarian / Reviewer / Visionary / Sentinel) collaborate |
+| "Best practice" depends on which LLM answered | Methodology encoded as skills: superpowers · Waza · unslop-preflight · autoresearch |
+
+**Sounds good? Try it:**
 
 ```bash
 git clone https://github.com/imMamdouhaboammar/delegate-team
 cd delegate-team
 ./install.sh --all
+./install.sh --verify   # sanity check
 ```
-
-After install: type `/mavis-ship "<task>"` (or `dt run "<task>"`) in any session.
 
 ---
 
-## Quick links
+## 📦 Quick install
 
-- [`orchestrator/README.md`](./orchestrator/README.md) — `/mavis-ship` skill + orchestrate.sh
-- [`scaffolder/README.md`](./scaffolder/README.md) — `mavis-skill-scaffold` CLI
-- [`mmas/README.md`](./mmas/README.md) — multi-agent team framework
-- [`integrations/README.md`](./integrations/README.md) — companion frameworks
-- [`DT.md`](./DT.md) — `dt` CLI specifics (the original delegation gateway)
-- [`INSTALL.md`](./INSTALL.md) — full install guide
-- [`CHANGELOG.md`](./CHANGELOG.md) — release notes
+**Three installation paths. Pick your favorite.**
 
----
-
-## What `dt` is
-
-`dt` is the delegation gateway inside the supersystem. It routes Claude Code tasks to backend coder agents (the `dt` CLI is the original product; the orchestrator, scaffolder, MMAS, and integrations were built on top). For `dt`-specific docs see [`DT.md`](./DT.md).
-
-- A local delegation gateway for AI coding agents
-- A routing layer between Claude Code and multiple backend coder agents
-- A policy layer for budgets, workspace boundaries, failover, and review
-- A MetaGPT-style team runner for complex tasks
-
-## What `dt` is not
-
-- It is not a replacement for Claude Code
-- It does not commit code automatically
-- It does not guarantee every backend is available
-- It does not make untrusted agent output safe without review
-
-## Core Features
-
-| Feature | Description |
-|---|---|
-| **Failover Ring** | `dt` attempts best-effort fallback across configured backends. If another backend is available, `dt` can retry the task automatically. |
-| **Lean Token Protocol** | A targeted, compact contract. The routing engine minimizes file ingestion size, feeding only the context that actually matters. |
-| **Autopilot Setup** | `dt setup` creates local Python virtual environments and checks cloud credentials. |
-| **Dynamic Auth** | Zero hardcoded keys. `dt` queries your active local sessions and safely stores configurations locally. |
-| **Skill Linker** | Instantly injects `dt`'s orchestrators directly into local Claude Code and Gemini CLI paths. |
-
-## Architecture
-
-Unlike standard tools that just "support MetaGPT" or fire prompts at an API, `dt` introduces a **supervised delegation runtime**:
-
-```text
-User
-  ↓
-Claude Code
-  ↓ brief / review
-dt Policy Gateway
-  ↓ route
-Single backend OR Team mode
-  ↓
-VertexCoder / Codex / MiniMax / OpenCode / Gemini
-  ↓
-result contract
-  ↓
-Claude Code review
-  ↓
-human-approved commit
-```
-
-- 📜 [Delegation Protocol](./DELEGATION_PROTOCOL.md): Strict boundaries, untrusted output handling, and security policies.
-- 🔀 [Role Routing](./ROLE_ROUTING.md): How MetaGPT roles are dynamically mapped to specific models via capability tags.
-- 🕵️ [Trace Schema](./TRACE_SCHEMA.md): JSON schema to prevent circular delegation, control depth, and avoid cost explosions.
-
-## Requirements
-
-- Node.js 18+
-- npm
-- Python 3.10+
-- Optional: gcloud CLI for VertexCoder
-- Optional: provider credentials for configured backends
-
-## Quick start
+### Path A — Skills.sh CLI (skill discovery + global install)
 
 ```bash
-# Clone the repository
-git clone https://github.com/imMamdouhaboammar/delegate-team.git
+npx skills add imMamdouhaboammar/delegate-team -a claude-code -g -y
+```
+
+This installs all 8 sub-skills to your Claude Code (or any of 68 supported agents)
+and makes `delegate-team`, `mavis-ship`, `mmas`, `skill-scaffold`, `dt`, etc.
+all invocable by name.
+
+### Path B — Claude Code marketplace (native plugin install)
+
+```bash
+/plugin marketplace add imMamdouhaboammar/delegate-team
+/plugin install delegate-team@delegate-team
+```
+
+### Path C — Bootstrap script (everything, including companion frameworks)
+
+```bash
+git clone https://github.com/imMamdouhaboammar/delegate-team
 cd delegate-team
-
-# Install dependencies and build
-npm install
-npm run build
-
-# Link the package globally
-npm link
-
-# Verify installation
-dt --help
-dt check
+./install.sh --all            # everything
+./install.sh --orchestrator   # just /mavis-ship
+./install.sh --mmas           # just the multi-agent framework
+./install.sh --integrations   # just companion frameworks
+./install.sh --verify         # check what's installed
 ```
 
-## Full setup
+After install, every component is idempotent and verifiable.
 
-```bash
-# Run the autopilot setup to build Python environments and configure cloud dependencies
-dt setup
+---
 
-# Check backend readiness
-dt check --strict
+## 🧩 Components
 
-# Link dt skills to local agents
-dt link-skill
-```
+| Component | Path | Language | Status | What it does |
+|---|---|---|---|---|
+| **dt CLI** | [`src/`](./src), [`dist/`](./dist) | ![TypeScript](https://img.shields.io/badge/TS-5.6-3178C6?style=flat-square) | ![Stable](https://img.shields.io/badge/stable-success?style=flat-square) | Delegation gateway with policy + failover + MetaGPT teams |
+| **`/mavis-ship`** | [`orchestrator/`](./orchestrator/) | ![Bash](https://img.shields.io/badge/Bash-4+-4EAA25?style=flat-square) | ![Stable](https://img.shields.io/badge/stable-success?style=flat-square) | Single-command orchestrator with regex routing |
+| **Skill scaffolder** | [`scaffolder/`](./scaffolder/) | ![Bash](https://img.shields.io/badge/Bash-4+-4EAA25?style=flat-square) | ![Stable](https://img.shields.io/badge/stable-success?style=flat-square) | `mavis-skill-scaffold` generator |
+| **MMAS** | [`mmas/`](./mmas/) | ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square) | ![Beta](https://img.shields.io/badge/beta-yellow?style=flat-square) | 8-agent multi-agent team framework |
+| **God Agent** | [`god-agent/`](./god-agent/) | ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square) | ![Stable](https://img.shields.io/badge/stable-success?style=flat-square) | Codex + opencode dispatcher |
+| **MiniMax Coder** | [`minimax-coder/`](./minimax-coder/) | ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square) | ![Stable](https://img.shields.io/badge/stable-success?style=flat-square) | MiniMax via `mmx` CLI |
+| **Vertex Coder** | [`vertex-coder/`](./vertex-coder/) | ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square) | ![Stable](https://img.shields.io/badge/stable-success?style=flat-square) | Gemini via google-genai |
+| **MetaGPT team** | [`metagpt/`](./metagpt/) | ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square) | ![Experimental](https://img.shields.io/badge/experimental-orange?style=flat-square) | Multi-role team runner |
 
-> **Warning:** `dt link-skill` creates or updates local skill links in your agent tool directories. Review the target paths before using it on a shared workstation.
+### Companion frameworks (separate install, see [`integrations/`](./integrations/))
 
-## Commands
+| Framework | Stars | What it adds |
+|---|---|---|
+| [superpowers](https://github.com/obra/superpowers) | ![242k](https://img.shields.io/github/stars/obra/superpowers?style=flat-square&color=yellow) | Methodology — 14 skills, brainstorm-first hard gate |
+| [Waza](https://github.com/tw93/Waza) | ![6.1k](https://img.shields.io/github/stars/tw93/Waza?style=flat-square&color=yellow) | Entry-point — 8 habits-engineering skills |
+| [unslop-preflight](https://github.com/imMamdouhaboammar/unslop-preflight) | ![New](https://img.shields.io/badge/new-ff69b4?style=flat-square) | UI quality gate — 23 reasoning gates |
+| [autoresearch](https://github.com/uditgoenka/autoresearch) | ![Popular](https://img.shields.io/badge/popular-brightgreen?style=flat-square) | Metric-driven iteration loop |
 
-### Which command should I use?
+---
 
-| Use case | Command |
-|---|---|
-| Small focused fix | `dt run "fix the auth bug"` |
-| Force one backend | `dt run "..." --backend vertexcoder` |
-| Large multi-module task | `dt run "..." --team` |
-| Direct team workflow | `dt metagpt "..." --workspace-only --no-install` |
-| Check setup | `dt check --strict` |
+## 🔁 The /mavis-ship chain (how it works)
 
-### Smart Multi-Backend Dispatch
-Cast a complex task. The routing analyzes it and selects the optimal backend, complete with automated failover.
-```bash
-dt run "Write a pytest suite in test_auth.py checking JWT login boundaries"
-```
-
-### Direct Vertex AI Coder (Single File)
-Modify or create a single file:
-```bash
-dt vx direct index.html "Update the hero title to a premium dark gradient design"
-```
-
-### Interactive Vertex AI Agent (Autonomous Multi-File)
-Summon an autonomous entity to write code, install packages, run tests, and self-correct over multiple files:
-```bash
-dt vx interactive "Implement a complete Express.js backend with modular JWT authorization"
-```
-
-## Backend readiness
-
-Run:
-
-```bash
-dt check --strict
-```
-
-Backends may show:
-- ready
-- missing credentials
-- missing binary
-- not configured
-
-If a backend shows missing credentials/binary, see
-[AGENT_ACCESS_GUIDE.md](./AGENT_ACCESS_GUIDE.md) — the controlling agent should walk
-the user through granting access (Codex, MiniMax, GLM, OpenCode, OpenRouter, Gemini,
-Vertex AI) rather than silently skipping the backend.
-
-## Security model
-
-- `dt` is local-first
-- Agent output is treated as untrusted until reviewed
-- Claude Code or the human keeps final commit authority
-- File tools are restricted to the workspace
-- Dependency installation is blocked unless explicitly enabled
-- The local proxy binds to `127.0.0.1` and requires a token
-- Do not expose `dt serve` to a public network
-
-For more details, see [SECURITY.md](./SECURITY.md).
-
-## Team mode
-
-> **Status:** `dt` currently provides a MetaGPT-style team adapter. It runs specialized roles through `dt` backends, such as architect, coder, UI implementer, and reviewer. This is not yet a full upstream MetaGPT integration. It is a controlled `dt` team runtime inspired by MetaGPT-style role orchestration.
-
-When the task is monumental, summon an entire company. While `dt run` focuses on execution, `dt metagpt` spins up an Architect, Product Manager, Engineer, and QA.
-```bash
-dt metagpt "Build a complete multiplayer snake game using websockets"
-```
-
-Because a full company acts with high autonomy, `dt` provides strict barriers:
-- `--plan-only`: Draft the architecture without writing code.
-- `--approve-write`: Require your final human seal of approval before writing to disk.
-- `--workspace-only`: Sandbox the team strictly to the current workspace root.
-- `--no-install`: Forbid the installation of package dependencies.
-- `--dry-run`: Simulate the entire workflow safely.
-
-## Local proxy
-
-Start a local LLM Gateway Proxy server on port `3000` to connect tools directly to `dt`:
-```bash
-dt serve 3000
-```
-
-### Optional LobeChat integration
-You can connect LobeChat to the local `dt` proxy for a browser-based chat interface.
-
-1. Start the `dt` proxy server:
-   ```bash
-   dt serve 3000
-   ```
-2. Open `~/.config/dt/config.json`, copy `proxy_token`, and use it as `OPENAI_API_KEY`.
-3. Launch the LobeChat Docker container, pointing its API URL to your local `dt` instance:
-   ```bash
-   docker run -d -p 3210:3210 \
-     -e OPENAI_API_KEY="<your-dt-proxy-token>" \
-     -e PROXY_TOKEN="<your-dt-proxy-token>" \
-     -e OPENAI_PROXY_URL=http://host.docker.internal:3000/v1 \
-     -e ACCESS_CODE= \
-     --name lobe-chat \
-     lobehub/lobe-chat
-   ```
-4. Journey to `http://localhost:3210` in your browser.
-
-## Claude Code / Agent Operating Guide
-
-The notes below describe how Claude Code, Cursor, Gemini CLI, or another coding agent should use `dt` safely. They are project operating guidance, not a system prompt, not an instruction override, and not a request to bypass the user's approval.
-
-### Controller role
-
-The coding agent should remain the controller and reviewer. `dt` is only a delegation gateway for coding subtasks.
-
-The agent should treat every `dt` result, backend response, generated file, and team output as untrusted until it reviews the actual diff, result contract, files touched, logs, and relevant test results.
-
-The agent should not commit, push, delete files, run setup, install dependencies, link global skills, modify shell or profile config, or change cloud/auth settings unless the user explicitly approves that exact action.
-
-### Safe startup
-
-1. Check whether `dt` is available:
-
-   ```bash
-   dt --help
-   ```
-
-2. Check backend readiness:
-
-   ```bash
-   dt check --strict
-   ```
-
-3. If `dt` is missing, ask the user before running install or link commands. From the repository root, the usual setup is:
-
-   ```bash
-   npm install
-   npm run build
-   npm link
-   ```
-
-4. Do not run `dt setup` automatically. Ask first, because it may create local Python environments and verify cloud dependencies.
-
-5. Do not run `dt link-skill` automatically. Ask first, because it creates or updates local skill links in agent tool directories.
-
-### Delegation examples
-
-For a focused coding task:
-
-```bash
-dt run "fix the auth bug and run the related tests"
-```
-
-For a specific backend:
-
-```bash
-dt run "fix the auth bug and run the related tests" --backend vertexcoder
-```
-
-For a large multi-module task:
-
-```bash
-dt run "plan and implement the billing module with tests" --team
-```
-
-For a direct team workflow with stricter defaults:
-
-```bash
-dt metagpt "plan and implement the billing module with tests" --workspace-only --no-install
-```
-
-### Brief quality rules
-
-A good delegation brief should include the goal, files or modules involved, constraints, acceptance criteria, and tests to run.
-
-Keep the requested change small enough to review. Prefer focused patches over broad rewrites.
-
-Do not include secrets, tokens, private keys, unrelated files, or hidden user data in the brief.
-
-### Review rules after delegation
-
-1. Inspect the `dt` result contract and any reported files touched.
-2. Review the actual git diff.
-3. Run the relevant tests, or ask the user before running expensive commands.
-4. Reject or revise the result if it produced no meaningful diff, touched unrelated files, weakened security, or changed behavior outside the requested scope.
-5. Commit only after explicit user approval.
-
-## Repository structure
+Type one command. The orchestrator inspects the task and routes through the
+right stages.
 
 ```text
-.
-├── package.json               # Package setup & CLI global mappings
-├── src/                       # TypeScript Source Code
-│   ├── cli.ts                 # CLI Entry Point
-│   ├── commands/              # CLI Commands (run, setup)
-│   ├── proxy/                 # LLM Gateway Proxy Server
-│   └── ...
-├── dist/                      # Generated after npm run build, not committed
-├── delegate-team/             # Master coordinator logic (Relay, routers, guidelines)
-│   ├── SKILL.md               # Unified orchestrator instructions
-│   └── scripts/               # Core routing, relay & fallback systems
-├── vertex-coder/              # Python agent code. Local .venv is created by dt setup
-│   ├── SKILL.md               # VertexCoder execution directives
-│   ├── vertex_direct_coder.py # Direct single-file coding agent
-│   └── vertex_interactive_agent.py # Autonomous multi-file developer loop
-├── LICENSE                    # MIT Permissive License
-└── README.md                  # Developer documentation
+                ┌─────────────────────────────────┐
+                │  /mavis-ship "<your task>"     │
+                └─────────────┬───────────────────┘
+                              │
+                ┌─────────────▼───────────────────┐
+                │  Waza /think                   │  pressure-test + design
+                │  ─────────────────────────────  │  (NEVER skip — hard gate)
+                └─────────────┬───────────────────┘
+                              │
+                ┌─────────────▼───────────────────┐
+                │  unslop audit (BLOCKING)        │  score ≥70 to proceed
+                │  ─────────────────────────────  │  for UI tasks only
+                └─────────────┬───────────────────┘
+                              │
+                ┌─────────────▼───────────────────┐
+                │  superpowers writing-plans      │  plan with checkpoints
+                │  ─────────────────────────────  │
+                └─────────────┬───────────────────┘
+                              │
+       ┌──────────────────────┼──────────────────────┐
+       │                      │                      │
+   ┌───▼──────────┐    ┌──────▼──────┐    ┌──────────▼────────┐
+   │ autoresearch │    │ /delegate-  │    │ /mavis-team       │
+   │  plan + loop │    │   team      │    │  MMAS (Atlas+)   │
+   │  metric-driven│    │  multi-model│    │  parallel agents │
+   └──────┬───────┘    └──────┬──────┘    └────────┬──────────┘
+          │                  │                    │
+       ┌──▼──────────────────▼────────────────────▼────────┐
+       │  Waza /check  →  quality-guard (Mavis)  → SHIP   │
+       │  review + 5-layer pre-delivery check             │
+       └──────────────────────────────────────────────────┘
 ```
 
-## Current limitations
+**Routing logic** (live in [`orchestrator/scripts/orchestrate.sh`](./orchestrator/scripts/orchestrate.sh)):
 
-- Team mode is MetaGPT-style, not a full upstream MetaGPT runtime
-- Some backends require local tools or credentials
-- Team artifacts are still evolving
-- Human approval queue is planned but not fully implemented
-- Security controls are local policy gates, not a sandboxed VM
+| Task signature | Route |
+|---|---|
+| Has measurable metric (e.g. "p95 < 200ms") | autoresearch loop |
+| UI task (frontend, page, modal, shadcn) | unslop BLOCKING → /delegate-team |
+| Multi-agent signals (squad, spawn team, swarm) | /mavis-team MMAS |
+| Bug / broken / failing | systematic-debugging → /delegate-team |
+| Heavy multi-file / refactor / migrate | /delegate-team |
+| Research / understand / learn | Waza /read + /learn |
+| Trivial (rename, bump) | handle locally, skip chain |
 
-## Roadmap
+---
 
-- Real team artifact handoff between roles
-- Human approval queue
-- Stronger role-to-backend contracts
-- More security regression tests
-- npm package release
-- Optional upstream MetaGPT compatibility
+## 🚀 Usage
 
-## Contributing
+### Slash command (in any Claude Code session)
 
-We welcome fellow developers to expand the orchestration power of `dt`!
-
-Before opening a PR:
 ```bash
-npm run typecheck
-npm run build
-npm test
-dt check
+/mavis-ship "Build a CLI to convert CSV to JSON"
+/mavis-ship "The mobile header is rendering wrong on Safari iOS 17"
+/mavis-ship "Make API p95 < 200ms"
+/mavis-ship "Design the auth flow before I implement it"
 ```
 
-Security-sensitive changes should include tests for:
-- workspace boundary
-- command allowlist
-- proxy auth
-- dependency install gates
+### CLI router (shell — returns routing decision without execution)
 
-1. Fork the Project.
-2. Create your Feature Branch (`git checkout -b feature/EpicEnhancement`).
-3. Commit your Changes (`git commit -m 'Add an EpicEnhancement'`).
-4. Push to the Branch (`git push origin feature/EpicEnhancement`).
-5. Open a Pull Request.
+```bash
+mavis-orchestrate "Build a landing page with shadcn components"
+```
 
-## License
+Output:
+```
+# /mavis-ship route for: "Build a landing page with shadcn components"
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Stages (descending score):
+  • unslop audit (UI gate)        (score=3)
+  • /think (Waza)                 (score=2)
+  • /delegate-team (multi-model)  (score=1)
+  • /check (Waza)                 (score=2)
+  • quality-guard (Mavis)         (score=2)
+
+# Verdict:
+UI DELIVERY path — unslop audit is BLOCKING before /delegate-team.
+```
+
+### dt CLI (low-level delegation)
+
+```bash
+dt run "Refactor the user model for multi-tenancy"
+dt run "<task>" --backend minimax-coder      # force a specific backend
+dt run "<task>" --team                       # MetaGPT-style multi-role
+dt setup                                     # first-time setup
+dt doctor                                    # health check
+```
+
+### Multi-agent team (MMAS — boss mode)
+
+```bash
+python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py --atlas
+# Atlas autonomously picks team composition based on the task signature
+```
+
+---
+
+## 🏗️ Architecture
+
+```
+                  ┌────────────────────────────────────┐
+                  │       USER TASK (natural lang)     │
+                  └──────────────────┬─────────────────┘
+                                     │
+                  ┌──────────────────▼─────────────────┐
+                  │   /mavis-ship orchestrator          │
+                  │   (orchestrator/SKILL.md)           │
+                  └─────┬───────────────┬───────────────┘
+                        │               │
+            ┌───────────▼──┐    ┌───────▼─────────┐
+            │  Methodology │    │   Execution     │
+            │  ─────────── │    │   ────────────  │
+            │  Waza        │    │  /delegate-team │
+            │  superpowers │    │  /mavis-team    │
+            │  unslop      │    │  autoresearch   │
+            │              │    │   (each routes  │
+            │              │    │    to a back-   │
+            │              │    │    end agent)   │
+            └──────────────┘    └─────────┬───────┘
+                                         │
+                ┌────────────────────────┼────────────────────┐
+                │                        │                    │
+         ┌──────▼──────┐         ┌───────▼─────┐      ┌──────▼──────┐
+         │  God Agent  │         │  MiniMax    │      │  Vertex     │
+         │  codex /    │         │  Coder      │      │  Coder      │
+         │  opencode   │         │  mmx CLI    │      │  Gemini     │
+         └─────────────┘         └─────────────┘      └─────────────┘
+
+                  ┌────────────────────────────────────┐
+                  │   VERIFICATION (Waza /check)       │
+                  │   + quality-guard 5-layer check    │
+                  └────────────────────────────────────┘
+```
+
+---
+
+## ❓ Why not just use...?
+
+| Comparison | Use this when |
+|---|---|
+| `autoresearch` alone | You have ONE measurable metric + bounded scope. Skip the planning. |
+| `/delegate-team` alone | You know which model + backend you want. Skip orchestration. |
+| `/mavis-team` alone | You want a specific team composition. Skip auto-picking. |
+| LLM directly (no agents) | Trivial edits. Use `:edit` mode. |
+| **`delegate-team` / `/mavis-ship`** | Anything else. Let the orchestrator decide. |
+
+---
+
+## 📚 Documentation
+
+| Doc | What's inside |
+|---|---|
+| [`INSTALL.md`](./INSTALL.md) | Full installation guide + verification matrix |
+| [`CHANGELOG.md`](./CHANGELOG.md) | v1 → v2 → v2.1 release notes |
+| [`DT.md`](./DT.md) | Original `dt` CLI specifics (gateway internals) |
+| [`orchestrator/README.md`](./orchestrator/README.md) | `/mavis-ship` details |
+| [`scaffolder/README.md`](./scaffolder/README.md) | `mavis-skill-scaffold` reference |
+| [`mmas/README.md`](./mmas/README.md) | Multi-agent team framework |
+| [`integrations/README.md`](./integrations/README.md) | Companion frameworks overview |
+| [`AGENTS.md`](./AGENTS.md) | Repo conventions for contributors |
+| [`CLAUDE.md`](./CLAUDE.md) | Claude-Code-specific guidance |
+| [`DELEGATION_PROTOCOL.md`](./DELEGATION_PROTOCOL.md) | Lean Token Protocol spec |
+| [`SECURITY.md`](./SECURITY.md) | Auth + scope policy |
+| [`ROLE_ROUTING.md`](./ROLE_ROUTING.md) | Backend routing rules |
+
+---
+
+## 🤝 Contributing
+
+1. **Fork** and **clone** the repo.
+2. **Read** [`AGENTS.md`](./AGENTS.md) — repo conventions live here.
+3. **Make a feature branch**: `git switch -c feat/your-change`
+4. **Run CI locally**:
+   ```bash
+   bash -n install.sh
+   bash -n orchestrator/scripts/orchestrate.sh
+   python -m py_compile mmas/spawn-team.py mmas/hash-edit.py
+   python -m json.tool < .claude-plugin/marketplace.json > /dev/null
+   ```
+5. **Open a PR** — the CI runs the same checks on the GitHub Actions runners.
+
+### Adding a new component
+
+See [`AGENTS.md`](./AGENTS.md#creating-a-new-component) for the full checklist.
+
+### Adding a new sub-skill
+
+Use the scaffolder to bootstrap it:
+
+```bash
+mavis-skill-scaffold --name my-new-skill --description "..." --type workflow
+```
+
+---
+
+## 🛣️ Roadmap
+
+- [x] **v2.0.0** — supersystem release (`/mavis-ship` + scaffolder + MMAS + integrations)
+- [x] **v2.1.0** — Skills.sh + Claude Code marketplace compatibility
+- [x] **v2.1.1** — orchestrate.sh regex routing fixes (BUILD/PUBLISM rule)
+- [ ] **v2.2.0** — ATLAS web UI for non-CLI users
+- [ ] **v3.0.0** — multi-tenant team runs + per-project skill isolation
+- [ ] **v3.x.x** — Webhook-driven CI feedback loop (autoresearch auto-iterate on test fail)
+
+---
+
+## 💖 Acknowledgments
+
+Built on top of amazing open-source work:
+
+- [obra/superpowers](https://github.com/obra/superpowers) — the methodology layer
+- [tw93/Waza](https://github.com/tw93/Waza) — the 8-skills framework
+- [uditgoenka/autoresearch](https://github.com/uditgoenka/autoresearch) — the metric loop
+- [imMamdouhaboammar/unslop-preflight](https://github.com/imMamdouhaboammar/unslop-preflight) — the UI quality gate
+- [vercel-labs/skills](https://github.com/vercel-labs/skills) — the registry infrastructure
+- [pbakaus/impeccable](https://github.com/pbakaus/impeccable), [addyosmani/best-practices](https://github.com/addyosmani) — design discipline
+- And 1800+ curated skills at `~/.agents/skills/` powering the global arsenal.
+
+---
+
+## 📜 License
+
+MIT — see [`LICENSE`](./LICENSE).
+
+---
+
+<div align="center">
+
+<sub>If this repo saved you time, [star it ⭐](https://github.com/imMamdouhaboammar/delegate-team) or
+[open an issue](https://github.com/imMamdouhaboammar/delegate-team/issues/new).</sub>
+
+<sub>Built by <strong>Mamdouh Aboammar</strong> · Cairo, Egypt 🇪🇬</sub>
+
+</div>
