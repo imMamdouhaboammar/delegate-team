@@ -3,6 +3,23 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.4.0] — 2026-06-30
+
+### Documentation — Polished README badge bar
+
+Replaced the 8-badge hero with a structured 23-badge layout in 5 sections:
+
+- **📦 Install** — npm version · bundlephobia install size · weekly downloads
+- **🧬 Status** — GitHub release · release date · license · last commit ·
+  commits-since-latest-release
+- **🛡️ Quality** — CI badge for `ci.yml` · `npm-publish.yml` · `release.yml`
+- **🌐 Ecosystem** — Skills.sh · stars · issues · PRs · contributors ·
+  code size · top language
+- **⚙️ Stack** — Node 18+ · TypeScript 5.6+ · Python 3.10+ · Bash 4+ · MIT
+
+All 26 tested badge URLs return 200. Color-coded by section. All dynamic
+(values update without re-releasing).
+
 ## [2.3.0] — 2026-06-30
 
 ### Added — npm package + auto-publish workflow

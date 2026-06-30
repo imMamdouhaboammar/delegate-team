@@ -11,17 +11,45 @@
 **Waza `/think` → unslop audit → superpowers writing-plans →**
 **autoresearch | `/delegate-team` | `/mavis-team` → Waza `/check` → quality-guard → SHIP**
 
-[![npm version](https://img.shields.io/npm/v/delegate-team?color=cb3837&logo=npm&label=npm&style=for-the-badge)](https://www.npmjs.com/package/delegate-team)
-[![npm downloads](https://img.shields.io/npm/dm/delegate-team?color=cb3837&logo=npm&style=for-the-badge)](https://www.npmjs.com/package/delegate-team)
-[![Version](https://img.shields.io/github/v/release/imMamdouhaboammar/delegate-team?color=blue&label=version&style=for-the-badge)](https://github.com/imMamdouhaboammar/delegate-team/releases)
-[![License: MIT](https://img.shields.io/github/license/imMamdouhaboammar/delegate-team?style=for-the-badge&color=blue)](https://github.com/imMamdouhaboammar/delegate-team/blob/master/LICENSE)
-[![Stars](https://img.shields.io/github/stars/imMamdouhaboammar/delegate-team?style=for-the-badge&logo=github)](https://github.com/imMamdouhaboammar/delegate-team/stargazers)
-[![CI](https://img.shields.io/github/actions/workflow/status/imMamdouhaboammar/delegate-team/ci.yml?branch=master&style=for-the-badge&label=CI)](https://github.com/imMamdouhaboammar/delegate-team/actions/workflows/ci.yml)
-[![npm publish](https://img.shields.io/github/actions/workflow/status/imMamdouhaboammar/delegate-team/npm-publish.yml?style=for-the-badge&label=npm%20publish&logo=npm)](https://github.com/imMamdouhaboammar/delegate-team/actions/workflows/npm-publish.yml)
-[![Skills.sh](https://img.shields.io/badge/dynamic/json?color=blueviolet&label=Skills.sh&query=%24.rank&url=https%3A%2F%2Fskills.sh%2Fapi%2Frank%2FimMamdouhaboammar%2Fdelegate-team&style=for-the-badge)](https://skills.sh/imMamdouhaboammar/delegate-team)
-[![Node](https://img.shields.io/badge/Node.js-18%2B-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
-[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-[![Bash](https://img.shields.io/badge/Bash-4%2B-4EAA25?style=for-the-badge&logo=gnu-bash&logoColor=white)](https://www.gnu.org/software/bash/)
+---
+
+### 📦 Install
+
+[![npm](https://img.shields.io/npm/v/delegate-team?color=cb3837&logo=npm&logoColor=white&label=install&style=for-the-badge)](https://www.npmjs.com/package/delegate-team)
+[![npm bundlephobia](https://img.shields.io/bundlephobia/min/delegate-team?color=cb3837&logo=npm&logoColor=white&label=install%20size&style=for-the-badge)](https://bundlephobia.com/package/delegate-team)
+[![npm weekly downloads](https://img.shields.io/npm/dw/delegate-team?color=cb3837&logo=npm&logoColor=white&label=weekly%20installs&style=for-the-badge)](https://www.npmjs.com/package/delegate-team)
+
+### 🧬 Status
+
+[![GitHub release](https://img.shields.io/github/v/release/imMamdouhaboammar/delegate-team?color=blue&label=version&style=for-the-badge)](https://github.com/imMamdouhaboammar/delegate-team/releases/latest)
+[![Release date](https://img.shields.io/github/release-date/imMamdouhaboammar/delegate-team?color=blue&style=for-the-badge)](https://github.com/imMamdouhaboammar/delegate-team/releases)
+[![License: MIT](https://img.shields.io/github/license/imMamdouhaboammar/delegate-team?color=blue&style=for-the-badge)](https://github.com/imMamdouhaboammar/delegate-team/blob/master/LICENSE)
+[![Last commit](https://img.shields.io/github/last-commit/imMamdouhaboammar/delegate-team?color=blue&style=for-the-badge)](https://github.com/imMamdouhaboammar/delegate-team/commits/master)
+[![Commits since latest release](https://img.shields.io/github/commits-since/imMamdouhaboammar/delegate-team/latest?color=blue&style=for-the-badge)](https://github.com/imMamdouhaboammar/delegate-team/compare/v2.3.0...master)
+
+### 🛡️ Quality
+
+[![CI](https://img.shields.io/github/actions/workflow/status/imMamdouhaboammar/delegate-team/ci.yml?branch=master&label=CI&logo=github-actions&logoColor=white&style=for-the-badge)](https://github.com/imMamdouhaboammar/delegate-team/actions/workflows/ci.yml)
+[![npm publish CI](https://img.shields.io/github/actions/workflow/status/imMamdouhaboammar/delegate-team/npm-publish.yml?label=npm%20publish&logo=npm&logoColor=white&style=for-the-badge)](https://github.com/imMamdouhaboammar/delegate-team/actions/workflows/npm-publish.yml)
+[![Release CI](https://img.shields.io/github/actions/workflow/status/imMamdouhaboammar/delegate-team/release.yml?label=auto-release&logo=github-actions&logoColor=white&style=for-the-badge)](https://github.com/imMamdouhaboammar/delegate-team/actions/workflows/release.yml)
+
+### 🌐 Ecosystem
+
+[![Skills.sh](https://img.shields.io/badge/Skills.sh-discovery-blueviolet?style=for-the-badge)](https://skills.sh/imMamdouhaboammar/delegate-team)
+[![GitHub stars](https://img.shields.io/github/stars/imMamdouhaboammar/delegate-team?style=for-the-badge&logo=github&color=gold)](https://github.com/imMamdouhaboammar/delegate-team/stargazers)
+[![Issues](https://img.shields.io/github/issues/imMamdouhaboammar/delegate-team?style=for-the-badge&logo=github)](https://github.com/imMamdouhaboammar/delegate-team/issues)
+[![PRs](https://img.shields.io/github/issues-pr/imMamdouhaboammar/delegate-team?style=for-the-badge&logo=github&color=lime)](https://github.com/imMamdouhaboammar/delegate-team/pulls)
+[![Contributors](https://img.shields.io/github/contributors/imMamdouhaboammar/delegate-team?style=for-the-badge&color=orange)](https://github.com/imMamdouhaboammar/delegate-team/graphs/contributors)
+[![Code size](https://img.shields.io/github/languages/code-size/imMamdouhaboammar/delegate-team?style=for-the-badge)](https://github.com/imMamdouhaboammar/delegate-team)
+[![Top language](https://img.shields.io/github/languages/top/imMamdouhaboammar/delegate-team?style=for-the-badge&color=yellow)](https://github.com/imMamdouhaboammar/delegate-team)
+
+### ⚙️ Stack
+
+[![Node.js 18+](https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
+[![TypeScript 5.6+](https://img.shields.io/badge/TypeScript-5.6+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![Bash 4+](https://img.shields.io/badge/Bash-4+-4EAA25?style=for-the-badge&logo=gnu-bash&logoColor=white)](https://www.gnu.org/software/bash)
+[![MIT license](https://img.shields.io/badge/Open%20Source-MIT-yellow?style=for-the-badge)](https://github.com/imMamdouhaboammar/delegate-team/blob/master/LICENSE)
 
 </div>
 
