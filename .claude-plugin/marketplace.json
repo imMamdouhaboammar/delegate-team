@@ -6,7 +6,7 @@
     "name": "Mamdouh Aboammar",
     "email": "maintainers@delegate-team.dev"
   },
-  "version": "2.6.0",
+  "version": "2.7.0",
   "homepage": "https://github.com/imMamdouhaboammar/delegate-team",
   "repository": "https://github.com/imMamdouhaboammar/delegate-team",
   "license": "MIT",
@@ -24,7 +24,7 @@
   "plugins": [
     {
       "name": "delegate-team",
-      "version": "2.6.0",
+      "version": "2.7.0",
       "description": "Main plugin \u2014 installs /mavis-ship orchestrator + mm multi-agent framework + skill-scaffolder + agent-kernel memory + integrations on top of the dt gateway CLI.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team",
@@ -41,7 +41,7 @@
     },
     {
       "name": "dt",
-      "version": "2.6.0",
+      "version": "2.7.0",
       "description": "The original `dt` CLI \u2014 gates Claude Code tasks to backend coders (Codex, MiniMax, Gemini, MetaGPT) with policy + failover.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/src",
@@ -51,7 +51,7 @@
     },
     {
       "name": "delegate-team-orchestrator",
-      "version": "2.6.0",
+      "version": "2.7.0",
       "description": "The /mavis-ship orchestrator in isolation \u2014 single skill (no other components).",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/orchestrator",
@@ -63,7 +63,7 @@
     },
     {
       "name": "delegate-team-mmas",
-      "version": "2.6.0",
+      "version": "2.7.0",
       "description": "Multi-agent team framework \u2014 8 specialized agents, spawn-team.py orchestrator, watchdog.sh, hash-edit.py. Reads shared memory from agent-kernel.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/mmas",
@@ -75,7 +75,7 @@
     },
     {
       "name": "delegate-team-scaffolder",
-      "version": "2.6.0",
+      "version": "2.7.0",
       "description": "mavis-skill-scaffold \u2014 generate properly-structured Mavis skill directories in one shot.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/scaffolder",
@@ -87,7 +87,7 @@
     },
     {
       "name": "delegate-team-god-agent",
-      "version": "2.6.0",
+      "version": "2.7.0",
       "description": "God Agent \u2014 multi-CLI dispatcher for Codex (codex CLI) and opencode-routed models (qwen, kimi, glm).",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/god-agent",
@@ -99,7 +99,7 @@
     },
     {
       "name": "delegate-team-minimax-coder",
-      "version": "2.6.0",
+      "version": "2.7.0",
       "description": "MiniMax-Coder \u2014 MiniMax-M3 / M2.7 / M2.7-highspeed backend via the mmx CLI.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/minimax-coder",
@@ -111,7 +111,7 @@
     },
     {
       "name": "delegate-team-vertex-coder",
-      "version": "2.6.0",
+      "version": "2.7.0",
       "description": "Vertex-Coder \u2014 Gemini family backend via the google.genai SDK.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/vertex-coder",
@@ -123,7 +123,7 @@
     },
     {
       "name": "delegate-team-agent-kernel",
-      "version": "2.6.0",
+      "version": "2.7.0",
       "description": "agent-kernel \u2014 local-first memory + governance layer. Shared rules, episodic recall, approval inbox, deterministic policy guard. Vendored @mamdouh/agent-kernel v0.0.5.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/agent-kernel",

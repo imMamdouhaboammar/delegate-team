@@ -570,6 +570,92 @@ def skill_path_for_stage(stage_key: str) -> Optional[str]:
     return p if os.path.isfile(p) else None
 
 
+def build_json_trace(task: str, scores: Dict[str, int]) -> dict:
+    """Build the JSON trace consumed by `tests/v26-smoke.test.ts` and any
+    external orchestrator consumer that wants machine-readable routing.
+
+    Returned dict shape (contract — v2.7.0+):
+      {
+        "task":              str,
+        "timestamp":         ISO-8601 UTC,
+        "detected_signals":  {
+            "publish_release_build": int,   # BUILD/PUBLISH score
+            "ui_frontend":           int,   # UI DELIVERY score
+            "bug_fix":               int,   # BUG score
+            "metrics_research":      int,   # PERFORMANCE/METRIC score
+            "memory_recall":         int,   # MEMORY score
+            "multi_agent":           int,   # MULTI-AGENT score
+            "research":              int,   # RESEARCH score (additional signal)
+            "feature":               int,   # FEATURE / default score
+        },
+        "selected_workflow":  str,         # verdict text (e.g. "UI DELIVERY", "MEMORY")
+        "selected_stages":    [str],       # ordered list of stage keys
+        "skipped_stages":     [str],       # stage keys that scored 0
+        "reasons":            [str],       # human-readable explanations
+        "dispatch":           str,         # exact command (or "" for no-dispatch paths)
+      }
+
+    This is the ONLY output when --json is used. Any debug/decorative output
+    must go to stderr so the JSON contract is preserved.
+    """
+    import datetime as _dt
+
+    n = normalize(task)
+    verdict = pick_verdict(n, scores) if scores else "TRIVIAL"
+    dispatch = _dispatch_command(n, scores) if scores else ""
+
+    # Translate internal scoring keys → spec-required signal buckets
+    detected_signals = {
+        "publish_release_build": int(scores.get("think", 0) if any_pat(BUILD_PATS, n) else 0),
+        "ui_frontend":           int(scores.get("unslop", 0)),
+        "bug_fix":               int(scores.get("systematic", 0)),
+        "metrics_research":      int(scores.get("autoresearch", 0)),
+        "memory_recall":         int(scores.get("memory", 0)),
+        "multi_agent":           int(scores.get("mmas", 0)),
+        "research":              int(scores.get("research", 0)),
+        "feature":               int(scores.get("delegate", 0)),
+    }
+
+    # Stage ordering: pick all stages that scored > 0, in canonical order
+    selected_stages: List[str] = []
+    skipped_stages:  List[str] = []
+    for key, _label in STAGE_LABELS:
+        if scores.get(key, 0) > 0:
+            selected_stages.append(key)
+        else:
+            skipped_stages.append(key)
+
+    # Human-readable reasons for the verdict
+    reasons: List[str] = []
+    if scores.get("memory", 0) >= 4:
+        reasons.append("Memory recall signal matched (remember / what did we / last time).")
+    if scores.get("research", 0) >= 4:
+        reasons.append("Research signal matched (research / investigate / study / explore).")
+    if scores.get("autoresearch", 0) >= 3:
+        reasons.append("Performance metric or named-perf keyword present.")
+    if scores.get("unslop", 0) >= 3:
+        reasons.append("UI / frontend / page-name signal present.")
+    if scores.get("systematic", 0) >= 3:
+        reasons.append("Bug / fix / debug keyword present.")
+    if scores.get("mmas", 0) >= 3:
+        reasons.append("Multi-agent team signal (team / parallel / spawn).")
+    if scores.get("delegate", 0) >= 2:
+        reasons.append("Generic build/feature signal — default delegate-team path.")
+    if not reasons:
+        reasons.append("Trivial task — no chain invoked.")
+
+    return {
+        "task":              task,
+        "timestamp":         _dt.datetime.now(_dt.timezone.utc).isoformat(),
+        "detected_signals":  detected_signals,
+        "selected_workflow":  verdict,
+        "selected_stages":   selected_stages,
+        "skipped_stages":    skipped_stages,
+        "reasons":           reasons,
+        "dispatch":          dispatch,
+    }
+
+
 def build_prewarm_manifest(task: str, scores: Dict[str, int]) -> dict:
     """Build a structured manifest of what the Mavis session (or the backend
     brief) should pre-warm before tackling the task.
@@ -1045,6 +1131,8 @@ def main(argv: List[str]) -> int:
     direct = False
     team = False
     prewarm = False
+    as_json = False
+    no_trace_file = False
     brief_path: Optional[str] = None
     args: List[str] = []
     i = 1
@@ -1058,6 +1146,10 @@ def main(argv: List[str]) -> int:
             team = True
         elif a == "--prewarm":
             prewarm = True
+        elif a == "--json":
+            as_json = True
+        elif a == "--no-trace-file":
+            no_trace_file = True
         elif a == "--brief" and i + 1 < len(argv):
             brief_path = argv[i + 1]
             i += 1
@@ -1080,13 +1172,26 @@ def main(argv: List[str]) -> int:
     if team and scores:
         scores = {**scores, "mmas": max(scores.get("mmas", 0), 4)}
 
+    # --json: emit ONLY a JSON trace to stdout (no comments, no formatting).
+    # This is the contract for the v26-smoke.test.ts routing tests.
+    # Debug/decorative output goes to stderr (suppressed when stderr is closed).
+    if as_json:
+        import json
+        import time
+        trace = build_json_trace(task, scores)
+        # Write only the JSON to stdout. Any other output is forbidden here.
+        sys.stdout.write(json.dumps(trace, indent=2, ensure_ascii=False) + "\n")
+        sys.stdout.flush()
+        return 0
+
     # --prewarm: emit the JSON manifest for the Mavis session to consume.
     # The Mavis session reads this, calls the `skill` tool for each path,
     # and then proceeds with the chain (or invokes --dispatch).
     if prewarm:
         manifest = build_prewarm_manifest(task, scores)
         import json
-        print(json.dumps(manifest, indent=2, ensure_ascii=False))
+        sys.stdout.write(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
+        sys.stdout.flush()
         return 0
 
     print(format_output(task, scores, team=team))
