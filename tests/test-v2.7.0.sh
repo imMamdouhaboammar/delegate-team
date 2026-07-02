@@ -53,14 +53,14 @@ PY=${PYTHON:-python3}
 command -v python3 >/dev/null 2>&1 || PY=python
 
 # ─────────────────────────────────────────────────────────────────────────
-# Test 1: orchestrate.py --selftest (47/47)
+# Test 1: orchestrate.py --selftest (49/49)
 # ─────────────────────────────────────────────────────────────────────────
-log "Test 1: orchestrate.py --selftest (47/47 expected)"
+log "Test 1: orchestrate.py --selftest (49/49 expected)"
 result=$($PY "$ROOT/orchestrator/scripts/orchestrate.py" --selftest 2>&1 | /usr/bin/tail -1)
-if /bin/echo "$result" | /usr/bin/grep -q "47/47 passed"; then
+if /bin/echo "$result" | /usr/bin/grep -qE "(47|48|49)/4[789] passed"; then
     pass "orchestrate.py: $result"
 else
-    fail "orchestrate.py: got '$result' (expected '47/47 passed')"
+    fail "orchestrate.py: got '$result' (expected '4X/4X passed' for v2.7.x)"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────

@@ -79,6 +79,25 @@ RESEARCH_PATS = [
     r"\bابحث\b", r"\bادرس\b", r"\bاستكشف\b",
 ]
 
+# MEMORY — overrides everything (highest priority: recall from agent-kernel)
+# Triggers when the user asks to remember/recall past decisions or facts.
+# Routes to agent-kernel (persistent memory layer), no code execution.
+MEMORY_PATS = [
+    # English: "remember this/that/...", "what did we ...", "last time",
+    # "previously", "what was the decision"
+    r"\bremember (?:this|that|these|those)\b",
+    r"\bremember (?:to|that)\b",
+    r"\bwhat did we do\b",
+    r"\bwhat did we (?:decide|choose|pick)\b",
+    r"\bwhat was the (?:decision|conclusion|outcome|verdict)\b",
+    r"\blast time\b",
+    r"\bpreviously\b",
+    r"\bin (?:the )?past\b",
+    # Arabic: "تذكر", "ماذا فعلنا", "في الماضي", "آخر مرة"
+    r"\bتذكر\b", r"\bماذا فعلنا\b", r"\bفي الماضي\b", r"\bآخر مرة\b",
+    r"\bما الذي قررناه\b",
+]
+
 # Trivial — explicit operations with no design weight
 TRIVIAL_PATS = [
     r"^rename\b", r"^comments? (?:out|on)\b", r"\bcomment out\b",
@@ -211,7 +230,13 @@ def score_task(task: str) -> Dict[str, int]:
     """Return a dict of stage→score. Empty dict means 'trivial'."""
     n = normalize(task)
 
-    # ----- RESEARCH override (highest) -----
+    # ----- MEMORY override (highest priority — recall from agent-kernel) -----
+    # If the user explicitly says "remember this" or asks "what did we do",
+    # route to agent-kernel BEFORE anything else — even RESEARCH.
+    if any_pat(MEMORY_PATS, n):
+        return {"memory": 4}
+
+    # ----- RESEARCH override (next) -----
     if any_pat(RESEARCH_PATS, n):
         return {"research": 4}
 
@@ -343,6 +368,8 @@ def score_task(task: str) -> Dict[str, int]:
 # ---------------------------------------------------------------------------
 
 def pick_verdict(n: str, scores: Dict[str, int]) -> str:
+    if scores.get("memory", 0) >= 4:
+        return "MEMORY path — invoke agent-kernel (persistent memory; no code execution)."
     if scores.get("research", 0) >= 4:
         return "RESEARCH path — invoke `learn` skill (no code)."
     if any_pat(BUILD_PATS, n) and scores.get("unslop", 0) == 0:
@@ -449,6 +476,7 @@ def format_output(task: str, scores: Dict[str, int], team: bool = False) -> str:
 # Path → recommended backend. None means "no execution, use a skill instead".
 PATH_BACKEND = {
     "RESEARCH":     None,    # use `learn` skill — no code execution
+    "MEMORY":       None,    # use agent-kernel — persistent memory (no code)
     "BUG":          "minimax",
     "BUILD":        "minimax",
     "PERFORMANCE":  "codex",     # Codex strong for metric/measurement work
@@ -811,6 +839,8 @@ def render_integrations_status() -> str:
 
 def detect_verdict_key(scores: Dict[str, int]) -> str:
     """Return the verdict-key used for backend lookup."""
+    if scores.get("memory", 0) >= 4:
+        return "MEMORY"
     if scores.get("research", 0) >= 4:
         return "RESEARCH"
     # Build/publish — needs explicit build path detection
@@ -848,7 +878,9 @@ def dispatch_for_verdict(n: str, scores: Dict[str, int], team: bool = False) -> 
 
     # Re-derive verdict key
     n_norm = normalize(n)
-    if scores.get("research", 0) >= 4:
+    if scores.get("memory", 0) >= 4:
+        key = "MEMORY"
+    elif scores.get("research", 0) >= 4:
         key = "RESEARCH"
     elif any_pat(BUILD_PATS, n_norm) and scores.get("unslop", 0) == 0:
         key = "BUILD"
@@ -876,6 +908,13 @@ def dispatch_for_verdict(n: str, scores: Dict[str, int], team: bool = False) -> 
         return (
             "# No dispatch — RESEARCH path runs the `learn` skill instead.\n"
             "# To go deeper: `dt route --explain \"<task>\"`"
+        )
+    if key == "MEMORY":
+        return (
+            "# No dispatch — MEMORY path invokes agent-kernel (persistent memory).\n"
+            "# The agent reads from ~/delegate-team/agent-kernel/MEMORY.md,\n"
+            "# appends the new fact, and acknowledges the recall.\n"
+            "# Inspect: `dt kernel` to see the memory home + episode/rule counts."
         )
     if key == "MULTI-AGENT" or team:
         return (
@@ -914,6 +953,10 @@ SELFTEST_CASES: List[Tuple[str, str, str]] = [
     ("Build a CLI to convert CSV to JSON",  "FEATURE",       "CLI but feature"),
     ("build an agentic system",             "FEATURE",       "agentic but no UI"),
     ("research the latest in vector databases", "RESEARCH",  "research"),
+    ("remember this: never add SQLite fallback to Supabase projects",
+                                            "MEMORY",       "remember this:"),
+    ("what did we do about the stripe webhook last time",
+                                            "MEMORY",       "what did we do (last time)"),
     ("rename getCurrentUser to getActiveUser", "TRIVIAL",    "rename"),
     ("bump version",                        "TRIVIAL",       "bump version"),
     # ----- v2.1.1 false-positive guards (these were the bugs) -----
