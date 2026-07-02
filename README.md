@@ -35,7 +35,7 @@ See **[docs/INSTALLATION.md](./docs/INSTALLATION.md)** for the full reference.
 
 ```bash
 npm install -g delegate-team
-dt --version          # → 2.7.0
+dt --version          # → 2.7.1
 dt run "<task>"       # dispatch with auto backend selection
 dt doctor             # health check
 ```

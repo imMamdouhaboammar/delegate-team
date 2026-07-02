@@ -1,7 +1,7 @@
 {
   "name": "delegate-team",
-  "version": "2.7.0",
-  "description": "Agentic engineering supersystem v2.7.0 — bundles the full Mavis arsenal: /mavis-ship orchestrator (47-case selftest), 38 curated integrations + 1890 auto-discovered skills, autopilot.sh (7-stage GOD command: PREWARM → BRAINSTORM → PLAN → EXECUTE → REVIEW → QUALITY-GUARD → REPORT), mavis-ship-uni smart universal wrapper (detects Mavis / codex / claude / gemini / opencode / mmx / shell and dispatches), and `dt` CLI gateway routing to Codex, MiniMax, Gemini, MetaGPT backends. Companion frameworks: agent-kernel, superpowers, Waza, unslop-preflight, autoresearch.",
+  "version": "2.7.1",
+  "description": "Agentic engineering supersystem v2.7.1 \u2014 bundles the full Mavis arsenal: /mavis-ship orchestrator (49-case selftest: TRIVIAL, FEATURE, BUILD/PUBLISH, UI DELIVERY, BUG, PERFORMANCE/METRIC, RESEARCH, MEMORY, MULTI-AGENT), 38 curated integrations + 1890 auto-discovered skills, autopilot.sh (7-stage GOD command), mavis-ship-uni smart universal wrapper (detects Mavis / codex / claude / gemini / opencode / mmx / shell), and `dt` CLI gateway routing to Codex, MiniMax, Gemini, MetaGPT backends. Companion frameworks: agent-kernel, superpowers, Waza, unslop-preflight, autoresearch.",
   "type": "module",
   "main": "dist/cli.js",
   "bin": {

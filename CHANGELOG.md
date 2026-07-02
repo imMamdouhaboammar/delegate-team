@@ -3,6 +3,44 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.7.1] — 2026-07-02
+
+### Added — Quality + CI fixes
+
+This release bundles 6 quality fixes on top of v2.7.0, focused on getting
+the CI green in any environment (fresh runner OR developer machine):
+
+- **MEMORY path routing** — agent-kernel recall via "remember this:" /
+  "what did we do" / "last time" triggers. Routes to agent-kernel
+  (persistent memory layer) instead of running code. Highest priority —
+  overrides RESEARCH. (orchestrator returns "MEMORY path — invoke
+  agent-kernel (persistent memory; no code execution).")
+- **JSON trace mode** (`--json`) — clean machine-readable output for
+  v26-smoke.test.ts. Top-level keys: task, timestamp, detected_signals,
+  selected_workflow (clean name), selected_workflow_description (full text),
+  selected_stages, skipped_stages, reasons, dispatch, kernel_used.
+- **`--check-kernel` flag** — reports kernel_used (0|1) in the trace.
+- **Version sync** — package.json + .claude-plugin/plugin.json +
+  .claude-plugin/marketplace.json + README.md all at 2.7.0.
+- **Smoke tests env-independent** — tests/test-v2.7.0.sh works on fresh
+  CI runners without ~/.mavis/skills or ~/delegate-team/bin/.
+- **`autopilot.sh --help`** now handled BEFORE orchestrator dependency
+  check, so it works even when ~/.mavis/skills/mavis-ship/scripts/ is
+  missing (fresh install state).
+- **`agents-health.sh`** gracefully reports "Summary: 0/0 agents ready"
+  with installation hint when ~/delegate-team/bin/ doesn't exist yet.
+- **NPM tarball cleaned** — only 1 .json file (package.json), 237.9 kB
+  total (was 42.6 MB). Excludes examples/, develpment/, logs/, __pycache__/.
+
+### Stats
+
+- orchestrate.py --selftest: 49/49 ✓ (was 47/47)
+- tests/test-v2.7.0.sh: 10/10 ✓ (works in local AND CI environments)
+- v26-smoke routing tests: 8/8 ✓
+- bundlephobia-guard: 1 JSON file in tarball ✓
+- npm package size: 268.4 kB → 237.9 kB
+
+
 ## [2.7.0] — 2026-07-02
 
 ### Added — The Arsenal release
