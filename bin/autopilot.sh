@@ -30,6 +30,27 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DELEGATE_TEAM_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# Handle --help / -h EARLY before any dependency checks.
+# This ensures CI tests can verify --help works even when the orchestrator
+# isn't installed yet (e.g. fresh runner, pre-install, sandbox tests).
+for arg in "$@"; do
+    case "$arg" in
+        --help|-h) usage 2>/dev/null || {
+            cat <<'EOF'
+Usage:
+  autopilot.sh "<task>"                       # full chain, foreground
+  autopilot.sh "<task>" --background          # detach, return PID + log path
+  autopilot.sh "<task>" --backend=<X>         # override backend (codex/claude/...)
+  autopilot.sh --status                       # show latest run
+  autopilot.sh --follow <log-path>            # tail -f a previous run
+  autopilot.sh --list                         # list runs
+  autopilot.sh --dry-run <task>               # print the plan, don't execute
+EOF
+            exit 0
+        } ;;
+    esac
+done
+
 # The orchestrator script lives at ~/.mavis/skills/mavis-ship/scripts/orchestrate.sh
 ORCHESTRATE="${ORCHESTRATE_OVERRIDE:-$HOME/.mavis/skills/mavis-ship/scripts/orchestrate.sh}"
 if [ ! -f "$ORCHESTRATE" ]; then
