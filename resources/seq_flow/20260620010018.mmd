@@ -1,0 +1,21 @@
+
+sequenceDiagram
+    participant User as المستخدم (المدير)
+    participant UI as واجهة المستخدم (React)
+    participant API as الواجهة البرمجية (FastAPI)
+    participant Audit as خدمة الفحص (AuditService)
+    participant DB as خدمة قاعدة البيانات (DBService)
+
+    User->>UI: فتح لوحة التحكم (Dashboard)
+    UI->>API: طلب إحصائيات النظام (get_dashboard_stats)
+    API->>DB: جلب حالة قاعدة البيانات وأدائها
+    DB-->>API: إرجاع بيانات الأداء والاستعلامات
+    API-->>UI: إرجاع البيانات بصيغة JSON
+    UI-->>User: عرض لوحة التحكم والرسوم البيانية
+
+    User->>UI: النقر على "بدء فحص النظام"
+    UI->>API: طلب إجراء فحص أمني (trigger_audit)
+    API->>Audit: تشغيل فحص الكود والمكتبات (run_security_audit)
+    Audit-->>API: إرجاع تقرير الثغرات والمكتبات القديمة
+    API-->>UI: إرسال تقرير الفحص الشامل
+    UI-->>User: عرض تقرير الفحص مع التوصيات والحلول

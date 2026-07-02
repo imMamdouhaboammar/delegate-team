@@ -1,0 +1,538 @@
+#!/usr/bin/env bash
+#
+# mavis-skill-scaffold — Generate a properly-structured Mavis skill directory.
+#
+# Inspired by vertex-coder's persistent scaffolding pattern. Takes a name + trigger
+# description and produces a Mavis-format SKILL.md with the right frontmatter,
+# sections, and (optionally) companion hook + slash command + test stub.
+#
+# Usage:
+#   mavis-skill-scaffold --name <kebab-name> --description "<trigger-desc>" [options]
+#   mavis-skill-scaffold --list
+#   mavis-skill-scaffold --validate <name>
+#   mavis-skill-scaffold --help
+#
+# Examples:
+#   mavis-skill-scaffold --name api-rate-limiter \
+#     --description "Rate limiting for APIs. Use when implementing throttling."
+#
+#   mavis-skill-scaffold --name security-audit \
+#     --description "Security audit workflow for auth code." \
+#     --type capability --with-tests
+#
+#   mavis-skill-scaffold --name api-design-master \
+#     --description "Full API design workflow" --type bundle --with-hooks
+#
+#   mavis-skill-scaffold --name security-audit --update --dry-run
+
+set -euo pipefail
+
+# ---------- Defaults ----------
+SKILL_NAME=""
+SKILL_DESCRIPTION=""
+SKILL_TYPE="capability"   # capability | bundle | atomic
+WITH_HOOKS=false
+WITH_TESTS=false
+WITH_COMMAND=false
+DRY_RUN=false
+UPDATE_MODE=false
+LIST_MODE=false
+VALIDATE_TARGET=""
+SKILLS_ROOT="${MAVIS_SKILLS_ROOT:-$HOME/.mavis/skills}"
+HOOKS_ROOT="${MAVIS_HOOKS_ROOT:-$HOME/.claude/hooks}"
+COMMANDS_ROOT="${MAVIS_COMMANDS_ROOT:-$HOME/.claude/commands}"
+
+# ---------- Colors (only if TTY) ----------
+if [[ -t 1 ]]; then
+  RED='\033[0;31m'
+  GREEN='\033[0;32m'
+  YELLOW='\033[0;33m'
+  BLUE='\033[0;34m'
+  BOLD='\033[1m'
+  DIM='\033[2m'
+  NC='\033[0m'
+else
+  RED='' GREEN='' YELLOW='' BLUE='' BOLD='' DIM='' NC=''
+fi
+
+log_info()    { echo -e "${BLUE}ℹ${NC}  $*" >&2; }
+log_success() { echo -e "${GREEN}✓${NC}  $*" >&2; }
+log_warn()    { echo -e "${YELLOW}⚠${NC}  $*" >&2; }
+log_error()   { echo -e "${RED}✗${NC}  $*" >&2; exit 1; }
+
+# ---------- Usage ----------
+usage() {
+  cat <<'EOF'
+mavis-skill-scaffold — Generate a properly-structured Mavis skill directory.
+
+USAGE:
+  mavis-skill-scaffold --name <kebab-name> --description "<trigger-desc>" [options]
+  mavis-skill-scaffold --list
+  mavis-skill-scaffold --validate <name>
+  mavis-skill-scaffold --help
+
+OPTIONS:
+  --name <name>             Skill name (kebab-case: lowercase letters, digits, hyphens)
+  --description "<desc>"    Trigger description (must include trigger keywords/phrases)
+  --type <type>             Skill type: capability (default) | bundle | atomic
+  --with-hooks              Also scaffold a companion PreToolUse hook script
+  --with-tests              Also scaffold a bash test stub
+  --with-command            Also scaffold a /<name> slash command
+  --update                  Update existing skill (preserve content, fill gaps)
+  --dry-run                 Preview without writing
+  --skills-root <path>      Override skills root (default: $HOME/.mavis/skills)
+  --list                    List all existing skills
+  --validate <name>         Validate existing skill structure
+  -h | --help               Show this help
+
+SKILL TYPES:
+  capability  Default — bundles a workflow, orchestrates component skills.
+              Adds: Architecture diagram, Component skills section.
+  atomic      Single-purpose skill focused on one technique.
+              Adds: Methodology section only.
+  bundle      Orchestrator — routes to other skills. Adds: Routing table,
+              Architecture section, Component skills registry.
+
+EXAMPLES:
+  # Atomic skill
+  mavis-skill-scaffold --name api-rate-limiter \
+    --description "Rate limiting for APIs. Use when implementing throttling."
+
+  # Capability skill (default)
+  mavis-skill-scaffold --name security-audit \
+    --description "Security audit workflow for auth code." \
+    --type capability --with-tests
+
+  # Bundle skill with hook + slash command
+  mavis-skill-scaffold --name api-design-master \
+    --description "Full API design workflow" --type bundle \
+    --with-hooks --with-command
+
+  # Validate an existing skill
+  mavis-skill-scaffold --validate expert-engineer
+
+For full design rationale, see: ~/.mavis/skills/skill-scaffold/SKILL.md
+EOF
+}
+
+# ---------- Argument parsing ----------
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --name)           SKILL_NAME="$2"; shift 2 ;;
+    --description)    SKILL_DESCRIPTION="$2"; shift 2 ;;
+    --type)           SKILL_TYPE="$2"; shift 2 ;;
+    --with-hooks)     WITH_HOOKS=true; shift ;;
+    --with-tests)     WITH_TESTS=true; shift ;;
+    --with-command)   WITH_COMMAND=true; shift ;;
+    --update)         UPDATE_MODE=true; shift ;;
+    --dry-run)        DRY_RUN=true; shift ;;
+    --skills-root)    SKILLS_ROOT="$2"; shift 2 ;;
+    --list)           LIST_MODE=true; shift ;;
+    --validate)       VALIDATE_TARGET="$2"; shift 2 ;;
+    -h|--help)        usage; exit 0 ;;
+    *)                log_error "Unknown option: $1. Use --help for usage." ;;
+  esac
+done
+
+# ---------- List mode ----------
+if [[ "$LIST_MODE" == true ]]; then
+  echo -e "${BOLD}Mavis skills in $SKILLS_ROOT:${NC}"
+  if [[ ! -d "$SKILLS_ROOT" ]]; then
+    log_warn "Skills root doesn't exist yet: $SKILLS_ROOT"
+    exit 0
+  fi
+  for skill_dir in "$SKILLS_ROOT"/*/; do
+    [[ -d "$skill_dir" ]] || continue
+    name=$(basename "$skill_dir")
+    skill_file="$skill_dir/SKILL.md"
+    if [[ -f "$skill_file" ]]; then
+      desc=$(awk '/^description:/{flag=1; next} flag && /^  /{sub(/^  /,""); print; exit}' "$skill_file")
+      printf "  ${GREEN}%-32s${NC} %s\n" "$name" "${desc:-<no description>}"
+    else
+      printf "  ${YELLOW}%-32s${NC} ${RED}(missing SKILL.md)${NC}\n" "$name"
+    fi
+  done
+  exit 0
+fi
+
+# ---------- Validate mode ----------
+if [[ -n "$VALIDATE_TARGET" ]]; then
+  skill_file="$SKILLS_ROOT/$VALIDATE_TARGET/SKILL.md"
+  if [[ ! -f "$skill_file" ]]; then
+    log_error "Skill not found: $skill_file"
+  fi
+  echo -e "${BOLD}Validating: $VALIDATE_TARGET${NC}"
+  errors=0
+
+  # Frontmatter starts with ---
+  if ! head -1 "$skill_file" | grep -q '^---$'; then
+    log_error "Missing frontmatter (file should start with ---)"
+    ((errors++))
+  fi
+
+  # name field
+  if ! grep -q "^name: $VALIDATE_TARGET$" "$skill_file"; then
+    log_error "Missing or incorrect 'name' field (should be: name: $VALIDATE_TARGET)"
+    ((errors++))
+  fi
+
+  # description field
+  if ! grep -q "^description:" "$skill_file"; then
+    log_error "Missing 'description' field"
+    ((errors++))
+  fi
+
+  # Description length
+  desc_len=$(awk '/^description:/{flag=1; next} /^[a-zA-Z]/{flag=0} flag' "$skill_file" | tr -d '\n' | wc -c | tr -d ' ')
+  if [[ $desc_len -lt 50 ]]; then
+    log_warn "Description is short ($desc_len chars). Recommended: 100+ chars with trigger keywords."
+  fi
+
+  # Section count
+  section_count=$(grep -c '^## ' "$skill_file" || true)
+  if [[ $section_count -lt 3 ]]; then
+    log_warn "Only $section_count sections (recommended: 3+)"
+  else
+    log_info "Has $section_count sections"
+  fi
+
+  # Trigger keywords check
+  if ! grep -qi 'trigger\|use this\|use when\|when to load' "$skill_file"; then
+    log_warn "No trigger keywords detected. Consider adding 'Use when...' or 'Trigger on...' phrases."
+  fi
+
+  if [[ $errors -eq 0 ]]; then
+    log_success "Valid skill structure"
+    exit 0
+  else
+    log_error "Found $errors error(s)"
+    exit 1
+  fi
+fi
+
+# ---------- Input validation ----------
+if [[ -z "$SKILL_NAME" ]]; then
+  log_error "Missing --name. Use --help for usage."
+fi
+if [[ -z "$SKILL_DESCRIPTION" ]]; then
+  log_error "Missing --description. Use --help for usage."
+fi
+
+# kebab-case validation
+if ! [[ "$SKILL_NAME" =~ ^[a-z][a-z0-9-]*[a-z0-9]$ ]]; then
+  log_error "Invalid skill name '$SKILL_NAME'. Must be kebab-case (lowercase letters, digits, hyphens; start with letter; end with letter or digit)."
+fi
+
+# type validation
+case "$SKILL_TYPE" in
+  capability|bundle|atomic) ;;
+  *) log_error "Invalid type '$SKILL_TYPE'. Must be: capability | bundle | atomic" ;;
+esac
+
+# description length warning
+if [[ ${#SKILL_DESCRIPTION} -lt 30 ]]; then
+  log_warn "Description is very short (${#SKILL_DESCRIPTION} chars). Recommended: 100+ chars with trigger keywords."
+fi
+
+# ---------- Path resolution ----------
+skill_dir="$SKILLS_ROOT/$SKILL_NAME"
+skill_file="$skill_dir/SKILL.md"
+
+# Existence check
+if [[ -d "$skill_dir" ]] && [[ "$UPDATE_MODE" != true ]]; then
+  log_error "Skill already exists at $skill_dir. Use --update to modify."
+fi
+
+# ---------- Title case ----------
+title_case() {
+  echo "$1" | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2)} 1'
+}
+SKILL_TITLE=$(title_case "$SKILL_NAME")
+TODAY=$(date +%Y-%m-%d)
+NOW_ISO=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date +%Y-%m-%dT%H:%M:%S)
+
+# ---------- SKILL.md generation ----------
+generate_skill_md() {
+  local frontmatter
+  frontmatter=$(cat <<EOF
+---
+name: $SKILL_NAME
+description: |
+  $SKILL_DESCRIPTION
+---
+EOF
+)
+
+  local type_intro
+  case "$SKILL_TYPE" in
+    bundle)
+      type_intro="**Bundle skill** — orchestrates component skills. Other skills (\`component-a\`, \`component-b\`, etc.) are **invoked by** this skill, not duplicated."
+      ;;
+    capability)
+      type_intro="**Capability skill** — provides a structured workflow for a specific problem domain. Loads methodology + checklist + worked examples."
+      ;;
+    atomic)
+      type_intro="**Atomic skill** — single-purpose, focused technique. Loads when one specific thing is needed."
+      ;;
+  esac
+
+  local workflow_section
+  case "$SKILL_TYPE" in
+    bundle)
+      workflow_section="## Routing — which skill when
+
+| Trigger | Load this skill |
+|---|---|
+| Trigger 1 | \`component-skill-1\` |
+| Trigger 2 | \`component-skill-2\` |
+| (Add rows as needed) | ... |
+
+## Workflow
+
+1. **Receive task** — apply Karpathy #1 (Think Before Coding).
+2. **Route** — pick the right component skill from the routing table above.
+3. **Delegate** — invoke the chosen skill's methodology.
+4. **Verify** — apply quality-guard 5-layer check before declaring done."
+      ;;
+    capability)
+      workflow_section="## Workflow / Methodology
+
+1. **Step 1** — description of first step.
+2. **Step 2** — description of second step.
+3. **Step 3** — description of third step.
+4. **Verify** — how to confirm the work is done correctly."
+      ;;
+    atomic)
+      workflow_section="## Methodology
+
+Step-by-step procedure:
+
+\`\`\`
+1. Identify the input
+2. Apply the core technique
+3. Verify the output matches expectations
+\`\`\`"
+      ;;
+  esac
+
+  cat <<EOF
+$frontmatter
+
+# $SKILL_TITLE
+
+> $type_intro
+
+## What this skill IS
+
+1. ...
+2. ...
+3. ...
+
+## What this skill is NOT
+
+- ...
+- ...
+
+$workflow_section
+
+## Examples
+
+### Example 1: (descriptive scenario)
+
+**Input**: ...
+
+**Behavior**:
+1. ...
+2. ...
+3. ...
+
+**Output**: ...
+
+## Cross-references
+
+- **Harness floor**: \`~/.mavis/agents/mavis/harness/GLOBAL.md\`
+- **Accumulated lessons**: \`~/.mavis/agents/mavis/memory/MEMORY.md\`
+- **Component skills**: (list any skills this one orchestrates)
+
+---
+
+**Last updated**: $TODAY
+**Maintained by**: ...
+EOF
+}
+
+# ---------- Plan ----------
+echo -e "${BOLD}Mavis Skill Scaffold Plan${NC}"
+echo -e "  ${DIM}Name${NC}         ${GREEN}$SKILL_NAME${NC}"
+echo -e "  ${DIM}Type${NC}         ${GREEN}$SKILL_TYPE${NC}"
+echo -e "  ${DIM}Description${NC}  ${GREEN}$SKILL_DESCRIPTION${NC}"
+echo -e "  ${DIM}Location${NC}     ${GREEN}$skill_dir${NC}"
+[[ "$WITH_HOOKS"   == true ]] && echo -e "  ${DIM}Hook${NC}         ${GREEN}$HOOKS_ROOT/${SKILL_NAME}-mindset.js${NC}"
+[[ "$WITH_TESTS"   == true ]] && echo -e "  ${DIM}Tests${NC}        ${GREEN}$skill_dir/test-${SKILL_NAME}.sh${NC}"
+[[ "$WITH_COMMAND" == true ]] && echo -e "  ${DIM}Command${NC}      ${GREEN}$COMMANDS_ROOT/${SKILL_NAME}.md${NC}"
+[[ "$UPDATE_MODE"  == true ]] && echo -e "  ${DIM}Mode${NC}         ${YELLOW}update (preserve existing content)${NC}"
+[[ "$DRY_RUN"      == true ]] && echo -e "  ${DIM}Mode${NC}         ${YELLOW}dry-run (no writes)${NC}"
+echo
+
+# ---------- Dry-run ----------
+if [[ "$DRY_RUN" == true ]]; then
+  log_info "DRY RUN — would generate the following:"
+  echo
+  echo -e "${DIM}━━━ $skill_file ━━━${NC}"
+  generate_skill_md
+  if [[ "$WITH_HOOKS" == true ]]; then
+    echo
+    echo -e "${DIM}━━━ $HOOKS_ROOT/${SKILL_NAME}-mindset.js ━━━${NC}"
+    echo "(PreToolUse hook template — see generate_hook_file logic in script)"
+  fi
+  if [[ "$WITH_TESTS" == true ]]; then
+    echo
+    echo -e "${DIM}━━━ $skill_dir/test-${SKILL_NAME}.sh ━━━${NC}"
+    echo "(bash test stub template)"
+  fi
+  if [[ "$WITH_COMMAND" == true ]]; then
+    echo
+    echo -e "${DIM}━━━ $COMMANDS_ROOT/${SKILL_NAME}.md ━━━${NC}"
+    echo "(slash command template)"
+  fi
+  exit 0
+fi
+
+# ---------- Write files ----------
+mkdir -p "$skill_dir"
+
+if [[ -f "$skill_file" ]] && [[ "$UPDATE_MODE" == true ]]; then
+  log_info "Updating existing $skill_file (preserving content)"
+  {
+    echo
+    echo "<!-- Updated $NOW_ISO by mavis-skill-scaffold -->"
+    echo "<!-- TODO: review diff and merge changes manually -->"
+    echo
+  } >> "$skill_file"
+else
+  generate_skill_md > "$skill_file"
+fi
+log_success "Created $skill_file"
+
+# ---------- Hook ----------
+if [[ "$WITH_HOOKS" == true ]]; then
+  mkdir -p "$HOOKS_ROOT"
+  hook_file="$HOOKS_ROOT/${SKILL_NAME}-mindset.js"
+  cat > "$hook_file" <<HOOKEOF
+#!/usr/bin/env node
+//
+// PreToolUse hook for skill: $SKILL_NAME
+// Fires on Edit|Write|MultiEdit to remind about $SKILL_NAME-specific patterns.
+//
+// Wire into ~/.claude/settings.json:
+//
+//   "PreToolUse": [{
+//     "matcher": "Edit|Write|MultiEdit",
+//     "hooks": [{
+//       "type": "command",
+//       "command": "~/.claude/hooks/${SKILL_NAME}-mindset.js"
+//     }]
+//   }]
+//
+
+const SKILL_NAME = '$SKILL_NAME';
+
+const input = require('fs').readFileSync(0, 'utf-8');
+let parsed;
+try { parsed = JSON.parse(input); } catch (e) { process.exit(0); }
+
+const filePath = parsed?.tool_input?.file_path || parsed?.tool_input?.path || '';
+if (!filePath) process.exit(0);
+
+console.error(\`\\n🎯 [\${SKILL_NAME}] Editing \${filePath}\\n\`);
+console.error(\`Apply \$SKILL_NAME checklist:\`);
+console.error('  1. ...');
+console.error('  2. ...');
+console.error('  3. ...');
+console.error('');
+
+process.exit(0);
+HOOKEOF
+  chmod +x "$hook_file"
+  log_success "Created $hook_file"
+  log_warn "Don't forget to wire it into ~/.claude/settings.json (PreToolUse matcher: Edit|Write|MultiEdit)"
+fi
+
+# ---------- Tests ----------
+if [[ "$WITH_TESTS" == true ]]; then
+  test_file="$skill_dir/test-${SKILL_NAME}.sh"
+  cat > "$test_file" <<TESTEOF
+#!/usr/bin/env bash
+#
+# Tests for $SKILL_NAME skill
+# Run: bash ~/.mavis/skills/$SKILL_NAME/test-${SKILL_NAME}.sh
+#
+
+set -euo pipefail
+
+PASS=0
+FAIL=0
+
+assert_eq() {
+  local desc="\$1"
+  local actual="\$2"
+  local expected="\$3"
+  if [[ "\$actual" == "\$expected" ]]; then
+    echo "  ✓ \$desc"
+    ((PASS++))
+  else
+    echo "  ✗ \$desc (expected: '\$expected', got: '\$actual')"
+    ((FAIL++))
+  fi
+}
+
+echo -e "$SKILL_NAME skill tests"
+echo
+
+# --- Add tests for your skill's behavior below ---
+# Example:
+# assert_eq "kebab-case name" "\$SKILL_NAME" "$SKILL_NAME"
+
+echo
+echo "Results: \$PASS passed, \$FAIL failed"
+[[ \$FAIL -eq 0 ]]
+TESTEOF
+  chmod +x "$test_file"
+  log_success "Created $test_file"
+fi
+
+# ---------- Slash command ----------
+if [[ "$WITH_COMMAND" == true ]]; then
+  mkdir -p "$COMMANDS_ROOT"
+  cmd_file="$COMMANDS_ROOT/${SKILL_NAME}.md"
+  cat > "$cmd_file" <<CMDEOF
+---
+description: Force-load the $SKILL_NAME skill
+---
+
+# /$SKILL_NAME
+
+When the user invokes /\$SKILL_NAME, load the $SKILL_NAME skill immediately and apply its methodology to the user's task.
+
+**Load**: \`~/.mavis/skills/$SKILL_NAME/SKILL.md\`
+
+Then proceed with the user's actual task using the loaded skill's workflow and routing rules.
+CMDEOF
+  log_success "Created $cmd_file"
+fi
+
+# ---------- Done ----------
+echo
+log_success "Done. Skill '$SKILL_NAME' scaffolded."
+echo
+log_info "Next steps:"
+echo "  1. Edit $skill_file to fill in the template sections"
+echo "  2. Replace placeholder descriptions with concrete workflow + examples"
+if [[ "$WITH_HOOKS" == true ]]; then
+  echo "  3. Customize $HOOKS_ROOT/${SKILL_NAME}-mindset.js with real routing logic"
+  echo "  4. Wire it into ~/.claude/settings.json"
+fi
+if [[ "$WITH_TESTS" == true ]]; then
+  echo "  5. Add real tests to $skill_dir/test-${SKILL_NAME}.sh"
+fi
+echo "  Validate:  mavis-skill-scaffold --validate $SKILL_NAME"

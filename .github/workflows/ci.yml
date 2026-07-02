@@ -1,0 +1,275 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  # ───────────────────────────────────────────────────────────────────────
+  # dt CLI: Node.js matrix build + typecheck + test
+  # ───────────────────────────────────────────────────────────────────────
+  build-and-test:
+    name: dt CLI (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build
+        run: npm run build
+      - name: Test
+        run: npm test
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Shell scripts: syntax + shellcheck
+  # ───────────────────────────────────────────────────────────────────────
+  shell-checks:
+    name: Shell scripts (install.sh / orchestrate.sh)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: bash syntax check
+        run: |
+          set -e
+          for f in install.sh orchestrator/scripts/orchestrate.sh \
+                   mmas/watchdog.sh scaffolder/bin/mavis-skill-scaffold \
+                   agent-kernel/install.sh agent-kernel/wrapper.sh; do
+            echo "checking $f"
+            bash -n "$f"
+          done
+      - name: shellcheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: './'
+          additional_files: 'install.sh orchestrator/scripts/orchestrate.sh mmas/watchdog.sh scaffolder/bin/mavis-skill-scaffold agent-kernel/install.sh agent-kernel/wrapper.sh'
+          # Only fail on errors, not warnings/info (these are stylistic)
+          severity: 'error'
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Python: minimax-coder + vertex-coder + mmas/agents/*.yaml
+  # ───────────────────────────────────────────────────────────────────────
+  python-checks:
+    name: Python (vertex-coder / minimax-coder / mmas)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install deps (pyyaml)
+        run: pip install pyyaml --quiet
+      - name: Syntax check
+        run: |
+          set -e
+          python -m py_compile vertex-coder/*.py
+          python -m py_compile minimax-coder/*.py
+          python -m py_compile mmas/spawn-team.py mmas/hash-edit.py
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Bundlephobia regression guard — BundlePhobia recently migrated from
+  # webpack to Rspack. Rspack treats `new URL('../package.json',
+  # import.meta.url)` in source as an asset reference and tries to bundle
+  # package.json as a JSON asset — but Rspack requires chunk assets to
+  # have a `.bundle` suffix, so it fails with:
+  #   "Found an asset without the `.bundle` suffix. A loader customization
+  #    might be needed to recognize this asset type<HASH>.json"
+  # Source MUST use fileURLToPath + dirname + join instead.
+  # See v2.5.1 release notes.
+  # ───────────────────────────────────────────────────────────────────────
+  bundlephobia-guard:
+    name: Bundlephobia regression guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install + build
+        run: |
+          set -e
+          npm ci
+          npm run build
+      - name: cli.js runs and reports correct version
+        run: |
+          set -e
+          chmod +x dist/cli.js
+          V=$(node dist/cli.js --version)
+          echo "  --version: $V"
+          if [ -z "$V" ]; then
+            echo "  ✗ --version returned empty"
+            exit 1
+          fi
+          echo "  ✓ cli.js --version reads package.json correctly"
+      - name: Assert no bundler-unsafe new URL('../package.json') in dist
+        run: |
+          set -e
+          # The pattern `new URL("../package.json", import.meta.url)` triggers
+          # BundlePhobia's Rspack to try to bundle package.json as an asset,
+          # which fails the .bundle suffix check.
+          if grep -E 'new URL\(["'"'"']\.\./package\.json["'"'"'],\s*import\.meta\.url\)' dist/cli.js; then
+            echo "  ✗ FOUND bundler-unsafe pattern: new URL('../package.json', import.meta.url)"
+            echo "  BundlePhobia's Rspack bundler will fail with"
+            echo "  'Found an asset without the `.bundle` suffix' error."
+            echo "  Use fileURLToPath + dirname + join instead."
+            exit 1
+          fi
+          echo "  ✓ dist/cli.js uses fileURLToPath + dirname + join (Rspack-safe)"
+      - name: Assert no extra .json files in npm pack
+        run: |
+          set -e
+          # Only package.json should be a .json in the tarball. Any extra
+          # .json file is a candidate for BundlePhobia to choke on.
+          # Filter to `npm notice` lines only — the prepack script
+          # (`npm run build` -> `tsup`) prints e.g.
+          #   `CLI Using tsconfig: tsconfig.json`
+          # to stderr; without filtering, that banner is matched by
+          # `grep -oE '\S+\.json'` and the test falsely fails.
+          PACK_JSONS=$(npm pack --dry-run 2>&1 | grep '^npm notice' | grep -oE '\S+\.json' | sort -u)
+          echo "  .json files in pack:"
+          echo "$PACK_JSONS" | sed 's/^/    /'
+          COUNT=$(echo "$PACK_JSONS" | wc -l | tr -d ' ')
+          if [ "$COUNT" -ne 1 ]; then
+            echo "  ✗ expected exactly 1 .json file (package.json), got $COUNT"
+            exit 1
+          fi
+          if [ "$(echo "$PACK_JSONS" | head -1)" != "package.json" ]; then
+            echo "  ✗ unexpected .json file in tarball"
+            exit 1
+          fi
+          echo "  ✓ tarball contains only package.json as .json asset"
+      - name: YAML lint (mmas/agents)
+        run: |
+          python -c "
+          import yaml, sys, glob
+          for f in glob.glob('mmas/agents/*.yaml'):
+              with open(f) as fh:
+                  yaml.safe_load(fh)
+              print(f'  ✓ {f}')
+          "
+      - name: JSON lint (.claude-plugin + skills.sh.json)
+        run: |
+          for f in package.json tsconfig.json .claude-plugin/plugin.json \
+                   .claude-plugin/marketplace.json skills.sh.json; do
+            echo "  ✓ $f"
+            python -m json.tool < "$f" > /dev/null
+          done
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Manifest discipline: SKILL.md frontmatter + orchestrate.sh routing test
+  # ───────────────────────────────────────────────────────────────────────
+  orchestrator-tests:
+    name: Orchestrator routing smoke tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: npm ci || true
+      - name: SKILL.md frontmatter check
+        run: |
+          set -e
+          cat > /tmp/check_frontmatter.py << 'PYEOF'
+          import re, sys
+          for path in sys.argv[1:]:
+              try:
+                  text = open(path).read()
+              except FileNotFoundError:
+                  continue
+              m = re.match(r'---\n(.*?)\n---', text, re.DOTALL)
+              if not m:
+                  sys.exit(f'  no YAML frontmatter in {path}')
+              fm = m.group(1)
+              if 'name:' not in fm:
+                  sys.exit(f'  no name in {path}')
+              if 'description:' not in fm:
+                  sys.exit(f'  no description in {path}')
+              print(f'  ok {path}')
+          PYEOF
+          python3 /tmp/check_frontmatter.py \
+              SKILL.md orchestrator/SKILL.md scaffolder/SKILL.md \
+              mmas/SKILL.md god-agent/SKILL.md minimax-coder/SKILL.md \
+              vertex-coder/SKILL.md integrations/unslop/SKILL.md \
+              agent-kernel/SKILL.md
+      - name: orchestrate.sh routing assertions
+        run: |
+          set -e
+          chmod +x orchestrator/scripts/orchestrate.sh
+          # 10-task signature matrix (8 original + 2 new for agent-kernel MEMORY path)
+          declare -a TESTS=(
+            "Build an OpenSource repo containing our full agentic engineering system: orchestrator + skill-scaffold + delegate-team backends + multi-agent team + integrations docs. Push to github|BUILD/PUBLISH"
+            "Build a landing page with shadcn components|UI DELIVERY"
+            "Make API p95 < 200ms|PERFORMANCE/METRIC"
+            "Research how Rust trait objects work|RESEARCH"
+            "Mobile header broken on Safari iOS 17|BUG"
+            "rename getCurrentUser to getActiveUser|TRIVIAL — handle locally"
+            "remember this: never add SQLite fallback to Supabase projects|MEMORY path"
+            "what did we do about the stripe webhook last time|MEMORY path"
+          )
+          for t in "${TESTS[@]}"; do
+            task="${t%%|*}"
+            expected="${t##*|}"
+            # Capture the verdict (or first 3 lines after '# Verdict:')
+            actual=$(orchestrator/scripts/orchestrate.sh "$task" 2>&1)
+            echo "  task: ${task:0:50}..."
+            echo "  expected substring: $expected"
+            if [[ "$actual" != *"$expected"* ]]; then
+              echo "  ✗ MISMATCH"
+              exit 1
+            fi
+            echo "  ✓"
+          done
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Skills.sh / Claude marketplace compatibility
+  # ───────────────────────────────────────────────────────────────────────
+  manifest-validate:
+    name: Plugin manifests (Claude marketplace + Skills.sh)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: SKILL.md at root
+        run: |
+          test -f SKILL.md || { echo "root SKILL.md missing"; exit 1; }
+          head -1 SKILL.md | grep -q '^---$' || { echo "no frontmatter"; exit 1; }
+          echo "  ✓ root SKILL.md present + frontmatter"
+      - name: agent-kernel/SKILL.md
+        run: |
+          test -f agent-kernel/SKILL.md || { echo "agent-kernel/SKILL.md missing"; exit 1; }
+          head -1 agent-kernel/SKILL.md | grep -q '^---$' || { echo "no frontmatter"; exit 1; }
+          grep -q 'name: agent-kernel' agent-kernel/SKILL.md || { echo "name not agent-kernel"; exit 1; }
+          echo "  ✓ agent-kernel/SKILL.md present + frontmatter + name"
+      - name: agent-kernel vendored CLI
+        run: |
+          test -f agent-kernel/dist/cli.mjs || { echo "vendored cli.mjs missing"; exit 1; }
+          chmod +x agent-kernel/dist/cli.mjs
+          node agent-kernel/dist/cli.mjs --version
+          echo "  ✓ vendored cli.mjs runs and reports version"
+      - name: marketplace.json
+        run: |
+          test -f .claude-plugin/marketplace.json
+          python -m json.tool < .claude-plugin/marketplace.json > /dev/null
+          python -c "import json; d=json.load(open('.claude-plugin/marketplace.json')); \
+              assert any(p['name']=='delegate-team-agent-kernel' for p in d['plugins']), \
+              'kernel plugin missing'; \
+              print('  ✓ marketplace.json has kernel plugin')"
+          echo "  ✓ marketplace.json valid"
+      - name: skills.sh.json
+        run: |
+          test -f skills.sh.json
+          python -c "import json; d=json.load(open('skills.sh.json')); assert 'groupings' in d"
+          python -c "import json; d=json.load(open('skills.sh.json')); \
+              all_skills = [s for g in d['groupings'] for s in g['skills']]; \
+              assert 'agent-kernel' in all_skills, 'agent-kernel not in any grouping'; \
+              print('  ✓ skills.sh.json includes agent-kernel')"
+          echo "  ✓ skills.sh.json valid + has groupings"

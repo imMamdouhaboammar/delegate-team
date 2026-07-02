@@ -1,0 +1,139 @@
+{
+  "name": "delegate-team",
+  "version": "2.7.0",
+  "description": "Agentic engineering supersystem v2.7.0 — bundles the full Mavis arsenal: /mavis-ship orchestrator (47-case selftest), 38 curated integrations + 1890 auto-discovered skills, autopilot.sh (7-stage GOD command: PREWARM → BRAINSTORM → PLAN → EXECUTE → REVIEW → QUALITY-GUARD → REPORT), mavis-ship-uni smart universal wrapper (detects Mavis / codex / claude / gemini / opencode / mmx / shell and dispatches), and `dt` CLI gateway routing to Codex, MiniMax, Gemini, MetaGPT backends. Companion frameworks: agent-kernel, superpowers, Waza, unslop-preflight, autoresearch.",
+  "type": "module",
+  "main": "dist/cli.js",
+  "bin": {
+    "dt": "dist/cli.js",
+    "delegate-team": "dist/cli.js",
+    "mavis-ship-uni": "bin/mavis-ship-uni",
+    "autopilot": "bin/autopilot.sh",
+    "agents-health": "bin/agents-health.sh"
+  },
+  "scripts": {
+    "build": "tsup",
+    "prepack": "npm run build",
+    "prepare": "npm run build",
+    "dev": "tsup --watch",
+    "test": "vitest run && bash tests/test-v2.7.0.sh",
+    "selftest": "python3 orchestrator/scripts/orchestrate.py --selftest",
+    "typecheck": "tsc --noEmit",
+    "size": "npm pack --dry-run",
+    "publish:dry": "npm publish --dry-run --access public",
+    "agents-health": "bash bin/agents-health.sh",
+    "autopilot": "bash bin/autopilot.sh"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "orchestrator",
+    "mavis-ship",
+    "src",
+    "agent-kernel",
+    "god-agent",
+    "minimax-coder",
+    "vertex-coder",
+    "scaffolder",
+    "mmas",
+    "resources",
+    "SKILL.md",
+    "README.md",
+    "CHANGELOG.md",
+    "INSTALL.md",
+    "LICENSE",
+    "skills.sh.json"
+  ],
+  "exclude": [
+    "**/__pycache__",
+    "**/*.pyc",
+    "**/.venv/**",
+    "**/venv/**",
+    "**/env/**",
+    "vertex-coder/.venv/**",
+    "minimax-coder/.venv/**",
+    "god-agent/.venv/**",
+    "node_modules/**",
+    "**/.DS_Store",
+    "**/*.log",
+    "**/*.temp",
+    ".claude-plugin/**",
+    ".github/**",
+    "agent-kernel/develpment/**",
+    "dt_traces/**",
+    "workspace/**",
+    "**/.cache/**",
+    "**/.turbo/**",
+    "**/.parcel-cache/**"
+  ],
+  "engines": {
+    "node": ">=18",
+    "python": ">=3.8"
+  },
+  "publishConfig": {
+    "access": "public",
+    "tag": "latest"
+  },
+  "keywords": [
+    "delegate-team",
+    "mavis-ship",
+    "mavis-ship-uni",
+    "autopilot",
+    "ai",
+    "agent",
+    "agents",
+    "agentic-engineering",
+    "multi-agent",
+    "orchestration",
+    "mmas",
+    "cli",
+    "delegation",
+    "skills",
+    "skills-sh",
+    "autoresearch",
+    "superpowers",
+    "waza",
+    "unslop",
+    "agent-kernel",
+    "memory",
+    "governance",
+    "claude-code",
+    "codex",
+    "cursor",
+    "minimax",
+    "mmx",
+    "vertex",
+    "gemini",
+    "metagpt",
+    "llm",
+    "routing",
+    "mcp",
+    "god-command",
+    "arsenal",
+    "big-boss",
+    "staff-engineer"
+  ],
+  "author": {
+    "name": "Mamdouh Aboammar",
+    "email": "maintainers@delegate-team.dev",
+    "url": "https://github.com/imMamdouhaboammar"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/imMamdouhaboammar/delegate-team/issues"
+  },
+  "homepage": "https://github.com/imMamdouhaboammar/delegate-team#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/imMamdouhaboammar/delegate-team.git"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.3.0",
+    "vitest": "^2.0.0"
+  },
+  "dependencies": {
+    "commander": "^15.0.0"
+  }
+}

@@ -1,0 +1,223 @@
+#!/usr/bin/env bash
+# mavis-ship-uni — the smart universal wrapper.
+#
+# Detects the calling runtime and dispatches to the right flow:
+#
+#   Mavis session       → load big-boss + run orchestrate.sh --prewarm (Mavis decides)
+#   Codex CLI           → call autopilot.sh --background (so codex returns immediately)
+#   Claude Code CLI     → call autopilot.sh --background
+#   Gemini CLI          → call autopilot.sh --background
+#   OpenCode CLI        → call autopilot.sh --background
+#   Mavis (mmx/minimax) → call autopilot.sh --background
+#   Plain shell         → call autopilot.sh (foreground with preflight)
+#
+# The wrapper exists because the underlying machinery (orchestrate, catalog,
+# autopilot) is universal — but each agent has different conventions:
+#   - Mavis session reads SKILL.md and uses the `skill` tool to load
+#     companions, so the wrapper just emits the prewarm JSON.
+#   - Codex / Claude / Gemini / OpenCode / mmx are CLIs that exit after
+#     one call, so the wrapper hands off to autopilot --background which
+#     detaches and returns a PID + log path immediately.
+#   - Plain shell has no agent context, so autopilot runs foreground
+#     and the user can watch the log scroll.
+#
+# Usage:
+#   mavis-ship-uni "<task>"                       # smart dispatch
+#   mavis-ship-uni --force-autopilot "<task>"     # skip detection, go straight to autopilot
+#   mavis-ship-uni --force-prewarm "<task>"       # skip detection, go straight to orchestrate prewarm
+#   mavis-ship-uni --detect-only                  # just print the detected runtime
+#   mavis-ship-uni --list-runtimes                # show detection rules
+#
+# Per-runtime output (the user sees what the wrapper is doing):
+#
+#   [22:05:30] [mavis-ship-uni] Detected runtime: mavis
+#   [22:05:30] [mavis-ship-uni] → flow: orchestrate --prewarm (Mavis session decides)
+#   [22:05:30] [mavis-ship-uni] → JSON manifest emitted
+#
+#   [22:05:30] [mavis-ship-uni] Detected runtime: codex
+#   [22:05:30] [mavis-ship-uni] → flow: autopilot --background (so codex can return immediately)
+#   [22:05:30] [mavis-ship-uni] Background autopilot started
+#   [22:05:30] [mavis-ship-uni] PID: 12345
+#   [22:05:30] [mavis-ship-uni] Log:  /tmp/mavis-autopilot-.../chain.log
+#   [22:05:30] [mavis-ship-uni] Report: /tmp/mavis-autopilot-.../report.md
+#
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ORCHESTRATE="$HOME/.mavis/skills/mavis-ship/scripts/orchestrate.sh"
+AUTOPILOT="$SCRIPT_DIR/autopilot.sh"
+
+# ---------- pretty output ----------
+log() { /bin/echo "[$(/bin/date +%H:%M:%S)] [mavis-ship-uni] $*" >&2; }
+hr()  { /bin/echo "------------------------------------------------------------" >&2; }
+
+# ---------- runtime detection ----------
+# Detection rules (in priority order — first match wins):
+#
+#   1. MAVIS_SESSION_ID set       → mavis   (the Mavis/Mavis session)
+#   2. CODEX_HOME set             → codex
+#   3. CLAUDECODE / CLAUDE_CODE   → claude
+#   4. GEMINI_CLI set             → gemini
+#   5. OPENCODE_* set             → opencode
+#   6. MMX_HOME set               → mmx     (Mavis's minimax CLI)
+#   7. parent process argv0     → fallback (codex / claude / gemini / opencode / mmx)
+#   8. otherwise                  → shell
+#
+detect_runtime() {
+    # 1. Mavis session
+    if [ -n "${MAVIS_SESSION_ID:-}" ] || [ -n "${MAVIS_AGENT_ROOT_SESSION:-}" ]; then
+        /bin/echo "mavis"
+        return
+    fi
+    # 2. Codex
+    if [ -n "${CODEX_HOME:-}" ]; then
+        /bin/echo "codex"
+        return
+    fi
+    # 3. Claude Code
+    if [ -n "${CLAUDECODE:-}" ] || [ -n "${CLAUDE_CODE:-}" ] || [ -n "${CLAUDE_CODE_ENTRYPOINT:-}" ]; then
+        /bin/echo "claude"
+        return
+    fi
+    # 4. Gemini CLI
+    if [ -n "${GEMINI_CLI:-}" ] || [ -n "${GEMINI_API_KEY:-}" ] && [ -n "${GEMINI_PROJECT:-}" ]; then
+        /bin/echo "gemini"
+        return
+    fi
+    # 5. OpenCode
+    if [ -n "${OPENCODE_CONFIG_DIR:-}" ]; then
+        /bin/echo "opencode"
+        return
+    fi
+    # 6. mmx (Mavis's minimax CLI)
+    if [ -n "${MMX_HOME:-}" ]; then
+        /bin/echo "mmx"
+        return
+    fi
+    # 7. Fallback: parent process argv0
+    local parent
+    parent=$(/bin/ps -o comm= -p $PPID 2>/dev/null | /usr/bin/tr -d ' ' || /bin/echo "")
+    case "$parent" in
+        *codex*)     /bin/echo "codex"; return ;;
+        *claude*)    /bin/echo "claude"; return ;;
+        *gemini*)    /bin/echo "gemini"; return ;;
+        *opencode*)  /bin/echo "opencode"; return ;;
+        *mmx*)       /bin/echo "mmx"; return ;;
+        *mavis*)     /bin/echo "mavis"; return ;;
+    esac
+    # 8. Default
+    /bin/echo "shell"
+}
+
+# ---------- dispatch ----------
+dispatch_mavis() {
+    local task="$1"
+    log '→ flow: orchestrate --prewarm (Mavis session decides)'
+    log '→ Mavis will load big-boss + relevant skills via the skill tool'
+    log '→ JSON manifest emitted for the session to consume'
+    "$ORCHESTRATE" --prewarm "$task"
+}
+
+dispatch_agent_bg() {
+    local runtime="$1" task="$2"
+    log "→ flow: autopilot --background (so $runtime can return immediately)"
+    log '→ the full chain (prewarm → brainstorm → plan → execute → review → quality-guard → report) runs detached'
+    "$AUTOPILOT" "$task" --background
+}
+
+dispatch_shell() {
+    local task="$1"
+    log '→ flow: autopilot foreground with preflight (you watch the log scroll)'
+    "$AUTOPILOT" "$task"
+}
+
+# ---------- main ----------
+usage() {
+    cat <<EOF
+mavis-ship-uni — the smart universal wrapper
+
+Usage:
+  mavis-ship-uni "<task>"                       # smart dispatch (default)
+  mavis-ship-uni --detect-only                  # just print detected runtime
+  mavis-ship-uni --list-runtimes                # show detection rules
+  mavis-ship-uni --force-autopilot "<task>"     # skip detection, autopilot --background
+  mavis-ship-uni --force-prewarm "<task>"       # skip detection, orchestrate --prewarm
+  mavis-ship-uni --force-shell "<task>"         # skip detection, autopilot foreground
+  mavis-ship-uni --help                          # this message
+EOF
+}
+
+TASK=""
+FORCE=""
+DETECT_ONLY=0
+LIST_RUNTIMES=0
+
+while [ $# -gt 0 ]; do
+    arg="$1"
+    case "$arg" in
+        --detect-only)  DETECT_ONLY=1 ;;
+        --list-runtimes) LIST_RUNTIMES=1 ;;
+        --force-autopilot) FORCE="agent-bg" ;;
+        --force-prewarm)   FORCE="mavis" ;;
+        --force-shell)     FORCE="shell" ;;
+        --help|-h)         usage; exit 0 ;;
+        -*)                /bin/echo "Unknown flag: $arg" >&2; usage; exit 64 ;;
+        *)                 TASK="$arg" ;;
+    esac
+    shift || true
+done
+
+if [ "$LIST_RUNTIMES" -eq 1 ]; then
+    cat <<EOF
+Detection priority (first match wins):
+
+  1. MAVIS_SESSION_ID  or MAVIS_AGENT_ROOT_SESSION  →  mavis
+  2. CODEX_HOME                                           →  codex
+  3. CLAUDECODE / CLAUDE_CODE / CLAUDE_CODE_ENTRYPOINT  →  claude
+  4. GEMINI_CLI + GEMINI_PROJECT                        →  gemini
+  5. OPENCODE_CONFIG_DIR                                  →  opencode
+  6. MMX_HOME                                             →  mmx
+  7. parent process argv0                                →  fallback
+  8. otherwise                                            →  shell
+
+Dispatch:
+  mavis   → orchestrate --prewarm (Mavis session decides + loads skills)
+  codex,claude,gemini,opencode,mmx → autopilot --background
+  shell   → autopilot foreground
+EOF
+    exit 0
+fi
+
+RUNTIME=$(detect_runtime)
+log "Detected runtime: $RUNTIME"
+hr
+
+if [ "$DETECT_ONLY" -eq 1 ]; then
+    /bin/echo "$RUNTIME"
+    exit 0
+fi
+
+if [ -z "$TASK" ]; then
+    usage
+    exit 64
+fi
+
+# Force override
+case "$FORCE" in
+    mavis)    RUNTIME_OVERRIDE="mavis" ;;
+    agent-bg) RUNTIME_OVERRIDE="agent" ;;
+    shell)    RUNTIME_OVERRIDE="shell" ;;
+    *)        RUNTIME_OVERRIDE="$RUNTIME" ;;
+esac
+
+case "$RUNTIME_OVERRIDE" in
+    mavis)
+        dispatch_mavis "$TASK"
+        ;;
+    codex|claude|gemini|opencode|mmx)
+        dispatch_agent_bg "$RUNTIME" "$TASK"
+        ;;
+    shell)
+        dispatch_shell "$TASK"
+        ;;
+esac

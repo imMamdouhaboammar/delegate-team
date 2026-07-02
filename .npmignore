@@ -1,0 +1,73 @@
+# .npmignore — patterns npm should skip when packing delegate-team@2.7.0
+# (mirrors .gitignore, but applied specifically for npm pack)
+
+# Dependencies
+node_modules/
+
+# Testing
+coverage/
+
+# Build
+dist/
+
+# Virtual environments (vertex-coder/.venv is huge)
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+**/.venv/
+**/venv/
+**/__pycache__/
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Editor
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+
+# Test outputs
+*-brief.md
+result.json
+.agent_memory.json
+.metagpt_dt_config.json
+.dt_aggregation_contract.json
+.dt_traces/
+.dt_team/
+
+# MMAS runtime
+mmas/logs/
+mmas/__pycache__/
+
+# Routing traces
+dt_traces/
+
+# Agent-kernel develpment/ backlog (internal)
+agent-kernel/develpment/
+
+# Vendor caches
+.cache/
+.turbo/
+.parcel-cache/
+
+# Mavis-specific (not for npm)
+.mavis/
+.mavis-*
+/tmp/
+
+# Local install configs
+.dependencies.json
+.dependencies.json.bak

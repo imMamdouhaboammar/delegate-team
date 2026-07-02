@@ -1,0 +1,4 @@
+pre-commit:
+  commands:
+    agent-kernel-guard:
+      run: agent-kernel guard --staged

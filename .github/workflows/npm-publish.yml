@@ -1,0 +1,103 @@
+name: npm publish
+
+# Auto-publish the npm package to https://registry.npmjs.org/ whenever a
+# git tag of shape `v*` (e.g. v2.2.0) is pushed.
+#
+# Required repository secrets:
+#   - NPM_TOKEN  — npm automation token (read-write, classic NOT OIDC for now)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Run in dry-run mode (no actual publish)'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: read
+  id-token: write   # for npm provenance
+
+jobs:
+  publish:
+    name: Build & Publish to npm
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org/'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+        shell: bash
+
+      - name: Typecheck
+        run: npm run typecheck
+        shell: bash
+
+      - name: Build (tsup)
+        run: npm run build
+        shell: bash
+
+      - name: Validate npm package contents
+        run: |
+          echo "--- npm pack dry-run ---"
+          npm pack --dry-run
+          echo
+          echo "--- file count + size sanity ---"
+          tar -tzf "$(npm pack | tail -1)" | wc -l
+          ls -la "$(npm pack | tail -1)"
+        shell: bash
+
+      - name: Publish to npm
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        shell: bash
+
+      - name: Publish (manual / dry-run)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ "${{ inputs.dry-run }}" = "true" ]; then
+            echo "--- DRY RUN: would publish ${{ github.ref }} ---"
+            npm publish --dry-run --access public
+          else
+            npm publish --access public --provenance
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        shell: bash
+
+      - name: Verify on npm registry
+        if: success()
+        run: |
+          sleep 8  # allow registry to update
+          echo "--- npm view delegate-team ---"
+          npm view delegate-team version
+          npm view delegate-team dist-tags
+          echo
+          echo "--- installable test ---"
+          npx -y delegate-team --version 2>&1 | head -3 || true
+        shell: bash
+
+      - name: Tag the commit on the npm-published release
+        if: success() && startsWith(github.ref, 'refs/tags/v')
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "Tagging release $VERSION as latest on npm..."
+          npm dist-tag add "delegate-team@$VERSION" latest
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        shell: bash

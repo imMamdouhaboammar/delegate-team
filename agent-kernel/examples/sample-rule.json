@@ -1,0 +1,16 @@
+{
+  "id": "no-local-fallbacks",
+  "type": "policy",
+  "scope": "global",
+  "level": "critical",
+  "text": "Do not add fake local persistence or fallback databases to production apps unless explicitly requested.",
+  "targets": ["all"],
+  "tags": ["database", "production"],
+  "status": "approved",
+  "enforcement": {
+    "promptContext": true,
+    "postEditScan": true,
+    "preCommit": true,
+    "ci": true
+  }
+}

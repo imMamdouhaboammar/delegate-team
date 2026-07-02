@@ -1,0 +1,120 @@
+# GitHub release notes automation
+#
+# Categorizes merged PRs into release-note sections based on the PR labels.
+# Anyone can change this file; the next release re-uses the rules.
+#
+# Reference: https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes
+#
+# When a `v*` tag is pushed, the release.yml workflow calls
+# generateReleaseNotes which uses these categories.
+
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+      - duplicate
+      - question
+      - invalid
+      - "wontfix"
+  categories:
+    - title: "🚨 Breaking Changes"
+      labels:
+        - breaking
+        - breaking-change
+        - "!breaking"
+    - title: "✨ Features"
+      labels:
+        - feature
+        - enhancement
+        - new-feature
+        - feat
+    - title: "🐛 Bug Fixes"
+      labels:
+        - fix
+        - bug
+        - bug-fix
+        - "!bug"
+    - title: "📖 Documentation"
+      labels:
+        - docs
+        - documentation
+        - "docs(.*)"
+    - title: "⚡ Performance"
+      labels:
+        - performance
+        - perf
+        - optimization
+    - title: "🔧 Build & Tooling"
+      labels:
+        - ci
+        - build
+        - tooling
+        - chore
+        - "ci(.*)"
+    - title: "🧪 Tests"
+      labels:
+        - test
+        - tests
+        - "test(.*)"
+    - title: "🔀 Refactors"
+      labels:
+        - refactor
+        - refactoring
+    - title: "📦 Dependencies"
+      labels:
+        - dependencies
+        - dep
+        - "deps(.*)"
+    - title: "🎨 Style / Cosmetics"
+      labels:
+        - style
+        - cosmetics
+        - ui
+        - "ui(.*)"
+    - title: "🚀 Releases & CI/CD"
+      labels:
+        - release
+        - ci-cd
+        - publish
+        - npm
+    - title: "🔒 Security"
+      labels:
+        - security
+        - sec
+        - vulnerability
+    - title: "🛠️ Maintenance"
+      labels:
+        - maintenance
+        - housekeeping
+        - "chore(.*)"
+
+  release_notes:
+    conventional_commits: true
+    first_contribution: true
+    commit_categories:
+      - breaking_changes
+      - features
+      - bug_fixes
+      - performance
+      - documentation
+      - dependencies
+    exclude_commit_patterns:
+      - "^chore\\(release\\):"
+      - "^Merge pull request"
+      - "^Revert"
+
+  format: |
+    ## 🛠️ delegate-team v$RESOLVED_VERSION
+
+    $RESOLVED_VERSION was published on $DATE.
+
+    ### 📊 What's in this release
+
+    <ul>$SUMMARY</ul>
+
+    See the [CHANGELOG.md](https://github.com/imMamdouhaboammar/delegate-team/blob/master/CHANGELOG.md) for full details.
+  theme: "modern"
+
+title_template: "🛠️ v$RESOLVED_VERSION — <RELEASE_TITLE>"
+
+tag_pattern: "^v[0-9]+\\.[0-9]+\\.[0-9]+$"

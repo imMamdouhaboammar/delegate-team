@@ -1,0 +1,396 @@
+{
+  "schema_version": "1.0.0",
+  "path": "/develpment",
+  "note": "Directory name is intentionally spelled develpment because the project owner requested that exact path.",
+  "product_north_star": "Local-first governance kernel for agentic coding with shared JSON memory, agent adapters, enforcement, audit, and skills.",
+  "product_lines": [
+    "Memory Core",
+    "Agent Adapters",
+    "Enforcement",
+    "Governance"
+  ],
+  "versions": [
+    {
+      "version": "0.1.0",
+      "stage": "Core Stabilization",
+      "goal": "Make the CLI and JSON memory layout reliable",
+      "priority": "P0",
+      "must_ship": [
+        "version command",
+        "doctor --verbose",
+        "config commands",
+        "strict validation baseline",
+        "test fixtures"
+      ]
+    },
+    {
+      "version": "0.2.0",
+      "stage": "Memory Governance",
+      "goal": "Add strong approval flow and memory pollution controls",
+      "priority": "P0",
+      "must_ship": [
+        "proposal scoring",
+        "duplicate detection",
+        "conflict detection",
+        "reject reasons",
+        "memory edit",
+        "memory deprecate"
+      ]
+    },
+    {
+      "version": "0.3.0",
+      "stage": "MCP Hardening",
+      "goal": "Make the MCP server production-ready",
+      "priority": "P0",
+      "must_ship": [
+        "request validation",
+        "read-only default",
+        "tool allowlist",
+        "resource pagination",
+        "MCP health check"
+      ]
+    },
+    {
+      "version": "0.4.0",
+      "stage": "Agent Adapters",
+      "goal": "Improve Claude, Codex, Cursor, Antigravity, and Gemini support",
+      "priority": "P0",
+      "must_ship": [
+        "adapter connect commands",
+        "adapter repair",
+        "adapter health report",
+        "project linking improvements"
+      ]
+    },
+    {
+      "version": "0.5.0",
+      "stage": "Enforcement Engine",
+      "goal": "Convert rules into executable policies",
+      "priority": "P0",
+      "must_ship": [
+        "policy compiler",
+        "command guard",
+        "file guard",
+        "dependency guard",
+        "secret guard",
+        "violation logs"
+      ]
+    },
+    {
+      "version": "0.6.0",
+      "stage": "Git and CI Gates",
+      "goal": "Add pre-commit, pre-push, and CI guards",
+      "priority": "P0",
+      "must_ship": [
+        "pre-commit hook",
+        "guard --staged",
+        "guard --ci",
+        "GitHub Actions template"
+      ]
+    },
+    {
+      "version": "0.7.0",
+      "stage": "Project Intelligence",
+      "goal": "Detect project type and load relevant rules only",
+      "priority": "P0",
+      "must_ship": [
+        "package manager detection",
+        "framework detection",
+        "database detection",
+        "project profile",
+        "context relevance filtering"
+      ]
+    },
+    {
+      "version": "0.8.0",
+      "stage": "Skills Registry",
+      "goal": "Add local skill packs and triggers",
+      "priority": "P0",
+      "must_ship": [
+        "skill schema",
+        "skill create/list/search/link",
+        "skill triggers",
+        "skill lint"
+      ]
+    },
+    {
+      "version": "0.9.0",
+      "stage": "Security Hardening",
+      "goal": "Add safe logging, redaction, trust model, and sandbox options",
+      "priority": "P0",
+      "must_ship": [
+        "redaction",
+        "safe logs",
+        "MCP allowlist",
+        "untrusted repo mode",
+        "symlink checks"
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "stage": "Stable Local Release",
+      "goal": "Daily-use ready local release",
+      "priority": "P0",
+      "must_ship": [
+        "stable CLI",
+        "stable JSON memory",
+        "stable MCP",
+        "stable adapters",
+        "stable hooks",
+        "backup/restore",
+        "migration docs"
+      ]
+    },
+    {
+      "version": "1.1.0",
+      "stage": "TUI Dashboard",
+      "goal": "Terminal UI for review and operations",
+      "priority": "P1",
+      "must_ship": [
+        "inbox screen",
+        "memory browser",
+        "violation screen",
+        "adapter status screen"
+      ]
+    },
+    {
+      "version": "1.2.0",
+      "stage": "Observability",
+      "goal": "Add logs, reports, traces, and audit export",
+      "priority": "P1",
+      "must_ship": [
+        "logs command",
+        "report command",
+        "weekly report",
+        "audit export"
+      ]
+    },
+    {
+      "version": "1.3.0",
+      "stage": "Policy Packs",
+      "goal": "Add ready packs by project type",
+      "priority": "P1",
+      "must_ship": [
+        "built-in packs",
+        "pack enable/disable",
+        "pack inspect",
+        "pack tests"
+      ]
+    },
+    {
+      "version": "1.4.0",
+      "stage": "Plugin SDK",
+      "goal": "Add extension points for adapters and guards",
+      "priority": "P1",
+      "must_ship": [
+        "adapter plugin interface",
+        "guard plugin interface",
+        "compiler target interface",
+        "plugin enable/disable"
+      ]
+    },
+    {
+      "version": "1.5.0",
+      "stage": "Team Sharing",
+      "goal": "Separate personal and team rules",
+      "priority": "P1",
+      "must_ship": [
+        "team init",
+        "team export/import",
+        "team diff",
+        "owner/version metadata"
+      ]
+    },
+    {
+      "version": "1.6.0",
+      "stage": "Remote Sync",
+      "goal": "Optional Git-backed sync across machines",
+      "priority": "P1",
+      "must_ship": [
+        "remote init",
+        "pull/push",
+        "conflict resolution",
+        "private path exclusions"
+      ]
+    },
+    {
+      "version": "1.7.0",
+      "stage": "Advanced Enforcement",
+      "goal": "Integrate mature scanners",
+      "priority": "P1",
+      "must_ship": [
+        "Semgrep generation",
+        "OPA/Rego generation",
+        "Conftest integration",
+        "normalized results"
+      ]
+    },
+    {
+      "version": "1.8.0",
+      "stage": "Self-Healing Rules",
+      "goal": "Improve rule quality",
+      "priority": "P2",
+      "must_ship": [
+        "rule smells",
+        "stale rule detection",
+        "unused rule detection",
+        "compact command"
+      ]
+    },
+    {
+      "version": "1.9.0",
+      "stage": "Compatibility Suite",
+      "goal": "Verify all adapters and policies",
+      "priority": "P1",
+      "must_ship": [
+        "fixture projects",
+        "adapter snapshots",
+        "hook simulation",
+        "MCP simulation",
+        "migration tests"
+      ]
+    },
+    {
+      "version": "2.0.0",
+      "stage": "Agent Governance OS",
+      "goal": "Complete local governance kernel",
+      "priority": "P0",
+      "must_ship": [
+        "local-first memory kernel",
+        "stable MCP",
+        "stable adapters",
+        "stable enforcement",
+        "stable skills",
+        "stable audit",
+        "stable team sharing",
+        "stable plugin SDK"
+      ]
+    }
+  ],
+  "epics": [
+    {
+      "id": "json-memory-system",
+      "name": "JSON Memory System",
+      "priority": "P0",
+      "items": [
+        "schema validation",
+        "memory IDs",
+        "proposal lifecycle",
+        "approved memory storage",
+        "duplicate detection",
+        "conflict detection"
+      ]
+    },
+    {
+      "id": "agent-adapter-compiler",
+      "name": "Agent Adapter Compiler",
+      "priority": "P0",
+      "items": [
+        "AGENTS.md compiler",
+        "CLAUDE.md compiler",
+        "Cursor .mdc compiler",
+        "Antigravity compiler",
+        "GEMINI.md compiler"
+      ]
+    },
+    {
+      "id": "mcp-server",
+      "name": "MCP Server",
+      "priority": "P0",
+      "items": [
+        "stdio MCP server",
+        "read-only tools",
+        "propose_memory tool",
+        "memory search tool",
+        "guard command tool"
+      ]
+    },
+    {
+      "id": "enforcement",
+      "name": "Enforcement",
+      "priority": "P0",
+      "items": [
+        "command guard",
+        "file guard",
+        "secret scan",
+        "dependency guard",
+        "violation logs"
+      ]
+    },
+    {
+      "id": "project-awareness",
+      "name": "Project Awareness",
+      "priority": "P0",
+      "items": [
+        "package manager detection",
+        "framework detection",
+        "command detection",
+        "database detection",
+        "profile cache"
+      ]
+    },
+    {
+      "id": "skills-and-packs",
+      "name": "Skills and Packs",
+      "priority": "P1",
+      "items": [
+        "local skill schema",
+        "skill registry",
+        "skill triggers",
+        "policy packs"
+      ]
+    },
+    {
+      "id": "governance",
+      "name": "Governance",
+      "priority": "P0",
+      "items": [
+        "approval inbox",
+        "approve/reject commands",
+        "audit logs",
+        "proposal sources"
+      ]
+    },
+    {
+      "id": "security",
+      "name": "Security",
+      "priority": "P0",
+      "items": [
+        "redaction",
+        "safe logs",
+        "MCP allowlist",
+        "untrusted repo mode"
+      ]
+    }
+  ],
+  "next_sprint": {
+    "target_version": "0.1.0",
+    "theme": "Reliability before features",
+    "tasks": [
+      "Refactor command structure",
+      "Add config commands",
+      "Add validate --strict",
+      "Add duplicate detection baseline",
+      "Add conflict detection baseline",
+      "Add backup and restore",
+      "Improve doctor --verbose",
+      "Add test fixtures"
+    ],
+    "exit_criteria": [
+      "npm test passes",
+      "validate --strict passes on fresh init",
+      "doctor --verbose gives actionable output",
+      "package can be installed with npm link",
+      "package can run without build step"
+    ]
+  },
+  "release_gates": [
+    "Source integrity",
+    "JSON integrity",
+    "Adapter integrity",
+    "Enforcement integrity",
+    "Documentation integrity",
+    "Packaging integrity",
+    "No secrets"
+  ]
+}

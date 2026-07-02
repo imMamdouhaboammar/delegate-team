@@ -1,0 +1,30 @@
+{
+  "id": "rule_no_sqlite_fallback",
+  "type": "policy",
+  "scope": "global",
+  "level": "critical",
+  "status": "approved",
+  "title": "No SQLite fallback in Supabase production apps",
+  "text": "In Supabase production apps, never add a local SQLite fallback unless the user explicitly asks for a local-only prototype.",
+  "targets": ["claude", "codex", "cursor", "antigravity", "gemini"],
+  "applies_when": {
+    "project_dependencies_any": ["@supabase/supabase-js"],
+    "paths_any": ["src/**", "app/**", "lib/**", "supabase/**"]
+  },
+  "enforcement": {
+    "promptContext": true,
+    "preToolUse": true,
+    "postEditScan": true,
+    "preCommit": true,
+    "ci": false,
+    "denyPatterns": ["sqlite3", "better-sqlite3", "fallback database", "local sqlite"]
+  },
+  "tags": ["supabase", "database", "production", "safety"],
+  "source": {
+    "createdBy": "user",
+    "channel": "cli"
+  },
+  "createdAt": "2026-06-23T00:00:00.000Z",
+  "updatedAt": "2026-06-23T00:00:00.000Z",
+  "version": 1
+}

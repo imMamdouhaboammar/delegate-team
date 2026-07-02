@@ -1,0 +1,9 @@
+# MiniMax Coder uses the official `mmx` CLI for all API transport.
+# No Python dependencies required at runtime — Python 3.10+ stdlib only.
+#
+# Setup:
+#   npm install -g mmx-cli        # installs `mmx` globally
+#   mmx auth login --api-key sk-xxxxx   # one-time auth
+#
+# Optional (only for inspect_settings.py to parse ~/.minimax/config.yaml):
+#   pip install PyYAML
