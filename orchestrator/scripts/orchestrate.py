@@ -570,29 +570,31 @@ def skill_path_for_stage(stage_key: str) -> Optional[str]:
     return p if os.path.isfile(p) else None
 
 
-def build_json_trace(task: str, scores: Dict[str, int]) -> dict:
+def build_json_trace(task: str, scores: Dict[str, int], check_kernel: bool = False) -> dict:
     """Build the JSON trace consumed by `tests/v26-smoke.test.ts` and any
     external orchestrator consumer that wants machine-readable routing.
 
     Returned dict shape (contract — v2.7.0+):
       {
-        "task":              str,
-        "timestamp":         ISO-8601 UTC,
-        "detected_signals":  {
-            "publish_release_build": int,   # BUILD/PUBLISH score
-            "ui_frontend":           int,   # UI DELIVERY score
-            "bug_fix":               int,   # BUG score
-            "metrics_research":      int,   # PERFORMANCE/METRIC score
-            "memory_recall":         int,   # MEMORY score
-            "multi_agent":           int,   # MULTI-AGENT score
-            "research":              int,   # RESEARCH score (additional signal)
-            "feature":               int,   # FEATURE / default score
+        "task":                         str,
+        "timestamp":                    ISO-8601 UTC,
+        "detected_signals":             {
+            "publish_release_build":   0|1,    # BUILD/PUBLISH signal (binary flag)
+            "ui_frontend":             int,    # UI DELIVERY score
+            "bug_fix":                 int,    # BUG score
+            "metrics_research":        int,    # PERFORMANCE/METRIC score
+            "memory_recall":           int,    # MEMORY score
+            "multi_agent":             int,    # MULTI-AGENT score
+            "research":                int,    # RESEARCH score (additional signal)
+            "feature":                 int,    # FEATURE / default score
         },
-        "selected_workflow":  str,         # verdict text (e.g. "UI DELIVERY", "MEMORY")
-        "selected_stages":    [str],       # ordered list of stage keys
-        "skipped_stages":     [str],       # stage keys that scored 0
-        "reasons":            [str],       # human-readable explanations
-        "dispatch":           str,         # exact command (or "" for no-dispatch paths)
+        "selected_workflow":             str,   # clean workflow name (e.g. "UI DELIVERY", "MEMORY", "BUILD/PUBLISH")
+        "selected_workflow_description": str,   # full human-readable description (e.g. "unslop audit (score≥70) is BLOCKING before delegate-team.")
+        "selected_stages":              [str], # ordered list of stage keys
+        "skipped_stages":               [str], # stage keys that scored 0
+        "reasons":                      [str], # human-readable explanations
+        "dispatch":                     str,   # exact command (or "" for no-dispatch paths)
+        "kernel_used":                  0|1,   # 1 if agent-kernel is present in this trace
       }
 
     This is the ONLY output when --json is used. Any debug/decorative output
@@ -604,9 +606,26 @@ def build_json_trace(task: str, scores: Dict[str, int]) -> dict:
     verdict = pick_verdict(n, scores) if scores else "TRIVIAL"
     dispatch = _dispatch_command(n, scores) if scores else ""
 
-    # Translate internal scoring keys → spec-required signal buckets
+    # Split the verdict into clean name + descriptive tail.
+    # e.g. "UI DELIVERY path — unslop audit (score≥70) is BLOCKING before delegate-team."
+    #   → name: "UI DELIVERY"
+    #   → desc: "unslop audit (score≥70) is BLOCKING before delegate-team."
+    if " path " in verdict:
+        wf_name, wf_desc_full = verdict.split(" path ", 1)
+        # Strip leading em-dash / colon / whitespace from the description
+        wf_desc = wf_desc_full.lstrip(" —:-")
+    elif verdict == "TRIVIAL":
+        wf_name = "TRIVIAL"
+        wf_desc = "handle locally, skip the chain."
+    else:
+        wf_name = verdict
+        wf_desc = ""
+
+    # Translate internal scoring keys → spec-required signal buckets.
+    # publish_release_build is a BINARY flag (0|1) — it does NOT carry the
+    # combined score, because tests assert `.toBe(1)` exactly.
     detected_signals = {
-        "publish_release_build": int(scores.get("think", 0) if any_pat(BUILD_PATS, n) else 0),
+        "publish_release_build": 1 if any_pat(BUILD_PATS, n) else 0,
         "ui_frontend":           int(scores.get("unslop", 0)),
         "bug_fix":               int(scores.get("systematic", 0)),
         "metrics_research":      int(scores.get("autoresearch", 0)),
@@ -631,6 +650,8 @@ def build_json_trace(task: str, scores: Dict[str, int]) -> dict:
         reasons.append("Memory recall signal matched (remember / what did we / last time).")
     if scores.get("research", 0) >= 4:
         reasons.append("Research signal matched (research / investigate / study / explore).")
+    if any_pat(BUILD_PATS, n):
+        reasons.append("Publish / release / ship / deploy / github signal matched.")
     if scores.get("autoresearch", 0) >= 3:
         reasons.append("Performance metric or named-perf keyword present.")
     if scores.get("unslop", 0) >= 3:
@@ -644,15 +665,31 @@ def build_json_trace(task: str, scores: Dict[str, int]) -> dict:
     if not reasons:
         reasons.append("Trivial task — no chain invoked.")
 
+    # kernel_used: 1 if agent-kernel is present + score > 0 for memory/stages,
+    # OR if --check-kernel was passed. detect_integrations() reads from
+    # the catalog and is safe to call from anywhere.
+    kernel_info = detect_integrations().get("agent-kernel", {})
+    if check_kernel:
+        # User asked explicitly: report 1 if installed, 0 if not.
+        kernel_used = 1 if kernel_info.get("installed") else 0
+    else:
+        kernel_used = 1 if (kernel_info.get("installed") and (
+            scores.get("memory", 0) > 0
+            or scores.get("systematic", 0) > 0
+            or scores.get("delegate", 0) > 0
+        )) else 0
+
     return {
-        "task":              task,
-        "timestamp":         _dt.datetime.now(_dt.timezone.utc).isoformat(),
-        "detected_signals":  detected_signals,
-        "selected_workflow":  verdict,
-        "selected_stages":   selected_stages,
-        "skipped_stages":    skipped_stages,
-        "reasons":           reasons,
-        "dispatch":          dispatch,
+        "task":                         task,
+        "timestamp":                    _dt.datetime.now(_dt.timezone.utc).isoformat(),
+        "detected_signals":             detected_signals,
+        "selected_workflow":            wf_name,
+        "selected_workflow_description": wf_desc,
+        "selected_stages":              selected_stages,
+        "skipped_stages":               skipped_stages,
+        "reasons":                      reasons,
+        "dispatch":                     dispatch,
+        "kernel_used":                  kernel_used,
     }
 
 
@@ -1133,6 +1170,7 @@ def main(argv: List[str]) -> int:
     prewarm = False
     as_json = False
     no_trace_file = False
+    check_kernel = False
     brief_path: Optional[str] = None
     args: List[str] = []
     i = 1
@@ -1150,6 +1188,8 @@ def main(argv: List[str]) -> int:
             as_json = True
         elif a == "--no-trace-file":
             no_trace_file = True
+        elif a == "--check-kernel":
+            check_kernel = True
         elif a == "--brief" and i + 1 < len(argv):
             brief_path = argv[i + 1]
             i += 1
@@ -1178,7 +1218,7 @@ def main(argv: List[str]) -> int:
     if as_json:
         import json
         import time
-        trace = build_json_trace(task, scores)
+        trace = build_json_trace(task, scores, check_kernel=check_kernel)
         # Write only the JSON to stdout. Any other output is forbidden here.
         sys.stdout.write(json.dumps(trace, indent=2, ensure_ascii=False) + "\n")
         sys.stdout.flush()
