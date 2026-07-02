@@ -89,7 +89,7 @@
     "**/.parcel-cache/**"
   ],
   "engines": {
-    "node": ">=18",
+    "node": ">=20",
     "python": ">=3.8"
   },
   "publishConfig": {

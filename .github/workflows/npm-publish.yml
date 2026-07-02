@@ -5,6 +5,18 @@ name: npm publish
 #
 # Required repository secrets:
 #   - NPM_TOKEN  — npm automation token (read-write, classic NOT OIDC for now)
+#
+# Usage:
+#   1. Tag a commit:  git tag v2.7.1 && git push --tags
+#      → CI builds, tests, then publishes + dist-tags "latest"
+#
+#   2. Manual dispatch with dry-run:
+#      → GitHub UI → Actions → npm publish → Run workflow → dry-run=true
+#      → CI builds, tests, dry-runs `npm publish --dry-run` (no NPM_TOKEN needed)
+#
+#   3. Manual dispatch with real publish:
+#      → GitHub UI → Actions → npm publish → Run workflow → dry-run=false
+#      → Requires NPM_TOKEN secret. Publishes + dist-tags "latest"
 
 on:
   push:
@@ -13,9 +25,9 @@ on:
   workflow_dispatch:
     inputs:
       dry-run:
-        description: 'Run in dry-run mode (no actual publish)'
+        description: 'Run in dry-run mode (no actual publish, no NPM_TOKEN required)'
         required: false
-        default: 'false'
+        default: 'true'
 
 permissions:
   contents: read
@@ -23,7 +35,7 @@ permissions:
 
 jobs:
   publish:
-    name: Build & Publish to npm
+    name: Build, Test & Publish to npm
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -50,54 +62,114 @@ jobs:
         run: npm run build
         shell: bash
 
+      # ─────────────────────────────────────────────────────────────────────
+      # Quality gates: run the full test suite before publishing
+      # ─────────────────────────────────────────────────────────────────────
+      - name: Run orchestrator selftest (49/49 routing cases)
+        run: python3 orchestrator/scripts/orchestrate.py --selftest
+        shell: bash
+
+      - name: Run v2.7.0 release smoke tests (10/10)
+        run: bash tests/test-v2.7.0.sh
+        shell: bash
+
       - name: Validate npm package contents
         run: |
           echo "--- npm pack dry-run ---"
           npm pack --dry-run
           echo
           echo "--- file count + size sanity ---"
-          tar -tzf "$(npm pack | tail -1)" | wc -l
-          ls -la "$(npm pack | tail -1)"
+          PACK_FILE=$(npm pack | tail -1)
+          echo "  tarball:    $PACK_FILE"
+          echo "  file count: $(tar -tzf "$PACK_FILE" | wc -l)"
+          echo "  size:       $(ls -la "$PACK_FILE" | awk '{print $5}') bytes"
+
+          # Verify ONLY 1 JSON file in tarball (package.json) — bundlephobia-guard
+          JSON_COUNT=$(tar -tzf "$PACK_FILE" | grep -c '\.json$' || true)
+          if [ "$JSON_COUNT" -ne 1 ]; then
+            echo "::error::Expected 1 JSON file in tarball, found $JSON_COUNT"
+            exit 1
+          fi
+          echo "  ✅ bundlephobia-guard: $JSON_COUNT JSON file in tarball"
         shell: bash
 
-      - name: Publish to npm
+      # ─────────────────────────────────────────────────────────────────────
+      # Publish: tag-pushed OR manual workflow_dispatch
+      # ─────────────────────────────────────────────────────────────────────
+      - name: Publish to npm (on tag push)
+        id: publish_tag
         if: startsWith(github.ref, 'refs/tags/v')
         run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         shell: bash
 
-      - name: Publish (manual / dry-run)
+      - name: Publish (manual / dry-run dispatch)
+        id: publish_manual
         if: github.event_name == 'workflow_dispatch'
         run: |
-          if [ "${{ inputs.dry-run }}" = "true" ]; then
-            echo "--- DRY RUN: would publish ${{ github.ref }} ---"
+          if [ "${{ inputs.dry-run }}" = "true" ] || [ "${{ inputs.dry-run }}" = "" ]; then
+            # Dry-run: NO NPM_TOKEN needed. Just emit the tarball preview.
+            echo "════════════════════════════════════════════"
+            echo "  DRY RUN MODE — no auth required"
+            echo "════════════════════════════════════════════"
+            echo "  Would publish: ${{ github.ref_name }}"
+            echo "  To:           https://registry.npmjs.org/"
+            echo "  Access:       public"
+            echo ""
+            echo "--- npm publish --dry-run output ---"
             npm publish --dry-run --access public
           else
+            # Real publish: requires NPM_TOKEN
+            echo "--- Real publish: ${{ github.ref_name }} ---"
             npm publish --access public --provenance
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         shell: bash
 
+      # ─────────────────────────────────────────────────────────────────────
+      # Post-publish: verify on npm registry + dist-tag = latest
+      # ─────────────────────────────────────────────────────────────────────
       - name: Verify on npm registry
-        if: success()
+        if: success() && (steps.publish_tag.conclusion == 'success' || steps.publish_manual.conclusion == 'success')
         run: |
-          sleep 8  # allow registry to update
-          echo "--- npm view delegate-team ---"
-          npm view delegate-team version
-          npm view delegate-team dist-tags
-          echo
+          # Wait for registry propagation (up to 30s with retries)
+          for i in 1 2 3 4 5 6; do
+            sleep 5
+            if npm view delegate-team version >/dev/null 2>&1; then
+              echo "--- npm view delegate-team (after ${i}x5s) ---"
+              npm view delegate-team version
+              npm view delegate-team dist-tags
+              break
+            fi
+            echo "  attempt $i: registry not yet updated, retrying..."
+          done
+
+          echo ""
           echo "--- installable test ---"
           npx -y delegate-team --version 2>&1 | head -3 || true
         shell: bash
 
-      - name: Tag the commit on the npm-published release
-        if: success() && startsWith(github.ref, 'refs/tags/v')
+      - name: Tag release as 'latest' on npm
+        if: success() && steps.publish_tag.conclusion == 'success' && startsWith(github.ref, 'refs/tags/v')
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
-          echo "Tagging release $VERSION as latest on npm..."
-          npm dist-tag add "delegate-team@$VERSION" latest
+          echo "Tagging release $VERSION as 'latest' on npm..."
+
+          # Retry up to 5 times (registry mirrors may need time)
+          for i in 1 2 3 4 5; do
+            if npm dist-tag add "delegate-team@$VERSION" latest; then
+              echo "  ✅ Tag 'latest' → $VERSION (attempt $i)"
+              npm view delegate-team dist-tags
+              exit 0
+            fi
+            echo "  attempt $i failed, retrying in 6s..."
+            sleep 6
+          done
+
+          echo "::error::Failed to add tag 'latest' after 5 attempts"
+          exit 1
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         shell: bash
