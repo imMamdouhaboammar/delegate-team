@@ -1,23 +1,10 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { WORKSPACE_ROOT } from '../config/index.js';
 
-const here = dirname(fileURLToPath(import.meta.url));
-// When bundled by tsup, route.ts ends up inlined into dist/cli.js, so
-// `here` is the dist/ directory at runtime. The orchestrator script
-// lives at <repo>/orchestrator/scripts/orchestrate.sh — i.e. one level
-// up from dist/. Try that first, then fall back to two levels up in
-// case the file is loaded unbundled (e.g. ts-node, vitest).
 function resolveOrchestrator(): string {
-  const candidates = [
-    join(here, '..', 'orchestrator', 'scripts', 'orchestrate.sh'),
-    join(here, '..', '..', 'orchestrator', 'scripts', 'orchestrate.sh'),
-  ];
-  for (const c of candidates) {
-    if (existsSync(c)) return c;
-  }
-  return candidates[0]; // best guess; will trigger the not-found branch.
+  return join(WORKSPACE_ROOT, 'orchestrator', 'scripts', 'orchestrate.sh');
 }
 
 const ORCHESTRATE = resolveOrchestrator();
@@ -36,15 +23,20 @@ function readLatestTrace(traceDir: string): string | null {
   if (!existsSync(traceDir)) {
     return null;
   }
+
   const files = readdirSync(traceDir)
-    .filter((f) => f.endsWith('.json'))
-    .sort()
-    .reverse();
+    .filter((file) => file.endsWith('.json'))
+    .map((file) => {
+      const path = join(traceDir, file);
+      return { file, path, mtimeMs: statSync(path).mtimeMs };
+    })
+    .sort((a, b) => b.mtimeMs - a.mtimeMs || b.file.localeCompare(a.file));
+
   if (files.length === 0) {
     return null;
   }
-  const latest = files[0];
-  return readFileSync(join(traceDir, latest), 'utf8');
+
+  return readFileSync(files[0].path, 'utf8');
 }
 
 export function runRouteExplain(task: string, options: RouteOptions): number {
