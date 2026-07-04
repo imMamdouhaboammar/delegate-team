@@ -1,20 +1,18 @@
 name: release
 
-# Auto-create a GitHub Release on every `vX.Y.Z` tag push.
+# Auto-create a GitHub Release on every valid `vX.Y.Z` tag push.
 #
 # Composes with `.github/release.yml` which provides the PR-label-based
 # category mapping used by `generate_release_notes`.
 #
 # Required permissions:
 #   - contents: write   — to create the release
-#   - id-token: write   — for npm provenance (when this workflow chains
-#                         npm-publish.yml via needs:, the npm publish
-#                         action uses the OIDC token)
+#   - id-token: write   — for npm provenance if release jobs are later chained
 
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v*'
   workflow_dispatch:
     inputs:
       tag:
@@ -31,7 +29,6 @@ permissions:
   id-token: write
 
 env:
-  # Available to all jobs below (replaces the broken ${{ needs.create-release.outputs.tag }})
   TARGET_TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
@@ -42,15 +39,25 @@ jobs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       body: ${{ steps.create_release.outputs.body }}
     steps:
-      - name: Resolve tag
+      - name: Resolve and validate tag
         id: tag
         shell: bash
         run: |
+          set -euo pipefail
           if [ -n "${{ inputs.tag }}" ]; then
-            echo "name=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+            TAG="${{ inputs.tag }}"
           else
-            echo "name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+            TAG="${GITHUB_REF#refs/tags/}"
           fi
+
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Release tag must match vX.Y.Z. Got: $TAG"
+            exit 1
+          fi
+
+          echo "name=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Resolved release tag: $TAG"
+
       - name: Expose tag for downstream jobs
         id: tag-meta
         shell: bash
@@ -68,13 +75,19 @@ jobs:
         id: baseline
         shell: bash
         run: |
+          set -euo pipefail
           TAG="${{ steps.tag.outputs.name }}"
-          PREV=$(git tag --sort=-version:refname \
-              2>/dev/null | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
-              | awk -v t="$TAG" '$0 < t' \
-              | head -1)
+          PREV=""
+
+          while IFS= read -r candidate; do
+            if [[ "$candidate" == "$TAG" ]]; then
+              break
+            fi
+            PREV="$candidate"
+          done < <(git tag | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V)
+
           echo "name=${PREV}" >> "$GITHUB_OUTPUT"
-          echo "previous tag: ${PREV:-<none — full repo history>}"
+          echo "previous tag: ${PREV:-<none - full repo history>}"
 
       - name: Generate release notes (PR-based auto-categorization)
         id: notes
@@ -132,13 +145,12 @@ jobs:
           } > /tmp/release-body.md
           echo "body written ($(wc -c < /tmp/release-body.md) bytes)"
 
-      - name: Create release (idempotent — skip if already exists)
+      - name: Create release (idempotent - skip if already exists)
         id: create_release
         uses: actions/github-script@v7
         with:
           script: |
             const TAG = '${{ steps.tag.outputs.name }}';
-            // Check if release already exists
             try {
               const { data: existing } = await github.rest.repos.getReleaseByTag({
                 owner: context.repo.owner,
@@ -160,11 +172,11 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               tag_name: TAG,
-              name: `🛠️ ${TAG} — auto release`,
+              name: `🛠️ ${TAG} - auto release`,
               body: body,
               draft: false,
               prerelease: false,
-              generate_release_notes: false,  // we already wrote them
+              generate_release_notes: false,
             });
 
             core.setOutput('upload_url', data.upload_url);
@@ -253,11 +265,11 @@ jobs:
                                 (aMaj === bMaj && aMin > bMin) ||
                                 (aMaj === bMaj && aMin === bMin && aPat > bPat);
               if (!oursNewer) {
-                core.info(`Not marking as latest — newer release ${latest.tag_name} exists`);
+                core.info(`Not marking as latest. Newer release ${latest.tag_name} exists`);
                 return;
               }
             } catch (e) {
-              // No prior release exists → we're the latest by default
+              // No prior release exists, so this release is latest by default.
             }
             await github.rest.repos.updateRelease({
               owner: context.repo.owner,
