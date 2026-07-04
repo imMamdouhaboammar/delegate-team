@@ -1,48 +1,38 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "delegate-team",
-  "description": "Agentic engineering supersystem. The main plugin installs /mavis-ship orchestrator, mm multi-agent framework, mavis-skill-scaffold, and integrates with the original `dt` gateway CLI. Companion plugins expose individual backends.",
+  "description": "Delegate Team plugin marketplace manifest.",
   "owner": {
     "name": "Mamdouh Aboammar",
     "email": "maintainers@delegate-team.dev"
   },
-  "version": "2.7.1",
+  "version": "2.7.2",
   "homepage": "https://github.com/imMamdouhaboammar/delegate-team",
   "repository": "https://github.com/imMamdouhaboammar/delegate-team",
   "license": "MIT",
   "keywords": [
-    "agentic-engineering",
     "delegation",
     "orchestration",
     "multi-agent",
     "ai-coding",
-    "claude-code",
-    "codex",
-    "minimax",
-    "gemini"
+    "claude-code"
   ],
   "plugins": [
     {
       "name": "delegate-team",
-      "version": "2.7.1",
-      "description": "Main plugin \u2014 installs /mavis-ship orchestrator + mm multi-agent framework + skill-scaffolder + agent-kernel memory + integrations on top of the dt gateway CLI.",
+      "version": "2.7.2",
+      "description": "Main Delegate Team plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team",
-      "tags": [
-        "orchestrator",
-        "default",
-        "engineering"
-      ],
+      "tags": ["orchestrator", "default", "engineering"],
       "source": "./",
       "strict": false,
-      "skills": [
-        "./"
-      ]
+      "skills": ["./"]
     },
     {
       "name": "dt",
-      "version": "2.7.1",
-      "description": "The original `dt` CLI \u2014 gates Claude Code tasks to backend coders (Codex, MiniMax, Gemini, MetaGPT) with policy + failover.",
+      "version": "2.7.2",
+      "description": "dt gateway CLI plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/src",
       "source": "./src",
@@ -51,87 +41,73 @@
     },
     {
       "name": "delegate-team-orchestrator",
-      "version": "2.7.1",
-      "description": "The /mavis-ship orchestrator in isolation \u2014 single skill (no other components).",
+      "version": "2.7.2",
+      "description": "Orchestrator plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/orchestrator",
       "source": "./orchestrator",
       "strict": false,
-      "skills": [
-        "./"
-      ]
+      "skills": ["./"]
     },
     {
       "name": "delegate-team-mmas",
-      "version": "2.7.1",
-      "description": "Multi-agent team framework \u2014 8 specialized agents, spawn-team.py orchestrator, watchdog.sh, hash-edit.py. Reads shared memory from agent-kernel.",
+      "version": "2.7.2",
+      "description": "MMAS plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/mmas",
       "source": "./mmas",
       "strict": false,
-      "skills": [
-        "./"
-      ]
+      "skills": ["./"]
     },
     {
       "name": "delegate-team-scaffolder",
-      "version": "2.7.1",
-      "description": "mavis-skill-scaffold \u2014 generate properly-structured Mavis skill directories in one shot.",
+      "version": "2.7.2",
+      "description": "Skill scaffolder plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/scaffolder",
       "source": "./scaffolder",
       "strict": false,
-      "skills": [
-        "./"
-      ]
+      "skills": ["./"]
     },
     {
       "name": "delegate-team-god-agent",
-      "version": "2.7.1",
-      "description": "God Agent \u2014 multi-CLI dispatcher for Codex (codex CLI) and opencode-routed models (qwen, kimi, glm).",
+      "version": "2.7.2",
+      "description": "Backend dispatcher plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/god-agent",
       "source": "./god-agent",
       "strict": false,
-      "skills": [
-        "./"
-      ]
+      "skills": ["./"]
     },
     {
       "name": "delegate-team-minimax-coder",
-      "version": "2.7.1",
-      "description": "MiniMax-Coder \u2014 MiniMax-M3 / M2.7 / M2.7-highspeed backend via the mmx CLI.",
+      "version": "2.7.2",
+      "description": "MiniMax coder plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/minimax-coder",
       "source": "./minimax-coder",
       "strict": false,
-      "skills": [
-        "./"
-      ]
+      "skills": ["./"]
     },
     {
       "name": "delegate-team-vertex-coder",
-      "version": "2.7.1",
-      "description": "Vertex-Coder \u2014 Gemini family backend via the google.genai SDK.",
+      "version": "2.7.2",
+      "description": "Vertex coder plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/vertex-coder",
       "source": "./vertex-coder",
       "strict": false,
-      "skills": [
-        "./"
-      ]
+      "skills": ["./"]
     },
     {
       "name": "delegate-team-agent-kernel",
-      "version": "2.7.1",
-      "description": "agent-kernel \u2014 local-first memory + governance layer. Shared rules, episodic recall, approval inbox, deterministic policy guard. Vendored @mamdouh/agent-kernel v0.0.5.",
+      "version": "2.7.2",
+      "description": "Agent kernel plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/agent-kernel",
       "source": "./agent-kernel",
       "strict": false,
-      "skills": [
-        "./"
-      ]
+      "skills": ["./"]
     }
   ]
 }
