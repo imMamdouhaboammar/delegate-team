@@ -4,7 +4,25 @@ import { readFileSync, existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
+import { timingSafeEqual } from 'node:crypto';
 import { WORKSPACE_ROOT } from '../config/index.js';
+
+const DEFAULT_MAX_BODY_BYTES = 2 * 1024 * 1024;
+
+function readPositiveIntEnv(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (!raw) return fallback;
+
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    console.warn(`[PROXY] Ignoring invalid ${name}=${raw}. Using ${fallback}.`);
+    return fallback;
+  }
+
+  return parsed;
+}
+
+const MAX_BODY_BYTES = readPositiveIntEnv("DT_PROXY_MAX_BODY", DEFAULT_MAX_BODY_BYTES);
 
 const FALLBACK_RING: Record<string, string[]> = {
   gemini: ["openrouter", "openai"],
@@ -17,6 +35,26 @@ function redact(s: any) {
   return String(s)
     .replace(/Bearer\s+[A-Za-z0-9._-]+/gi, "Bearer [REDACTED]")
     .replace(/(api[_-]?key["']?\s*[:=]\s*["']?)[^"',\s]+/gi, "$1[REDACTED]");
+}
+
+function firstHeader(value: string | string[] | undefined): string | undefined {
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
+
+function extractAuthToken(req: http.IncomingMessage): string | undefined {
+  const bearer = firstHeader(req.headers.authorization)?.replace(/^Bearer\s+/i, "");
+  return bearer || firstHeader(req.headers["x-api-key"]);
+}
+
+function safeTokenEqual(actual: string | undefined, expected: string | undefined): boolean {
+  if (!actual || !expected) return false;
+
+  const actualBuffer = Buffer.from(actual);
+  const expectedBuffer = Buffer.from(expected);
+
+  if (actualBuffer.length !== expectedBuffer.length) return false;
+  return timingSafeEqual(actualBuffer, expectedBuffer);
 }
 
 function readEnvFile(filePath: string): Record<string, string> {
@@ -324,9 +362,9 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
     return res.end("Proxy requires a configured proxy_token in ~/.config/dt/config.json or PROXY_TOKEN env var");
   }
 
-  const authHeader = req.headers["authorization"]?.replace(/^Bearer\s+/i, "") || req.headers["x-api-key"] as string;
+  const authHeader = extractAuthToken(req);
 
-  if (authHeader !== requiredToken) {
+  if (!safeTokenEqual(authHeader, String(requiredToken))) {
     res.writeHead(401);
     return res.end("Unauthorized");
   }
@@ -337,7 +375,6 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
   }
 
   let body = "";
-  const MAX_BODY_BYTES = 2 * 1024 * 1024; // 2MB
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
@@ -557,5 +594,6 @@ export function runServe(port: number) {
   const server = http.createServer(handleRequest);
   server.listen(port, '127.0.0.1', () => {
     console.log(`\n🚀 Starting LLM Gateway Proxy Server on http://127.0.0.1:${port}...`);
+    console.log(`[PROXY] Max body bytes: ${MAX_BODY_BYTES}`);
   });
 }
