@@ -24,24 +24,26 @@ the per-component docs linked below.
 
 ### Layer 1 — dt CLI
 
-- npm package: `delegate-team` (≈21 KB tarball, single `dist/cli.js`).
-- Surfaces: `dt run`, `dt doctor`, `dt metagpt`, `dt serve`, `dt route`.
+- npm package: `delegate-team`.
+- Surfaces: `dt run`, `dt run --dry-run`, `dt doctor --json`, `dt metagpt`,
+  `dt serve`, `dt route`.
 - Standalone: does not require `/mavis-ship`, agent-kernel, or MMAS.
-- Use when: you want to dispatch a task to a known backend, or run the LLM
+- Use when: you want to inspect or dispatch a task to a backend, or run the LLM
   gateway proxy on `127.0.0.1:3000`.
 
 ### Layer 2 — /mavis-ship orchestrator
 
 - Bash + Skills.sh skill at `orchestrator/`.
 - Symlinks installed to `~/.mavis/skills/mavis-ship/` and `~/.claude/commands/mavis-ship.md`.
-- Inspects the natural-language task, scores 11 stage signals, picks a verdict,
-  writes a structured trace to `.logs/routing/*.json`.
+- Inspects the natural-language task, scores stage signals, picks a verdict,
+  and writes a structured route trace.
+- `dt route --last` selects the newest trace by file modification time.
 - Use when: you have a natural-language task and want the right stage chain.
 - See [ROUTING.md](./ROUTING.md).
 
 ### Layer 3 — agent-kernel (companion)
 
-- Vendored at `agent-kernel/dist/cli.mjs` (~85 KB).
+- Vendored at `agent-kernel/dist/cli.mjs`.
 - Single source of truth for: shared rules, episodic memory, approval inbox,
   generated `AGENTS.md` / `CLAUDE.md` / cursor rules.
 - **Opt-in**: the orchestrator skips the memory stage entirely when
@@ -52,9 +54,12 @@ the per-component docs linked below.
 
 - Python team runtime at `mmas/spawn-team.py` + `mmas/watchdog.sh`.
 - Spawns 1–8 specialist agents (Atlas / Forge / Scout / Oracle / Librarian /
-  Reviewer / Visionary / Sentinel) in parallel, watches them with a 30 s
-  watchdog.
-- Guardrails: max agents cap, per-agent timeout, plan-only mode, kill switch.
+  Reviewer / Visionary / Sentinel) in parallel, watches them with a watchdog.
+- Agents and watchdogs are started with `start_new_session=True`, which gives
+  each worker a detached process group. The stop command terminates those
+  groups, not just parent PIDs.
+- Guardrails: max agents cap, per-agent timeout, plan-only mode, process-group
+  cleanup, kill switch.
 - See [MMAS.md](./MMAS.md).
 
 ### Layer 5 — Backend agents
@@ -73,9 +78,9 @@ the per-component docs linked below.
 2. Slash command loads orchestrator/SKILL.md
 3. Orchestrator runs: mavis-orchestrate "X"
 4. mavis-orchestrate:
-     a. Lowercases + scores 11 stage signals
+     a. Lowercases + scores stage signals
      b. Picks verdict (RESEARCH / MEMORY / BUILD / PERF / UI / MMAS / BUG / FEATURE / default)
-     c. Writes trace JSON to .logs/routing/<timestamp>.json
+     c. Writes trace JSON
      d. Prints human-readable summary
 5. Orchestrator SKILL.md drives execution of the chosen stages:
      - /think (Waza)
@@ -90,6 +95,30 @@ the per-component docs linked below.
 
 ---
 
+## Release flow
+
+```
+package.json version bump
+        ↓
+npm run version:check
+        ↓
+package-lock warning if stale
+        ↓
+CI: typecheck + build + test + npm pack validation
+        ↓
+npm publish --provenance if version is new
+        ↓
+registry verify + npx install verify
+        ↓
+matching Git tag and GitHub Release
+```
+
+The publish workflow does not blindly publish on every push. It checks whether
+`package.json.version` already exists on npm and skips publish when the version
+is already present.
+
+---
+
 ## What lives in the repo vs. on the user's machine
 
 | Lives in repo | Lives on user machine after install |
@@ -98,30 +127,33 @@ the per-component docs linked below.
 | `orchestrator/SKILL.md`, `orchestrate.sh` | `~/.mavis/skills/mavis-ship/`, `~/.claude/commands/mavis-ship.md` |
 | `mmas/spawn-team.py`, `watchdog.sh`, `agents/*.yaml` | `~/.mavis/agents/mavis/multi-agent/` |
 | `agent-kernel/dist/cli.mjs` | `~/.agent-kernel/` (memory home), `~/.local/bin/agent-kernel` |
-| `install.sh` | (not copied — run from clone) |
+| `install.sh` | run from clone |
 | `integrations/*.md` (docs) | `~/.claude/skills/`, `~/.claude/commands/` for companion frameworks |
 
 ---
 
 ## Trust boundaries
 
-1. **`dt` is sandboxed** — workspace-bound, command-allowlisted, MCP opt-in via
+1. **`dt` is sandboxed**: workspace-bound, command-allowlisted, MCP opt-in via
    `DT_ENABLE_MCP=true`. See [SECURITY-MODEL.md](./SECURITY-MODEL.md).
-2. **`/mavis-ship` is advisory** — the orchestrator prints a routing decision
+2. **`/mavis-ship` is advisory**: the orchestrator prints a routing decision
    and the SKILL.md drives execution through Claude Code's tool surface. The
    orchestrator never executes code directly; it tells the agent what to do.
-3. **MMAS is process-spawning** — agents run as detached subprocesses. Each
-   agent is sandboxed by `cwd=<task_dir>`, with `start_new_session=True` and
-   bounded lifetime.
-4. **agent-kernel is file-system-rooted** — its memory home is a regular
+3. **MMAS is process-spawning**: agents run as detached subprocess groups. Each
+   agent is sandboxed by `cwd=<task_dir>`, bounded by guardrails, and cleaned up
+   by process group.
+4. **agent-kernel is file-system-rooted**: its memory home is a regular
    directory the user can `cat`, `grep`, and back up with normal Unix tools.
+5. **npm publishing is CI-governed**: version drift, missing runtime files,
+   secret-like package contents, and mismatched tags are blocked or warned
+   before publish.
 
 ---
 
 ## Compatibility
 
-- Node ≥ 18 for the `dt` CLI and the agent-kernel CLI.
-- Python ≥ 3.10 for MMAS and the backend agents.
+- Node ≥ 20 for the `dt` CLI.
+- Python ≥ 3.10 for MMAS and backend agents.
 - Bash ≥ 4 for the orchestrator.
 - Tested on macOS, Ubuntu, Windows WSL2.
 
