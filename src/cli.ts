@@ -138,6 +138,7 @@ program
   .option('--team', 'Force routing to the MetaGPT team orchestrator')
   .option('--allow-install', 'Allow package installation during execution')
   .option('--approve-write', 'Require human approval before writing to disk')
+  .option('--dry-run', 'Show routing and fallback plan without executing a backend')
   .action((promptArray, options) => {
     const prompt = Array.isArray(promptArray) ? promptArray.join(" ") : promptArray;
     runDispatch(prompt, options);
