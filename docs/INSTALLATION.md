@@ -9,7 +9,7 @@
 | **Lane 2** | `/mavis-ship` in Claude Code | Lane 1 + the `mavis-ship` skill + `mavis-orchestrate` CLI | 2m |
 | **Lane 3** | Full local agent OS | Lane 2 + MMAS + agent-kernel + companion frameworks | 5–10m |
 
-Don't know which lane? Read the [README](./README.md) first. The rest of this
+Don't know which lane? Read the [README](../README.md) first. The rest of this
 doc is the technical reference.
 
 ---
@@ -21,22 +21,25 @@ doc is the technical reference.
 npm install -g delegate-team
 
 # Verify
-dt --version         # → 2.5.1
-dt doctor            # backend health check (advisory only)
+dt --version
+dt doctor            # human-readable backend health check
+dt doctor --json     # machine-readable output for CI / scripts
 
 # Use
-dt run "<task>"      # dispatch with auto backend selection
-dt run "<task>" -b minimax-coder   # force a specific backend
+dt run "<task>"                    # dispatch with auto backend selection
+dt run "<task>" --dry-run          # show selected backend and fallback chain
+dt run "<task>" -b minimax         # force a specific backend
 
 # Uninstall
 npm uninstall -g delegate-team
 ```
 
 **What you get**: a single Node CLI. No skills, no hooks, no companion
-frameworks, no network calls at runtime.
+frameworks, no network calls at runtime unless you explicitly dispatch to a
+backend that uses network credentials.
 
-**What you do NOT get**: `/mavis-ship`, MMAS, agent-kernel, orchestrator routing.
-Those are Lane 2 / Lane 3.
+**What you do NOT get**: `/mavis-ship`, MMAS, agent-kernel, or companion
+framework installation. Those are Lane 2 / Lane 3.
 
 ---
 
@@ -74,12 +77,12 @@ Use Lane 3 for those.
 # 1. Install the dt CLI first (Lane 1)
 npm install -g delegate-team
 
-# 2. Clone + install everything
+# 2. Clone + inspect everything before installing
 git clone https://github.com/imMamdouhaboammar/delegate-team
 cd delegate-team
 
-# 2a. Dry-run first — see what would change on disk
-./install.sh --all --dry-run
+# 2a. Safest preview: no writes, no network
+./install.sh --all --dry-run --no-network --trust-mode strict
 
 # 2b. Trust mode: pick strict / normal / dev
 ./install.sh --all --trust-mode normal --yes
@@ -110,6 +113,40 @@ cd delegate-team
 
 ---
 
+## Non-interactive `dt setup`
+
+Use this path for CI, bootstrap scripts, or machines where prompts are not
+acceptable:
+
+```bash
+dt setup \
+  --project my-gcp-project \
+  --location us-central1 \
+  --skip-auth \
+  --skip-gcp-enable \
+  --skip-provision \
+  --yes
+```
+
+Flags:
+
+| Flag | Purpose |
+|---|---|
+| `--project <id>` | Set the GCP project without prompting. Required for reliable non-interactive setup. |
+| `--location <region>` | Write the configured GCP location. Defaults to `us-central1`. |
+| `--skip-auth` | Do not run `gcloud auth login` or ADC login. |
+| `--skip-gcp-enable` | Do not enable Vertex AI / Dialogflow APIs automatically. |
+| `--skip-provision` | Do not provision the Vertex AI agent. |
+| `--yes` | Use safe default answers where prompts still exist. |
+
+`dt setup` writes local config files with private permissions:
+
+- `~/.config/dt/config.json` → `0600`
+- `~/.metagpt/config2.yaml` → `0600`
+- containing directories → `0700`
+
+---
+
 ## Installation matrix
 
 | Component | Lane 1 | Lane 2 | Lane 3 |
@@ -132,6 +169,9 @@ cd delegate-team
 # Lane 1
 dt --version && dt doctor
 
+# Machine-readable health check
+dt doctor --json
+
 # Lane 2 + 3
 ./install.sh --verify
 ```
@@ -150,6 +190,7 @@ The installer touches these locations on a normal Lane 3 install:
 - `~/.agent-kernel/` — memory home (kernel-managed)
 - `~/.local/bin/` and `~/bin/` — CLI symlinks
 - `~/.config/dt/` — runtime config
+- `~/.metagpt/` — MetaGPT adapter config when `dt setup` is used
 
 Network calls:
 
@@ -157,8 +198,12 @@ Network calls:
 - Lane 3 — yes (npx skills add for Waza, optional `git clone` for unslop
   if `unslop` is not already on PATH, optional `agent-kernel init --sync` if
   you let the post-install hook run)
+- `dt setup` — Python package installs, optional gcloud auth, optional API
+  enablement, optional provisioning
 
-Pass `--no-network` to disable all of those.
+Pass `--no-network` to `install.sh` to disable installer network calls. Use
+`dt setup --skip-auth --skip-gcp-enable --skip-provision` when you need setup
+without cloud mutations.
 
 ---
 
@@ -171,6 +216,8 @@ Pass `--no-network` to disable all of those.
 | `mavis-orchestrate: command not found` | `~/.local/bin` not on PATH | `export PATH="$HOME/.local/bin:$PATH"` |
 | `agent-kernel: command not found` | kernel install skipped | `./install.sh --kernel` |
 | Permission denied on `~/.local/bin` | bindir mode | use `mkdir -p ~/.local/bin && chmod 700 ~/.local/bin` |
+| `dt setup --yes` aborts with no project | non-interactive setup needs a project | add `--project <id>` |
+| `dt run` cannot find `relay.mjs` or `opencode-router.mjs` | broken npm artifact or old install | upgrade with `npm install -g delegate-team@latest` and run `dt run --dry-run "test"` |
 
 ---
 
