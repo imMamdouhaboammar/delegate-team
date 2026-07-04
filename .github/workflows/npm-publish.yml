@@ -81,31 +81,17 @@ jobs:
           set -euo pipefail
           node --version
           npm --version
-          node - <<'NODE'
+          if node - <<'NODE'
           const cp = require('child_process');
           const version = cp.execSync('npm --version', { encoding: 'utf8' }).trim();
           const [major, minor, patch] = version.split('.').map(Number);
           const ok = major > 11 || (major === 11 && (minor > 5 || (minor === 5 && patch >= 1)));
-          if (!ok) process.exit(10);
+          process.exit(ok ? 0 : 1);
           NODE
-        shell: bash
-        continue-on-error: true
-
-      - name: Upgrade npm when runner image is behind
-        run: |
-          set -euo pipefail
-          node - <<'NODE'
-          const cp = require('child_process');
-          const version = cp.execSync('npm --version', { encoding: 'utf8' }).trim();
-          const [major, minor, patch] = version.split('.').map(Number);
-          const ok = major > 11 || (major === 11 && (minor > 5 || (minor === 5 && patch >= 1)));
-          if (!ok) {
-            console.log(`Current npm ${version} is older than 11.5.1. Installing npm@latest.`);
-            process.exit(10);
-          }
-          console.log(`npm ${version} is ready for trusted publishing.`);
-          NODE
-          if [ "$?" -eq 10 ]; then
+          then
+            echo "npm is ready for trusted publishing."
+          else
+            echo "npm is older than 11.5.1. Installing npm@latest."
             npm install -g npm@latest
           fi
           npm --version
