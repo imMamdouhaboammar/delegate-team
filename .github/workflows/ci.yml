@@ -120,10 +120,10 @@ jobs:
           # The pattern `new URL("../package.json", import.meta.url)` triggers
           # BundlePhobia's Rspack to try to bundle package.json as an asset,
           # which fails the .bundle suffix check.
-          if grep -E 'new URL\(["'"']\.\./package\.json["'"'],\s*import\.meta\.url\)' dist/cli.js; then
+          if grep -E "new URL\([\"']\.\./package\.json[\"'],\s*import\.meta\.url\)" dist/cli.js; then
             echo "  ✗ FOUND bundler-unsafe pattern: new URL('../package.json', import.meta.url)"
             echo "  BundlePhobia's Rspack bundler will fail with"
-            echo "  'Found an asset without the `.bundle` suffix' error."
+            echo "  'Found an asset without the \`.bundle\` suffix' error."
             echo "  Use fileURLToPath + dirname + join instead."
             exit 1
           fi
