@@ -38,16 +38,18 @@ program
   .alias('status')
   .description('Scan health, configs, and credential status of all backends')
   .option('--strict', 'Exit with code 1 if no backends are fully ready')
+  .option('--json', 'Print machine-readable JSON without ANSI formatting')
   .action((options) => {
-    runCheck(options.strict);
+    runCheck(options.strict, options.json);
   });
 
 program
   .command('doctor')
   .description('Alias for check command')
   .option('--strict', 'Exit with code 1 if no backends are fully ready')
+  .option('--json', 'Print machine-readable JSON without ANSI formatting')
   .action((options) => {
-    runCheck(options.strict);
+    runCheck(options.strict, options.json);
   });
 
 program
@@ -180,8 +182,8 @@ program
 if (process.argv.length > 2 && !process.argv[2].startsWith('-')) {
   const isCommand = ['check', 'status', 'doctor', 'link-skill', 'setup', 'init', 'auth', 'gcp-enable', 'vertex-provision', 'vx', 'vertex', 'metagpt', 'mg', 'run', 'dispatch', 'serve', 'proxy', 'route', 'kernel', 'kernel-version', 'help'].includes(process.argv[2]);
   if (!isCommand) {
-    console.error(`\\n❌ Error: Unknown command '${process.argv[2]}'.`);
-    console.error(`Run 'dt --help' to see available commands.\\n`);
+    console.error(`\n❌ Error: Unknown command '${process.argv[2]}'.`);
+    console.error(`Run 'dt --help' to see available commands.\n`);
     process.exit(1);
   }
 }
