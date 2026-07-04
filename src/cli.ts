@@ -63,8 +63,14 @@ program
   .command('setup')
   .alias('init')
   .description('Run autopilot setup to automatically configure dependencies, auth, GCP & agents')
-  .action(() => {
-    runSetup().catch(err => {
+  .option('--project <id>', 'GCP project ID for non-interactive setup')
+  .option('--location <region>', 'GCP location to write into dt config', 'us-central1')
+  .option('--skip-auth', 'Skip gcloud auth login and ADC login')
+  .option('--skip-gcp-enable', 'Skip enabling Vertex AI and Dialogflow APIs')
+  .option('--skip-provision', 'Skip Vertex AI agent provisioning')
+  .option('-y, --yes', 'Use safe default answers for setup prompts')
+  .action((options) => {
+    runSetup(options).catch(err => {
       console.error('\n❌ Setup failed:', err);
       process.exit(1);
     });
