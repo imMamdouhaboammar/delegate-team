@@ -76,29 +76,39 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           registry-url: ${{ env.NPM_REGISTRY_URL }}
 
-      - name: Print toolchain versions
+      - name: Ensure modern npm for trusted publishing
         run: |
           set -euo pipefail
           node --version
           npm --version
-          # npm Trusted Publishing requires a modern npm CLI. Node 24 normally ships it,
-          # but keep the guard explicit for runner image drift.
           node - <<'NODE'
-          const [major, minor, patch] = process.env.npm_config_user_agent
-            ? process.env.npm_config_user_agent.match(/npm\/(\d+)\.(\d+)\.(\d+)/)?.slice(1).map(Number) || [0, 0, 0]
-            : [0, 0, 0];
+          const cp = require('child_process');
+          const version = cp.execSync('npm --version', { encoding: 'utf8' }).trim();
+          const [major, minor, patch] = version.split('.').map(Number);
           const ok = major > 11 || (major === 11 && (minor > 5 || (minor === 5 && patch >= 1)));
-          if (!ok) {
-            console.log('npm CLI may be older than 11.5.1. Installing npm@latest for OIDC trusted publishing support.');
-            process.exit(10);
-          }
+          if (!ok) process.exit(10);
           NODE
         shell: bash
         continue-on-error: true
 
-      - name: Ensure npm supports trusted publishing
-        if: failure()
-        run: npm install -g npm@latest
+      - name: Upgrade npm when runner image is behind
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const cp = require('child_process');
+          const version = cp.execSync('npm --version', { encoding: 'utf8' }).trim();
+          const [major, minor, patch] = version.split('.').map(Number);
+          const ok = major > 11 || (major === 11 && (minor > 5 || (minor === 5 && patch >= 1)));
+          if (!ok) {
+            console.log(`Current npm ${version} is older than 11.5.1. Installing npm@latest.`);
+            process.exit(10);
+          }
+          console.log(`npm ${version} is ready for trusted publishing.`);
+          NODE
+          if [ "$?" -eq 10 ]; then
+            npm install -g npm@latest
+          fi
+          npm --version
         shell: bash
 
       - name: Install dependencies
