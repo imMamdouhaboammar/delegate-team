@@ -1,8 +1,8 @@
 # MMAS — Multi-Agent System
 
-> **MMAS** is delegate-team's multi-agent team runtime. It spawns 1–8
-> specialist agents in parallel, monitors them with a watchdog, and gives you
-> a kill switch.
+> **MMAS** is delegate-team's local multi-agent team runtime. It spawns 1–8
+> specialist agents in parallel, records their process groups, monitors them
+> with a watchdog, and gives you a process-group aware kill switch.
 
 This doc covers the runtime + safety guardrails. For conceptual context, see
 [ARCHITECTURE.md](./ARCHITECTURE.md#layer-4--mmas).
@@ -13,18 +13,25 @@ This doc covers the runtime + safety guardrails. For conceptual context, see
 
 Use MMAS when:
 
-- The task is genuinely parallelizable (e.g. "audit three services at once",
-  "explore N candidate architectures in parallel").
-- The task needs multiple specializations (e.g. "scout the codebase, design
-  the migration, review the plan, write the docs").
-- You want one orchestrator agent (Atlas) to pick the team.
+- The task is genuinely parallelizable, such as auditing several services at once.
+- The task needs multiple specializations, such as scout, reviewer, docs, and guard.
+- You want Atlas to pick the team through `team_plan.json`.
 
 Do **not** use MMAS when:
 
-- The task is sequential by nature ("first analyze, then refactor").
-- The task fits one agent cleanly — use `dt run "<task>"` instead.
-- You are uncomfortable with subprocess spawning — see
+- The task is sequential by nature.
+- The task fits one agent cleanly. Use `dt run "<task>"` instead.
+- You are uncomfortable with subprocess spawning. Read
   [SECURITY-MODEL.md](./SECURITY-MODEL.md) first.
+
+---
+
+## Requirements
+
+- Python `>=3.10`.
+- PyYAML installed.
+- Bash for `watchdog.sh`.
+- Backend CLIs or credentials for whichever agents you select.
 
 ---
 
@@ -34,9 +41,13 @@ Do **not** use MMAS when:
 # Spawn Atlas alone, let it pick the team via team_plan.json
 python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py "<task>" --atlas
 
-# Spawn a fixed team (max 8 agents)
+# Spawn a fixed team
 python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py "<task>" \
     --team atlas,forge,scout,oracle
+
+# Preview without spawning
+python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py "<task>" \
+    --team atlas,forge --plan-only
 
 # Check status of a running task
 python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py status <task_id>
@@ -44,8 +55,11 @@ python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py status <task_id>
 # List available agents
 python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py list
 
-# Kill a running task
+# Kill a running task with process-group cleanup
 python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py stop <task_id>
+
+# Generate a report from boulder.json
+python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py report <task_id>
 ```
 
 ---
@@ -63,8 +77,7 @@ python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py stop <task_id>
 | `visionary` | god-agent | strategist | Long-term roadmap, trade-offs |
 | `sentinel` | minimax-coder | guard | Policy + safety checks |
 
-Each agent is defined by a YAML file in `mmas/agents/<name>.yaml` — open
-them to see exact model + system prompt + tools.
+Each agent is defined by a YAML file in `mmas/agents/<name>.yaml`.
 
 ---
 
@@ -72,10 +85,9 @@ them to see exact model + system prompt + tools.
 
 ### Max agents
 
-Default: **4**. Hard cap: **8** (the number of specialist YAMLs shipped).
+Default: **4**. Hard cap: **8**.
 
 ```bash
-# Override per-invocation
 python3 spawn-team.py "<task>" --team atlas,forge,scout,oracle,reviewer,sentinel \
     --max-agents 6
 ```
@@ -85,28 +97,51 @@ limit + the team you asked for.
 
 ### Per-agent timeout
 
-Default: **900 seconds (15 minutes)** per agent.
+Default: **900 seconds (15 minutes)** per agent. Hard cap: **7200 seconds**.
 
 ```bash
 python3 spawn-team.py "<task>" --team atlas,forge --timeout 1800
 ```
 
-When a timeout fires, MMAS:
+### Kill grace
 
-1. Sends `SIGTERM` to the agent.
-2. Waits 30 seconds for graceful exit.
-3. Sends `SIGKILL` if the agent is still alive.
-4. Marks the agent as `timeout` in `boulder.json`.
-5. Continues monitoring the rest of the team.
+Default: **5 seconds**. Hard cap: **30 seconds**.
+
+```bash
+python3 spawn-team.py "<task>" --team atlas,forge --kill-grace 10
+```
+
+### Process-group cleanup
+
+Every agent and watchdog subprocess is spawned with `start_new_session=True`.
+That creates a detached process group. MMAS records both `pid` and `pgid` in
+`boulder.json`.
+
+The stop command now:
+
+1. Sends `SIGTERM` to the watchdog process group.
+2. Sends `SIGTERM` to every agent process group.
+3. Waits for the configured grace period.
+4. Sends `SIGKILL` to groups whose original PID is still alive.
+5. Marks affected agents as `stopped` and writes a stop event.
+
+This matters because killing only the parent PID can leave child processes alive
+when an agent starts a nested CLI or tool process.
+
+### Atlas timeout cleanup
+
+In `--atlas` mode, Atlas is spawned first and must write `team_plan.json` before
+`--atlas-timeout`. If it does not, MMAS now terminates the Atlas process group
+and marks the task as `timeout` with `stop_reason=atlas_timeout`.
 
 ### Session workspace
 
-Every task gets a sandboxed workspace:
+Every task gets a workspace:
 
 ```
 ~/.mavis/multi-agent/tasks/<task_id>/
 ├── boulder.json       # task + agent state
-├── team_plan.json     # Atlas's plan (only in --atlas mode)
+├── team_plan.json     # Atlas's plan, only in --atlas mode
 ├── logs/
 │   ├── atlas.log
 │   ├── forge.log
@@ -114,9 +149,8 @@ Every task gets a sandboxed workspace:
 └── watchdog.log
 ```
 
-Agents run with `cwd=<task_dir>` and `start_new_session=True`. They cannot
-write outside the task directory unless explicitly allowed via
-`--allow-workspace-escape`.
+Agents run with `cwd=<task_dir>`. Treat that directory as the operational
+boundary for a run.
 
 ### Plan-only mode
 
@@ -124,13 +158,8 @@ write outside the task directory unless explicitly allowed via
 python3 spawn-team.py "<task>" --team atlas --plan-only
 ```
 
-In plan-only mode:
-
-- Atlas runs and writes `team_plan.json` as usual.
-- All other agents are skipped.
-- No subprocess is spawned for the rest of the team.
-
-Use this to review Atlas's plan before committing to a full run.
+In plan-only mode, MMAS prints the planned team and exits before spawning any
+agent. Use this to review scope and guardrails before a full run.
 
 ### No-write mode
 
@@ -138,51 +167,40 @@ Use this to review Atlas's plan before committing to a full run.
 python3 spawn-team.py "<task>" --team atlas,scout --no-write
 ```
 
-Agents can read files and produce logs, but cannot write outside `logs/`.
-Used for audit runs.
-
-### Kill switch
-
-```bash
-python3 spawn-team.py stop <task_id>
-```
-
-Sends `SIGTERM` to the watchdog and every spawned agent. Waits 5 seconds,
-then `SIGKILL`s anything still alive. Updates `boulder.json` with the stop
-event.
-
-You can also kill by PID directly:
-
-```bash
-kill -TERM <watchdog_pid>
-```
-
-The watchdog catches the signal and kills its child agents before exiting.
+`--no-write` maps to `--write-mode none`. This is primarily a guardrail signal
+for agents and logs. It does not replace OS-level sandboxing.
 
 ---
 
-## Configuration
+## `boulder.json` state
 
-Defaults are stored at `~/.mavis/multi-agent/config.json` and can be
-overridden per-invocation:
+A task state file includes process metadata:
 
 ```json
 {
-  "maxAgents": 4,
-  "timeoutSeconds": 900,
-  "writeMode": "workspace",
-  "logsEnabled": true,
-  "watchdogInterval": 30,
-  "atlasTimeout": 120,
-  "killGracePeriod": 5
+  "task_id": "task-...",
+  "status": "running",
+  "watchdog_pid": 12345,
+  "watchdog_pgid": 12345,
+  "guardrails": {
+    "maxAgents": 4,
+    "timeoutSeconds": 900,
+    "writeMode": "workspace",
+    "killGracePeriod": 5
+  },
+  "agents": [
+    {
+      "name": "atlas",
+      "pid": 12346,
+      "pgid": 12346,
+      "status": "running",
+      "log_file": ".../logs/atlas.log",
+      "summary_file": ".../logs/atlas.summary"
+    }
+  ],
+  "events": []
 }
 ```
-
-`writeMode` values:
-
-- `workspace` — agents can write anywhere inside the task dir.
-- `logs-only` — agents can write only to `logs/`.
-- `none` — agents are read-only (alias for `--no-write`).
 
 ---
 
@@ -192,43 +210,17 @@ overridden per-invocation:
 
 ```
 logs/<agent>.log         # raw subprocess stdout/stderr
-logs/<agent>.summary     # agent's final summary (written by the agent)
+logs/<agent>.summary     # agent's final summary, written by the agent
 ```
 
 ### Task-level report
 
-After a run completes (or is killed), MMAS writes a `report.json` at the
-task root:
-
-```json
-{
-  "task_id": "...",
-  "task": "...",
-  "started_at": "...",
-  "completed_at": "...",
-  "duration_seconds": 1234,
-  "status": "completed | killed | timeout | error",
-  "agents": [
-    {
-      "name": "...",
-      "status": "...",
-      "exit_code": 0,
-      "duration_seconds": 123,
-      "summary_file": "..."
-    }
-  ],
-  "stop_reason": "...",
-  "events": ["...", "..."]
-}
-```
-
-### Manual summary
-
-For an interactive summary without running anything:
-
 ```bash
-python3 spawn-team.py status <task_id>     # one-liner per agent
+python3 spawn-team.py report <task_id>
 ```
+
+The report command reads `boulder.json`, writes `report.json`, and prints a
+terminal summary with agent status, PID, and PGID.
 
 ---
 
@@ -236,23 +228,21 @@ python3 spawn-team.py status <task_id>     # one-liner per agent
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `Task not found: <task_id>` | typo or already cleaned up | `ls ~/.mavis/multi-agent/tasks/` |
-| Agent stuck in `running` for hours | timeout not configured | `--timeout 1800` |
-| `spawn-team.py: permission denied` | not `chmod +x` | `chmod +x ~/.mavis/agents/mavis/multi-agent/spawn-team.py` |
+| `Task not found: <task_id>` | typo or cleaned up task | `ls ~/.mavis/multi-agent/tasks/` |
+| Agent stuck in `running` for hours | timeout too long or backend stuck | `spawn-team.py stop <task_id>` |
+| `spawn-team.py: permission denied` | not executable | `chmod +x ~/.mavis/agents/mavis/multi-agent/spawn-team.py` |
 | `agent-kernel` not found in MMAS | optional dep missing | run `agent-kernel doctor` |
-| Watchdog never finishes | `--interval` too low | `--interval 30` (default) |
+| Watchdog never finishes | backend subprocess still alive | stop the task, then inspect PGIDs in `boulder.json` |
 | Hardcoded `${DELEGATE_TEAM_ROOT}` error | stale install | reinstall Lane 3 |
 
 ---
 
 ## What's deliberately NOT in MMAS
 
-- **Cross-machine coordination.** MMAS is local-only. For distributed runs,
-  run multiple instances on separate machines with separate task IDs.
-- **Resource quotas.** MMAS does not enforce CPU/RAM caps. Use OS-level
-  cgroups or `nice` if you need them.
-- **Persistent agent memory.** Agents read agent-kernel memory at start but
-  do not write back to it during the run. Episodes are written at task
-  completion by the orchestrator, not by MMAS.
+- **Cross-machine coordination.** MMAS is local-only.
+- **Resource quotas.** MMAS does not enforce CPU/RAM caps. Use OS-level cgroups
+  or `nice` if you need them.
+- **Persistent agent memory.** Agents read agent-kernel memory at start but do
+  not write back to it during the run.
 
 These are explicit non-goals. If you need them, please open an issue.
