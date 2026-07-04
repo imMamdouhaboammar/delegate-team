@@ -219,8 +219,60 @@ jobs:
         id: pack
         run: |
           set -euo pipefail
-          npm pack --json > /tmp/npm-pack.json
-          PACK_FILE=$(python3 -c "import json; print(json.load(open('/tmp/npm-pack.json'))[0]['filename'])")
+          PACK_JSON=/tmp/npm-pack.json
+          PACK_STDERR=/tmp/npm-pack.stderr
+
+          # Build already ran above. --ignore-scripts keeps lifecycle output from
+          # polluting npm pack --json stdout while still validating the exact
+          # files that will be packed from the current workspace.
+          if ! npm pack --json --ignore-scripts > "$PACK_JSON" 2> "$PACK_STDERR"; then
+            echo "::error::npm pack command failed"
+            echo "::group::npm pack stdout"
+            cat "$PACK_JSON" || true
+            echo "::endgroup::"
+            echo "::group::npm pack stderr"
+            cat "$PACK_STDERR" || true
+            echo "::endgroup::"
+            exit 1
+          fi
+
+          if [ -s "$PACK_STDERR" ]; then
+            echo "::group::npm pack stderr"
+            cat "$PACK_STDERR"
+            echo "::endgroup::"
+          fi
+
+          if [ ! -s "$PACK_JSON" ]; then
+            echo "::error::npm pack produced no JSON output"
+            exit 1
+          fi
+
+          if ! python3 -m json.tool "$PACK_JSON" > /dev/null 2>&1; then
+            echo "::error::npm pack output is not valid JSON"
+            echo "::group::npm pack stdout"
+            cat "$PACK_JSON"
+            echo "::endgroup::"
+            echo "::group::npm pack stderr"
+            cat "$PACK_STDERR" || true
+            echo "::endgroup::"
+            exit 1
+          fi
+
+          PACK_FILE=$(python3 - <<'PY'
+          import json
+          import sys
+          with open('/tmp/npm-pack.json', 'r', encoding='utf-8') as handle:
+              data = json.load(handle)
+          if not isinstance(data, list) or not data or not data[0].get('filename'):
+              sys.exit('npm pack JSON did not include a filename')
+          print(data[0]['filename'])
+          PY
+          )
+
+          if [ -z "$PACK_FILE" ] || [ ! -f "$PACK_FILE" ]; then
+            echo "::error::Could not resolve packed tarball from npm pack output: $PACK_FILE"
+            exit 1
+          fi
 
           tar -tzf "$PACK_FILE" | sort > /tmp/npm-pack-contents.txt
           echo "Packed file: $PACK_FILE"
