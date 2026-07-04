@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [18.x, 20.x, 22.x]
+        node-version: [20.x, 22.x, 24.x]
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node-version }}
@@ -118,7 +118,7 @@ jobs:
           # The pattern `new URL("../package.json", import.meta.url)` triggers
           # BundlePhobia's Rspack to try to bundle package.json as an asset,
           # which fails the .bundle suffix check.
-          if grep -E 'new URL\(["'"'"']\.\./package\.json["'"'"'],\s*import\.meta\.url\)' dist/cli.js; then
+          if grep -E 'new URL\(["'"']\.\./package\.json["'"'],\s*import\.meta\.url\)' dist/cli.js; then
             echo "  ✗ FOUND bundler-unsafe pattern: new URL('../package.json', import.meta.url)"
             echo "  BundlePhobia's Rspack bundler will fail with"
             echo "  'Found an asset without the `.bundle` suffix' error."
@@ -149,6 +149,43 @@ jobs:
             exit 1
           fi
           echo "  ✓ tarball contains only package.json as .json asset"
+      - name: Assert required runtime files in npm pack
+        run: |
+          set -euo pipefail
+          PACK_JSON=$(mktemp)
+          npm pack --json > "$PACK_JSON"
+          PACK_FILE=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))[0]['filename'])" "$PACK_JSON")
+          tar -tzf "$PACK_FILE" | sort > /tmp/npm-pack-files.txt
+
+          for required in \
+            package/dist/cli.js \
+            package/bin/mavis-ship-uni \
+            package/bin/autopilot.sh \
+            package/bin/agents-health.sh \
+            package/delegate-team/scripts/relay.mjs \
+            package/delegate-team/scripts/opencode-router.mjs; do
+            if ! grep -Fxq "$required" /tmp/npm-pack-files.txt; then
+              echo "  ✗ missing runtime file in npm tarball: $required"
+              exit 1
+            fi
+            echo "  ✓ $required"
+          done
+      - name: Install npm tarball smoke test
+        run: |
+          set -euo pipefail
+          PACK_JSON=$(mktemp)
+          npm pack --json > "$PACK_JSON"
+          PACK_FILE=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))[0]['filename'])" "$PACK_JSON")
+          TMP_DIR=$(mktemp -d)
+          pushd "$TMP_DIR" >/dev/null
+          npm init -y >/dev/null
+          npm install "$GITHUB_WORKSPACE/$PACK_FILE" --ignore-scripts >/dev/null
+          ./node_modules/.bin/dt --version
+          ./node_modules/.bin/delegate-team --help >/dev/null
+          test -f ./node_modules/delegate-team/delegate-team/scripts/relay.mjs
+          test -f ./node_modules/delegate-team/delegate-team/scripts/opencode-router.mjs
+          popd >/dev/null
+          echo "  ✓ packed artifact installs and exposes runtime scripts"
       - name: YAML lint (mmas/agents)
         run: |
           python -c "
@@ -175,7 +212,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
-        run: npm ci || true
+        run: npm ci
       - name: SKILL.md frontmatter check
         run: |
           set -e
@@ -205,7 +242,7 @@ jobs:
         run: |
           set -e
           chmod +x orchestrator/scripts/orchestrate.sh
-          # 10-task signature matrix (8 original + 2 new for agent-kernel MEMORY path)
+          # 8-task signature matrix including agent-kernel MEMORY path
           declare -a TESTS=(
             "Build an OpenSource repo containing our full agentic engineering system: orchestrator + skill-scaffold + delegate-team backends + multi-agent team + integrations docs. Push to github|BUILD/PUBLISH"
             "Build a landing page with shadcn components|UI DELIVERY"
