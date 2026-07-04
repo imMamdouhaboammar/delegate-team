@@ -7,6 +7,15 @@ import { randomBytes } from 'node:crypto';
 import { C, runCmd } from '../utils/index.js';
 import { DELEGATE_TEAM_PATH, RELAY_SCRIPT, VERTEX_CODER_PATH, VERTEX_DIRECT_SCRIPT, VERTEX_INTERACTIVE_SCRIPT, VERTEX_VENV_PYTHON } from '../config/index.js';
 
+type SetupOptions = {
+  project?: string;
+  location?: string;
+  skipAuth?: boolean;
+  skipGcpEnable?: boolean;
+  skipProvision?: boolean;
+  yes?: boolean;
+};
+
 function ensurePrivateDir(path: string) {
   if (!existsSync(path)) {
     mkdirSync(path, { recursive: true, mode: 0o700 });
@@ -115,7 +124,7 @@ export function runLinkSkill() {
   }
 }
 
-export async function runSetup() {
+export async function runSetup(options: SetupOptions = {}) {
   console.log(`\n${C.bold}${C.cyan}🚀 Initiating Autopilot Onboarding Setup Wizard...${C.reset}`);
   console.log(`${C.dim}This wizard will configure your local environment, authentications, and cloud projects automatically.${C.reset}\n`);
 
@@ -125,7 +134,16 @@ export async function runSetup() {
   });
 
   const ask = (query: string): Promise<string> => new Promise(resolve => rl.question(query, resolve));
+  const askOrDefault = async (query: string, defaultAnswer: string): Promise<string> => {
+    if (options.yes) {
+      console.log(`${C.dim}${query}${defaultAnswer}${C.reset}`);
+      return defaultAnswer;
+    }
+    return ask(query);
+  };
+
   const proxyToken = "dt-local-" + randomBytes(8).toString('hex');
+  const location = options.location || "us-central1";
 
   // --- STEP 1: Local Virtual Environment Setup ---
   console.log(`${C.bold}📦 [Step 1/6] Setting up Python Virtual Environment...${C.reset}`);
@@ -176,7 +194,7 @@ export async function runSetup() {
   if (gcloudBinCheck.status !== 0) {
     console.log(`  ${C.yellow}⚠️  Google Cloud CLI (gcloud) was not found in your system PATH.${C.reset}`);
     console.log(`  ${C.dim}To use Vertex AI, you need to install gcloud. Follow instructions at: https://cloud.google.com/sdk/docs/install${C.reset}`);
-    const proceed = await ask(`  Do you want to skip gcloud checks and continue setting up other components? (y/N): `);
+    const proceed = await askOrDefault(`  Do you want to skip gcloud checks and continue setting up other components? (y/N): `, "y");
     if (proceed.trim().toLowerCase() !== "y") {
       rl.close();
       process.exit(127);
@@ -185,62 +203,74 @@ export async function runSetup() {
   } else {
     console.log(`  ${C.green}✅ Google Cloud CLI detected.${C.reset}\n`);
   }
+
   // --- STEP 3: GCP Authentication ---
   if (gcloudBinCheck.status === 0) {
-    console.log(`${C.bold}🔐 [Step 3/6] Authenticating with Google Cloud...${C.reset}`);
-    const loginChoice = await ask(`  Would you like to log in to gcloud and set up application credentials now? (Y/n): `);
-    if (loginChoice.trim().toLowerCase() !== "n") {
-      await runAuth();
+    if (options.skipAuth) {
+      console.log(`${C.dim}Skipping gcloud authentication because --skip-auth was provided.${C.reset}\n`);
     } else {
-      console.log(`  ${C.dim}Skipping active authentication...${C.reset}\n`);
+      console.log(`${C.bold}🔐 [Step 3/6] Authenticating with Google Cloud...${C.reset}`);
+      const loginChoice = await askOrDefault(`  Would you like to log in to gcloud and set up application credentials now? (Y/n): `, "y");
+      if (loginChoice.trim().toLowerCase() !== "n") {
+        await runAuth();
+      } else {
+        console.log(`  ${C.dim}Skipping active authentication...${C.reset}\n`);
+      }
     }
   }
 
   // --- STEP 4: Resolve GCP Project ID ---
-  let selectedProjectId = "";
+  let selectedProjectId = options.project || "";
   if (gcloudBinCheck.status === 0) {
     console.log(`${C.bold}💼 [Step 4/6] Resolving Google Cloud Project ID...${C.reset}`);
-    console.log(`  ${C.dim}Fetching active projects from your account...${C.reset}`);
-    const projectsProc = spawnSync("gcloud", ["projects", "list", "--format=json"], { encoding: "utf8" });
-    let projects: any[] = [];
-    if (projectsProc.status === 0) {
-      try {
-        projects = JSON.parse(projectsProc.stdout.trim());
-      } catch (err) {
-        // ignore
-      }
-    }
-
-    if (projects.length > 0) {
-      console.log(`\n  ${C.bold}Available GCP Projects:${C.reset}`);
-      for (let i = 0; i < projects.length; i++) {
-        console.log(`  [${i + 1}] ${C.cyan}${projects[i].projectId}${C.reset} (${projects[i].name || "N/A"})`);
-      }
-      console.log(`  [${projects.length + 1}] Enter Project ID Manually`);
-      
-      const pChoice = await ask(`\n  Select a project by number (1-${projects.length + 1}): `);
-      const choiceIdx = parseInt(pChoice.trim(), 10) - 1;
-      if (choiceIdx >= 0 && choiceIdx < projects.length) {
-        selectedProjectId = projects[choiceIdx].projectId;
-      }
-    }
 
     if (!selectedProjectId) {
+      console.log(`  ${C.dim}Fetching active projects from your account...${C.reset}`);
+      const projectsProc = spawnSync("gcloud", ["projects", "list", "--format=json"], { encoding: "utf8" });
+      let projects: any[] = [];
+      if (projectsProc.status === 0) {
+        try {
+          projects = JSON.parse(projectsProc.stdout.trim());
+        } catch (err) {
+          // ignore
+        }
+      }
+
+      if (options.yes && projects.length === 1) {
+        selectedProjectId = projects[0].projectId;
+      } else if (projects.length > 0 && !options.yes) {
+        console.log(`\n  ${C.bold}Available GCP Projects:${C.reset}`);
+        for (let i = 0; i < projects.length; i++) {
+          console.log(`  [${i + 1}] ${C.cyan}${projects[i].projectId}${C.reset} (${projects[i].name || "N/A"})`);
+        }
+        console.log(`  [${projects.length + 1}] Enter Project ID Manually`);
+        
+        const pChoice = await ask(`\n  Select a project by number (1-${projects.length + 1}): `);
+        const choiceIdx = parseInt(pChoice.trim(), 10) - 1;
+        if (choiceIdx >= 0 && choiceIdx < projects.length) {
+          selectedProjectId = projects[choiceIdx].projectId;
+        }
+      }
+    }
+
+    if (!selectedProjectId && !options.yes) {
       const manualProj = await ask(`  Enter your Google Cloud Project ID manually: `);
       selectedProjectId = manualProj.trim();
     }
 
     if (!selectedProjectId) {
-      console.error(`  ${C.red}❌ No Project ID provided. Setup aborted.${C.reset}`);
+      console.error(`  ${C.red}❌ No Project ID provided. Setup aborted. Re-run with --project <id> for non-interactive setup.${C.reset}`);
       rl.close();
       process.exit(1);
     }
     console.log(`  ${C.green}🎯 Bound to GCP Project: ${C.bold}${selectedProjectId}${C.reset}\n`);
   } else {
-    const manualProj = await ask(`💼 [Step 4/6] Enter your Google Cloud Project ID manually: `);
-    selectedProjectId = manualProj.trim();
+    if (!selectedProjectId && !options.yes) {
+      const manualProj = await ask(`💼 [Step 4/6] Enter your Google Cloud Project ID manually: `);
+      selectedProjectId = manualProj.trim();
+    }
     if (!selectedProjectId) {
-      console.error(`  ${C.red}❌ No Project ID provided. Setup aborted.${C.reset}`);
+      console.error(`  ${C.red}❌ No Project ID provided. Setup aborted. Re-run with --project <id>.${C.reset}`);
       rl.close();
       process.exit(1);
     }
@@ -249,9 +279,13 @@ export async function runSetup() {
   // --- STEP 5: Enable APIs and Provision Virtual Agent ---
   if (gcloudBinCheck.status === 0) {
     console.log(`${C.bold}⚙️  [Step 5/6] Enabling APIs & Provisioning Agent...${C.reset}`);
-    const apiChoice = await ask(`  Do you want to automatically enable Vertex AI & Dialogflow APIs in project '${selectedProjectId}'? (Y/n): `);
-    if (apiChoice.trim().toLowerCase() !== "n") {
-      await runGcpEnable(selectedProjectId);
+    if (options.skipGcpEnable) {
+      console.log(`  ${C.dim}Skipping API enablement because --skip-gcp-enable was provided.${C.reset}`);
+    } else {
+      const apiChoice = await askOrDefault(`  Do you want to automatically enable Vertex AI & Dialogflow APIs in project '${selectedProjectId}'? (Y/n): `, "y");
+      if (apiChoice.trim().toLowerCase() !== "n") {
+        await runGcpEnable(selectedProjectId);
+      }
     }
 
     const configDir = join(homedir(), ".config", "dt");
@@ -259,14 +293,18 @@ export async function runSetup() {
     const configPath = join(configDir, "config.json");
     const configData = {
       project_id: selectedProjectId,
-      location: "us-central1",
+      location,
       proxy_token: proxyToken
     };
     writePrivateFile(configPath, JSON.stringify(configData, null, 2));
 
-    const provisionChoice = await ask(`  Do you want to provision the dt agent on GCP? (Y/n): `);
-    if (provisionChoice.trim().toLowerCase() !== "n") {
-      await runVertexProvision();
+    if (options.skipProvision) {
+      console.log(`  ${C.dim}Skipping Vertex AI agent provisioning because --skip-provision was provided.${C.reset}`);
+    } else {
+      const provisionChoice = await askOrDefault(`  Do you want to provision the dt agent on GCP? (Y/n): `, "y");
+      if (provisionChoice.trim().toLowerCase() !== "n") {
+        await runVertexProvision();
+      }
     }
   } else {
     console.log(`${C.bold}⚙️  [Step 5/6] Skipping API enablement & Agent provisioning (no gcloud).${C.reset}\n`);
@@ -281,7 +319,7 @@ export async function runSetup() {
   const configPath = join(configDir, "config.json");
   const configData = {
     project_id: selectedProjectId,
-    location: "us-central1",
+    location,
     proxy_token: proxyToken
   };
   writePrivateFile(configPath, JSON.stringify(configData, null, 2));
@@ -305,7 +343,7 @@ ${C.bold}${C.green}🎉 CONGRATULATIONS! AUTOPILOT SETUP COMPLETED SUCCESSFULLY!
 --------------------------------------------------------------
 ${C.bold}Your settings:${C.reset}
   🎯 Bound Project: ${C.bold}${C.cyan}${selectedProjectId}${C.reset}
-  📍 Location:      ${C.bold}${C.cyan}us-central1${C.reset}
+  📍 Location:      ${C.bold}${C.cyan}${location}${C.reset}
   💼 Python env:    ${C.dim}${venvDir}${C.reset}
   📂 Config Path:   ${C.dim}${configPath}${C.reset}
 
