@@ -1,7 +1,7 @@
 # Installation
 
 > **Pick the lane that matches what you actually need.** Three lanes, one repo.
-> Each lane is fully reversible and idempotent.
+> Each lane is reversible and idempotent.
 
 | Lane | You want | What gets installed | Time |
 |---|---|---|---|
@@ -11,6 +11,19 @@
 
 Don't know which lane? Read the [README](../README.md) first. The rest of this
 doc is the technical reference.
+
+---
+
+## Runtime requirements
+
+| Runtime | Required | Why |
+|---|---|---|
+| Node.js | `>=20` | `dt` CLI, tsup build, npm package scripts |
+| npm | modern npm, npm `>=11.5.1` recommended for Trusted Publishing | publish workflow and provenance |
+| Python | `>=3.10` | MMAS, backend agents, modern type syntax |
+| Bash | `>=4` | orchestrator, installer, watchdog |
+
+The CI matrix tests Node 20, 22, and 24. Python checks run on Python 3.11.
 
 ---
 
@@ -58,6 +71,7 @@ cd delegate-team
 # 4. Verify
 mavis-orchestrate "what is a closure in JS"    # prints routing decision
 /mavis-ship "your task here"                    # in any Claude Code session
+dt route --last                                 # latest saved route trace
 
 # Uninstall
 ./install.sh --uninstall
@@ -109,6 +123,8 @@ cd delegate-team
 - `--no-network` skips `npx skills add` and `git clone` of companion frameworks.
 - `--trust-mode strict` blocks auto-loading of MCP, blocks external downloads,
   and prints every sensitive operation before executing it.
+- MMAS agents and watchdogs are launched in detached process groups so the kill
+  switch can clean up subprocess trees, not only parent PIDs.
 - See [docs/SECURITY-MODEL.md](./SECURITY-MODEL.md) for the threat model.
 
 ---
@@ -147,6 +163,41 @@ Flags:
 
 ---
 
+## Release and publish checks
+
+Before bumping or publishing a version, run:
+
+```bash
+npm ci
+npm run version:check
+npm install --package-lock-only
+npm run typecheck
+npm test
+npm publish --dry-run --access public
+```
+
+`npm run version:check` enforces version sync across:
+
+- `package.json`
+- `.claude-plugin/plugin.json`
+- `.claude-plugin/marketplace.json`
+- every marketplace plugin entry
+- `CHANGELOG.md`
+
+It intentionally prints a warning, not a hard failure, when `package-lock.json`
+version metadata is stale. Regenerate it with:
+
+```bash
+npm install --package-lock-only
+```
+
+The npm publish workflow runs the same version guard, prints a GitHub Actions
+warning for stale lockfiles, validates the tarball, smoke-tests the installed
+package, blocks secret-like files, publishes with provenance, then verifies npm
+registry state.
+
+---
+
 ## Installation matrix
 
 | Component | Lane 1 | Lane 2 | Lane 3 |
@@ -171,6 +222,9 @@ dt --version && dt doctor
 
 # Machine-readable health check
 dt doctor --json
+
+# Route planning without execution
+dt run "test routing" --dry-run
 
 # Lane 2 + 3
 ./install.sh --verify
@@ -218,6 +272,7 @@ without cloud mutations.
 | Permission denied on `~/.local/bin` | bindir mode | use `mkdir -p ~/.local/bin && chmod 700 ~/.local/bin` |
 | `dt setup --yes` aborts with no project | non-interactive setup needs a project | add `--project <id>` |
 | `dt run` cannot find `relay.mjs` or `opencode-router.mjs` | broken npm artifact or old install | upgrade with `npm install -g delegate-team@latest` and run `dt run --dry-run "test"` |
+| npm publish warning says lockfile drift | package version changed but lockfile was not regenerated | `npm install --package-lock-only` |
 
 ---
 
