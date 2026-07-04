@@ -1,5 +1,4 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-// We must import unlinkSync from node:fs to fix the bug
 import { unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -37,7 +36,16 @@ export function runVertex(mode: string, args: string[]) {
   }
 }
 
-export function runDispatch(rawPrompt: string | undefined, options: { backend?: string, brief?: string, team?: boolean, allowInstall?: boolean, approveWrite?: boolean }) {
+type DispatchOptions = {
+  backend?: string;
+  brief?: string;
+  team?: boolean;
+  allowInstall?: boolean;
+  approveWrite?: boolean;
+  dryRun?: boolean;
+};
+
+export function runDispatch(rawPrompt: string | undefined, options: DispatchOptions) {
   let backend = options.backend;
   if (options.team) {
     backend = "metagpt";
@@ -72,9 +80,10 @@ ${rawPrompt}
 
   const briefText = readFileSync(briefFile, "utf8");
 
-    // 2. Resolve default backend via Router if not specified
+  // 2. Resolve default backend via Router if not specified
   let forceMetagpt = false;
   let autoRouted = false;
+  let routeReason = "explicit backend";
   if (!backend) {
     console.log(`${C.dim}Running OpenCode Router to evaluate task complexity...${C.reset}`);
     try {
@@ -85,6 +94,7 @@ ${rawPrompt}
       });
       if (routerProc.status === 0) {
         const routeData = JSON.parse(routerProc.stdout.trim());
+        routeReason = `router score ${routeData.score}`;
         console.log(`${C.bold}${C.cyan}Router Complexity Score: ${routeData.score}${C.reset}`);
         // Choose best backend based on score
         if (routeData.score >= 8) {
@@ -103,16 +113,20 @@ ${rawPrompt}
         }
       } else {
         backend = "vertexcoder";
+        routeReason = `router status ${routerProc.status ?? 'unknown'}`;
+        const stderr = routerProc.stderr?.trim();
         console.log(`Router returned non-zero status, defaulting to: ${C.bold}${C.green}vertexcoder${C.reset}`);
+        if (stderr) console.log(`${C.dim}Router stderr: ${stderr}${C.reset}`);
       }
-    } catch {
-      // Fallback default
+    } catch (err: any) {
       backend = "vertexcoder";
+      routeReason = `router exception: ${err?.message || String(err)}`;
       console.log(`Router evaluation failed, defaulting to: ${C.bold}${C.green}vertexcoder${C.reset}`);
     }
     
     if (!backend) {
       backend = "vertexcoder";
+      routeReason = "router returned no backend";
     }
   }
   
@@ -120,6 +134,22 @@ ${rawPrompt}
     forceMetagpt = true;
   } else {
     forwardArgs.push("--backend", backend as string);
+  }
+
+  const plannedChain = forceMetagpt ? ["metagpt"] : [backend as string, ...(FALLBACK_RING[backend as string] || [])];
+
+  if (options.dryRun) {
+    console.log(`\n${C.bold}${C.cyan}Dry run dispatch plan${C.reset}`);
+    console.log(`  brief:        ${briefFile}`);
+    console.log(`  selected:     ${backend}`);
+    console.log(`  route reason: ${routeReason}`);
+    console.log(`  chain:        ${plannedChain.join(' -> ')}`);
+    console.log(`  would execute: ${forceMetagpt ? 'dt metagpt' : 'relay.mjs'}\n`);
+
+    if (isTempBrief && existsSync(briefFile)) {
+      try { unlinkSync(briefFile); } catch {}
+    }
+    return;
   }
 
   // 3. Dispatch & Automatic Fallback Ring
