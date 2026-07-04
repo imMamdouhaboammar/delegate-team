@@ -1,175 +1,389 @@
 name: npm publish
 
-# Auto-publish the npm package to https://registry.npmjs.org/ whenever a
-# git tag of shape `v*` (e.g. v2.2.0) is pushed.
+# Publishes delegate-team to npm when package.json has a new version.
 #
-# Required repository secrets:
-#   - NPM_TOKEN  — npm automation token (read-write, classic NOT OIDC for now)
+# Modes:
+# - push to master: publish only if package.json.version is not on npm yet
+# - push tag vX.Y.Z: publish only if the tag matches package.json.version
+# - workflow_dispatch: dry-run by default, real publish only when dry_run=false
 #
-# Usage:
-#   1. Tag a commit:  git tag v2.7.1 && git push --tags
-#      → CI builds, tests, then publishes + dist-tags "latest"
-#
-#   2. Manual dispatch with dry-run:
-#      → GitHub UI → Actions → npm publish → Run workflow → dry-run=true
-#      → CI builds, tests, dry-runs `npm publish --dry-run` (no NPM_TOKEN needed)
-#
-#   3. Manual dispatch with real publish:
-#      → GitHub UI → Actions → npm publish → Run workflow → dry-run=false
-#      → Requires NPM_TOKEN secret. Publishes + dist-tags "latest"
+# Security posture:
+# - Preferred: npm Trusted Publishing with OIDC. Configure npm package settings:
+#   owner: imMamdouhaboammar, repo: delegate-team, workflow: npm-publish.yml
+# - Fallback: NPM_TOKEN secret, only until trusted publishing is configured
+# - No package-manager cache in release builds
+# - npm provenance enabled
 
 on:
   push:
+    branches:
+      - master
     tags:
       - 'v*'
   workflow_dispatch:
     inputs:
-      dry-run:
-        description: 'Run in dry-run mode (no actual publish, no NPM_TOKEN required)'
+      dry_run:
+        description: 'Run validation and npm publish --dry-run only'
         required: false
         default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      dist_tag:
+        description: 'npm dist-tag to publish or verify'
+        required: false
+        default: 'latest'
+        type: string
+      create_github_release:
+        description: 'Create or update the matching GitHub Release after publish'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
 
 permissions:
-  contents: read
-  id-token: write   # for npm provenance
+  contents: write
+  id-token: write
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '24'
+  NPM_REGISTRY_URL: 'https://registry.npmjs.org/'
+  DRY_RUN_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+  DIST_TAG_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.dist_tag || 'latest' }}
+  CREATE_RELEASE_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.create_github_release || 'true' }}
 
 jobs:
   publish:
-    name: Build, Test & Publish to npm
+    name: Validate, pack, publish, and sync npm
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: true
 
-      - name: Setup Node.js
+      - name: Setup Node.js for npm release
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          registry-url: 'https://registry.npmjs.org/'
-          cache: 'npm'
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: ${{ env.NPM_REGISTRY_URL }}
+
+      - name: Print toolchain versions
+        run: |
+          set -euo pipefail
+          node --version
+          npm --version
+          # npm Trusted Publishing requires a modern npm CLI. Node 24 normally ships it,
+          # but keep the guard explicit for runner image drift.
+          node - <<'NODE'
+          const [major, minor, patch] = process.env.npm_config_user_agent
+            ? process.env.npm_config_user_agent.match(/npm\/(\d+)\.(\d+)\.(\d+)/)?.slice(1).map(Number) || [0, 0, 0]
+            : [0, 0, 0];
+          const ok = major > 11 || (major === 11 && (minor > 5 || (minor === 5 && patch >= 1)));
+          if (!ok) {
+            console.log('npm CLI may be older than 11.5.1. Installing npm@latest for OIDC trusted publishing support.');
+            process.exit(10);
+          }
+          NODE
+        shell: bash
+        continue-on-error: true
+
+      - name: Ensure npm supports trusted publishing
+        if: failure()
+        run: npm install -g npm@latest
+        shell: bash
 
       - name: Install dependencies
         run: npm ci
+        shell: bash
+
+      - name: Resolve package and publish decision
+        id: meta
+        run: |
+          set -euo pipefail
+
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          REPO_URL=$(node -p "require('./package.json').repository && require('./package.json').repository.url || ''")
+          HOMEPAGE=$(node -p "require('./package.json').homepage || ''")
+          BUGS_URL=$(node -p "require('./package.json').bugs && require('./package.json').bugs.url || ''")
+          EXPECTED_TAG="v${VERSION}"
+          DIST_TAG="${DIST_TAG_INPUT:-latest}"
+          DRY_RUN="${DRY_RUN_INPUT:-false}"
+
+          echo "Package: $NAME@$VERSION"
+          echo "Expected git tag: $EXPECTED_TAG"
+          echo "Requested npm dist-tag: $DIST_TAG"
+          echo "Dry run: $DRY_RUN"
+
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::package.json version must be SemVer. Got: $VERSION"
+            exit 1
+          fi
+
+          if [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" != "$EXPECTED_TAG" ]]; then
+            echo "::error::Git tag $GITHUB_REF_NAME does not match package.json version $EXPECTED_TAG"
+            exit 1
+          fi
+
+          NORMALIZED_REPO=$(printf '%s' "$REPO_URL" | sed -E 's#^git\+##; s#\.git$##')
+          EXPECTED_REPO="https://github.com/${GITHUB_REPOSITORY}"
+          if [[ "$NORMALIZED_REPO" != "$EXPECTED_REPO" ]]; then
+            echo "::error::package.json repository.url must point to $EXPECTED_REPO. Got: $REPO_URL"
+            exit 1
+          fi
+
+          if [[ "$HOMEPAGE" != "${EXPECTED_REPO}#readme" ]]; then
+            echo "::warning::package.json homepage is '$HOMEPAGE'. Expected '${EXPECTED_REPO}#readme'."
+          fi
+
+          if [[ "$BUGS_URL" != "${EXPECTED_REPO}/issues" ]]; then
+            echo "::warning::package.json bugs.url is '$BUGS_URL'. Expected '${EXPECTED_REPO}/issues'."
+          fi
+
+          if npm view "${NAME}@${VERSION}" version --registry "${NPM_REGISTRY_URL}" >/dev/null 2>&1; then
+            PACKAGE_PUBLISHED="true"
+            SHOULD_PUBLISH="false"
+            REASON="already published on npm"
+          elif [[ "$DRY_RUN" == "true" ]]; then
+            PACKAGE_PUBLISHED="false"
+            SHOULD_PUBLISH="false"
+            REASON="dry run requested"
+          else
+            PACKAGE_PUBLISHED="false"
+            SHOULD_PUBLISH="true"
+            REASON="new version not found on npm"
+          fi
+
+          echo "Publish decision: $SHOULD_PUBLISH ($REASON)"
+
+          {
+            echo "pkg_name=$NAME"
+            echo "pkg_version=$VERSION"
+            echo "expected_tag=$EXPECTED_TAG"
+            echo "dist_tag=$DIST_TAG"
+            echo "dry_run=$DRY_RUN"
+            echo "package_published=$PACKAGE_PUBLISHED"
+            echo "should_publish=$SHOULD_PUBLISH"
+            echo "reason=$REASON"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo "PKG_NAME=$NAME"
+            echo "PKG_VERSION=$VERSION"
+            echo "EXPECTED_TAG=$EXPECTED_TAG"
+            echo "DIST_TAG=$DIST_TAG"
+          } >> "$GITHUB_ENV"
         shell: bash
 
       - name: Typecheck
         run: npm run typecheck
         shell: bash
 
-      - name: Build (tsup)
+      - name: Build
         run: npm run build
         shell: bash
 
-      # ─────────────────────────────────────────────────────────────────────
-      # Quality gates: run the full test suite before publishing
-      # ─────────────────────────────────────────────────────────────────────
-      - name: Run orchestrator selftest (49/49 routing cases)
-        run: python3 orchestrator/scripts/orchestrate.py --selftest
+      - name: Test
+        run: npm test
         shell: bash
 
-      - name: Run v2.7.0 release smoke tests (10/10)
-        run: bash tests/test-v2.7.0.sh
+      - name: Production dependency audit
+        run: npm audit --omit=dev --audit-level=high
         shell: bash
 
-      - name: Validate npm package contents
+      - name: Pack and validate npm artifact
+        id: pack
         run: |
-          echo "--- npm pack dry-run ---"
-          npm pack --dry-run
-          echo
-          echo "--- file count + size sanity ---"
-          PACK_FILE=$(npm pack | tail -1)
-          echo "  tarball:    $PACK_FILE"
-          echo "  file count: $(tar -tzf "$PACK_FILE" | wc -l)"
-          echo "  size:       $(ls -la "$PACK_FILE" | awk '{print $5}') bytes"
+          set -euo pipefail
+          npm pack --json > /tmp/npm-pack.json
+          cat /tmp/npm-pack.json
 
-          # Verify ONLY 1 JSON file in tarball (package.json) — bundlephobia-guard
-          JSON_COUNT=$(tar -tzf "$PACK_FILE" | grep -c '\.json$' || true)
-          if [ "$JSON_COUNT" -ne 1 ]; then
-            echo "::error::Expected 1 JSON file in tarball, found $JSON_COUNT"
+          PACK_FILE=$(node - <<'NODE'
+          const fs = require('fs');
+          const data = JSON.parse(fs.readFileSync('/tmp/npm-pack.json', 'utf8'));
+          console.log(data[0].filename);
+          NODE
+          )
+
+          if [[ ! -f "$PACK_FILE" ]]; then
+            echo "::error::npm pack did not produce $PACK_FILE"
             exit 1
           fi
-          echo "  ✅ bundlephobia-guard: $JSON_COUNT JSON file in tarball"
-        shell: bash
 
-      # ─────────────────────────────────────────────────────────────────────
-      # Publish: tag-pushed OR manual workflow_dispatch
-      # ─────────────────────────────────────────────────────────────────────
-      - name: Publish to npm (on tag push)
-        id: publish_tag
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        shell: bash
+          tar -tzf "$PACK_FILE" | sort > /tmp/npm-pack-contents.txt
+          echo "Packed file: $PACK_FILE"
+          echo "Packed files: $(wc -l < /tmp/npm-pack-contents.txt)"
+          echo "Packed bytes: $(stat -c %s "$PACK_FILE")"
 
-      - name: Publish (manual / dry-run dispatch)
-        id: publish_manual
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          if [ "${{ inputs.dry-run }}" = "true" ] || [ "${{ inputs.dry-run }}" = "" ]; then
-            # Dry-run: NO NPM_TOKEN needed. Just emit the tarball preview.
-            echo "════════════════════════════════════════════"
-            echo "  DRY RUN MODE — no auth required"
-            echo "════════════════════════════════════════════"
-            echo "  Would publish: ${{ github.ref_name }}"
-            echo "  To:           https://registry.npmjs.org/"
-            echo "  Access:       public"
-            echo ""
-            echo "--- npm publish --dry-run output ---"
-            npm publish --dry-run --access public
-          else
-            # Real publish: requires NPM_TOKEN
-            echo "--- Real publish: ${{ github.ref_name }} ---"
-            npm publish --access public --provenance
+          REQUIRED_FILES=(
+            "package/package.json"
+            "package/README.md"
+            "package/LICENSE"
+            "package/dist/cli.js"
+            "package/bin/mavis-ship-uni"
+            "package/bin/autopilot.sh"
+            "package/bin/agents-health.sh"
+            "package/delegate-team/scripts/relay.mjs"
+            "package/delegate-team/scripts/opencode-router.mjs"
+          )
+
+          for file in "${REQUIRED_FILES[@]}"; do
+            if ! grep -Fxq "$file" /tmp/npm-pack-contents.txt; then
+              echo "::error::Missing required npm artifact file: $file"
+              exit 1
+            fi
+          done
+
+          if grep -E '(^|/)(\.env|\.npmrc|id_rsa|id_dsa|id_ecdsa|id_ed25519|.*\.pem|.*\.key)$' /tmp/npm-pack-contents.txt; then
+            echo "::error::Potential secret-bearing file included in npm package"
+            exit 1
           fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+          JSON_COUNT=$(grep -c '\.json$' /tmp/npm-pack-contents.txt || true)
+          if [[ "$JSON_COUNT" -ne 1 ]]; then
+            echo "::error::Expected only package.json as a JSON file in the npm package, found $JSON_COUNT"
+            exit 1
+          fi
+
+          echo "pack_file=$PACK_FILE" >> "$GITHUB_OUTPUT"
         shell: bash
 
-      # ─────────────────────────────────────────────────────────────────────
-      # Post-publish: verify on npm registry + dist-tag = latest
-      # ─────────────────────────────────────────────────────────────────────
-      - name: Verify on npm registry
-        if: success() && (steps.publish_tag.conclusion == 'success' || steps.publish_manual.conclusion == 'success')
+      - name: Install packed artifact smoke test
         run: |
-          # Wait for registry propagation (up to 30s with retries)
-          for i in 1 2 3 4 5 6; do
+          set -euo pipefail
+          TMP_DIR=$(mktemp -d)
+          PACK_FILE="${{ steps.pack.outputs.pack_file }}"
+          pushd "$TMP_DIR" >/dev/null
+          npm init -y >/dev/null
+          npm install "$GITHUB_WORKSPACE/$PACK_FILE" --ignore-scripts >/dev/null
+          ./node_modules/.bin/dt --version
+          ./node_modules/.bin/delegate-team --help >/dev/null
+          test -f ./node_modules/delegate-team/delegate-team/scripts/relay.mjs
+          test -f ./node_modules/delegate-team/delegate-team/scripts/opencode-router.mjs
+          popd >/dev/null
+        shell: bash
+
+      - name: npm publish dry run
+        if: steps.meta.outputs.dry_run == 'true'
+        run: npm publish --dry-run --access public --tag "${{ steps.meta.outputs.dist_tag }}"
+        shell: bash
+
+      - name: Publish to npm
+        if: steps.meta.outputs.should_publish == 'true'
+        run: npm publish --access public --tag "${{ steps.meta.outputs.dist_tag }}" --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: 'true'
+        shell: bash
+
+      - name: Verify npm registry link
+        if: steps.meta.outputs.should_publish == 'true' || steps.meta.outputs.package_published == 'true'
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3 4 5 6; do
+            if npm view "${PKG_NAME}@${PKG_VERSION}" version --registry "${NPM_REGISTRY_URL}" >/tmp/npm-version.txt 2>/dev/null; then
+              FOUND_VERSION=$(cat /tmp/npm-version.txt | tr -d '"')
+              if [[ "$FOUND_VERSION" == "$PKG_VERSION" ]]; then
+                echo "npm has ${PKG_NAME}@${PKG_VERSION}"
+                npm view "${PKG_NAME}@${PKG_VERSION}" repository.url homepage bugs.url dist.tarball --registry "${NPM_REGISTRY_URL}"
+                npm view "${PKG_NAME}" dist-tags --registry "${NPM_REGISTRY_URL}"
+                exit 0
+              fi
+            fi
+            echo "npm registry not ready yet. attempt=$attempt"
             sleep 5
-            if npm view delegate-team version >/dev/null 2>&1; then
-              echo "--- npm view delegate-team (after ${i}x5s) ---"
-              npm view delegate-team version
-              npm view delegate-team dist-tags
-              break
-            fi
-            echo "  attempt $i: registry not yet updated, retrying..."
           done
-
-          echo ""
-          echo "--- installable test ---"
-          npx -y delegate-team --version 2>&1 | head -3 || true
+          echo "::error::Could not verify ${PKG_NAME}@${PKG_VERSION} on npm"
+          exit 1
         shell: bash
 
-      - name: Tag release as 'latest' on npm
-        if: success() && steps.publish_tag.conclusion == 'success' && startsWith(github.ref, 'refs/tags/v')
+      - name: Verify installed package from npm
+        if: steps.meta.outputs.should_publish == 'true' || steps.meta.outputs.package_published == 'true'
+        run: npx -y "${PKG_NAME}@${PKG_VERSION}" --version
+        shell: bash
+
+      - name: Create matching git tag after publish
+        if: steps.meta.outputs.should_publish == 'true' && github.ref_type != 'tag'
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
-          echo "Tagging release $VERSION as 'latest' on npm..."
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Retry up to 5 times (registry mirrors may need time)
-          for i in 1 2 3 4 5; do
-            if npm dist-tag add "delegate-team@$VERSION" latest; then
-              echo "  ✅ Tag 'latest' → $VERSION (attempt $i)"
-              npm view delegate-team dist-tags
-              exit 0
+          if git rev-parse -q --verify "refs/tags/${EXPECTED_TAG}" >/dev/null; then
+            TAG_SHA=$(git rev-list -n 1 "$EXPECTED_TAG")
+            if [[ "$TAG_SHA" != "$GITHUB_SHA" ]]; then
+              echo "::error::Tag ${EXPECTED_TAG} already exists but points to $TAG_SHA, not $GITHUB_SHA"
+              exit 1
             fi
-            echo "  attempt $i failed, retrying in 6s..."
-            sleep 6
-          done
+            echo "Tag ${EXPECTED_TAG} already points to this commit."
+          else
+            git tag "$EXPECTED_TAG" "$GITHUB_SHA"
+            git push origin "$EXPECTED_TAG"
+            echo "Created and pushed ${EXPECTED_TAG}."
+          fi
+        shell: bash
 
-          echo "::error::Failed to add tag 'latest' after 5 attempts"
-          exit 1
+      - name: Create or update GitHub Release
+        if: steps.meta.outputs.dry_run != 'true' && env.CREATE_RELEASE_INPUT == 'true' && (steps.meta.outputs.should_publish == 'true' || github.ref_type == 'tag')
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          RELEASE_NOTES=/tmp/release-notes.md
+          cat > "$RELEASE_NOTES" <<EOF
+          ## ${PKG_NAME} ${EXPECTED_TAG}
+
+          Published package: \`${PKG_NAME}@${PKG_VERSION}\`
+
+          npm package:
+          https://www.npmjs.com/package/${PKG_NAME}/v/${PKG_VERSION}
+
+          Repository:
+          https://github.com/${GITHUB_REPOSITORY}
+
+          Source commit:
+          https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}
+
+          Workflow run:
+          https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+
+          Install:
+          \`npm install -g ${PKG_NAME}@${PKG_VERSION}\`
+          EOF
+
+          if gh release view "$EXPECTED_TAG" >/dev/null 2>&1; then
+            gh release edit "$EXPECTED_TAG" --title "${PKG_NAME} ${EXPECTED_TAG}" --notes-file "$RELEASE_NOTES" --target "$GITHUB_SHA"
+            echo "Updated GitHub Release ${EXPECTED_TAG}."
+          else
+            gh release create "$EXPECTED_TAG" --title "${PKG_NAME} ${EXPECTED_TAG}" --notes-file "$RELEASE_NOTES" --target "$GITHUB_SHA"
+            echo "Created GitHub Release ${EXPECTED_TAG}."
+          fi
+        shell: bash
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "## npm publish summary"
+            echo ""
+            echo "Package: \`${{ steps.meta.outputs.pkg_name }}@${{ steps.meta.outputs.pkg_version }}\`"
+            echo "Expected tag: \`${{ steps.meta.outputs.expected_tag }}\`"
+            echo "Dist tag: \`${{ steps.meta.outputs.dist_tag }}\`"
+            echo "Dry run: \`${{ steps.meta.outputs.dry_run }}\`"
+            echo "Already published: \`${{ steps.meta.outputs.package_published }}\`"
+            echo "Should publish: \`${{ steps.meta.outputs.should_publish }}\`"
+            echo "Reason: ${{ steps.meta.outputs.reason }}"
+            echo ""
+            echo "npm: https://www.npmjs.com/package/${{ steps.meta.outputs.pkg_name }}/v/${{ steps.meta.outputs.pkg_version }}"
+            echo "repo: https://github.com/${GITHUB_REPOSITORY}"
+          } >> "$GITHUB_STEP_SUMMARY"
         shell: bash
