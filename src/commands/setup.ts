@@ -1,11 +1,23 @@
-import { existsSync, mkdirSync, rmSync, symlinkSync, writeFileSync, lstatSync, readlinkSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { chmodSync, existsSync, mkdirSync, rmSync, symlinkSync, writeFileSync, lstatSync, readlinkSync } from 'node:fs';
+import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import readline from 'node:readline';
 import { randomBytes } from 'node:crypto';
 import { C, runCmd } from '../utils/index.js';
 import { DELEGATE_TEAM_PATH, RELAY_SCRIPT, VERTEX_CODER_PATH, VERTEX_DIRECT_SCRIPT, VERTEX_INTERACTIVE_SCRIPT, VERTEX_VENV_PYTHON } from '../config/index.js';
+
+function ensurePrivateDir(path: string) {
+  if (!existsSync(path)) {
+    mkdirSync(path, { recursive: true, mode: 0o700 });
+  }
+  chmodSync(path, 0o700);
+}
+
+function writePrivateFile(path: string, content: string) {
+  writeFileSync(path, content, { encoding: 'utf8', mode: 0o600 });
+  chmodSync(path, 0o600);
+}
 
 export function runLinkSkill() {
   console.log(`\n${C.bold}${C.cyan}🔗 Symlinking Agent Skills to Local Systems...${C.reset}`);
@@ -180,7 +192,7 @@ export async function runSetup() {
     if (loginChoice.trim().toLowerCase() !== "n") {
       await runAuth();
     } else {
-      console.log(`  ${C.dim}Skipping active authentication...${C.reset}\\n`);
+      console.log(`  ${C.dim}Skipping active authentication...${C.reset}\n`);
     }
   }
 
@@ -243,23 +255,21 @@ export async function runSetup() {
     }
 
     const configDir = join(homedir(), ".config", "dt");
-    if (!existsSync(configDir)) {
-      mkdirSync(configDir, { recursive: true });
-    }
+    ensurePrivateDir(configDir);
     const configPath = join(configDir, "config.json");
     const configData = {
       project_id: selectedProjectId,
       location: "us-central1",
       proxy_token: proxyToken
     };
-    writeFileSync(configPath, JSON.stringify(configData, null, 2), "utf8");
+    writePrivateFile(configPath, JSON.stringify(configData, null, 2));
 
     const provisionChoice = await ask(`  Do you want to provision the dt agent on GCP? (Y/n): `);
     if (provisionChoice.trim().toLowerCase() !== "n") {
       await runVertexProvision();
     }
   } else {
-    console.log(`${C.bold}⚙️  [Step 5/6] Skipping API enablement & Agent provisioning (no gcloud).${C.reset}\\n`);
+    console.log(`${C.bold}⚙️  [Step 5/6] Skipping API enablement & Agent provisioning (no gcloud).${C.reset}\n`);
   }
 
   // --- STEP 6: Global Skills Symlinking & Save Config ---
@@ -267,23 +277,19 @@ export async function runSetup() {
   runLinkSkill();
 
   const configDir = join(homedir(), ".config", "dt");
-  if (!existsSync(configDir)) {
-    mkdirSync(configDir, { recursive: true });
-  }
+  ensurePrivateDir(configDir);
   const configPath = join(configDir, "config.json");
   const configData = {
     project_id: selectedProjectId,
     location: "us-central1",
     proxy_token: proxyToken
   };
-  writeFileSync(configPath, JSON.stringify(configData, null, 2), "utf8");
+  writePrivateFile(configPath, JSON.stringify(configData, null, 2));
   console.log(`  ${C.green}💾 Written configuration to: ${C.dim}${configPath}${C.reset}`);
 
   // MetaGPT Configuration
   const metagptDir = join(homedir(), ".metagpt");
-  if (!existsSync(metagptDir)) {
-    mkdirSync(metagptDir, { recursive: true });
-  }
+  ensurePrivateDir(metagptDir);
   const metagptConfigPath = join(metagptDir, "config2.yaml");
   const metagptConfigContent = `llm:
   api_type: "openai"
@@ -291,7 +297,7 @@ export async function runSetup() {
   api_key: "${proxyToken}"
   model: "google/gemini-3.1-pro-custom-tools"
 `;
-  writeFileSync(metagptConfigPath, metagptConfigContent, "utf8");
+  writePrivateFile(metagptConfigPath, metagptConfigContent);
   console.log(`  ${C.green}💾 Written MetaGPT configuration to: ${C.dim}${metagptConfigPath}${C.reset}`);
 
   console.log(`
@@ -361,4 +367,3 @@ export async function runVertexProvision() {
     throw new Error("Vertex AI Agent provisioning failed");
   }
 }
-
