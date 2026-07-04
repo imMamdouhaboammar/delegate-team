@@ -10,7 +10,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `dt doctor --json` and `dt check --json` for machine-readable backend health checks.
 - `dt setup` automation flags: `--project`, `--location`, `--skip-auth`, `--skip-gcp-enable`, `--skip-provision`, and `--yes`.
 - `dt run --dry-run` to show selected backend, routing reason, fallback chain, and planned execution without running a backend.
+- `npm run version:check` to guard version sync across package, plugin manifests, marketplace plugin entries, and changelog.
 - npm publish workflow that publishes only when `package.json.version` is not already on npm, validates the packed artifact, verifies registry state, and creates matching release metadata.
+- npm publish workflow lockfile warning when `package-lock.json` version metadata is stale.
 
 ### Fixed
 
@@ -22,16 +24,24 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Proxy token validation now uses constant-time comparison for equal-length tokens.
 - Release workflow now validates `vX.Y.Z` tags explicitly and uses version-aware previous-tag ordering.
 - `dt route --last` now selects the newest trace by file modification time instead of filename sorting.
+- MMAS `stop` now terminates agent and watchdog process groups, not only parent PIDs.
+- MMAS Atlas timeout now cleans up the Atlas process group when `team_plan.json` is not produced in time.
+- Python engine requirement now matches the MMAS/backend runtime contract: `python >=3.10`.
 
 ### Tests
 
 - Added tests for `doctor --json` structured output.
 - Added tests for `dt run --dry-run` planning output.
 - Added tests to keep marketplace plugin entry versions in sync with `package.json`.
+- Added tests to guard the npm package runtime file whitelist and bin aliases.
 
 ### Docs
 
-- Updated `docs/INSTALLATION.md` with automation-safe setup examples, `doctor --json`, `run --dry-run`, private config permissions, and updated network/write surface notes.
+- Updated `README.md` for `2.7.2`, dry-run routing, JSON doctor output, release checks, npm hardening, and refreshed CI commands.
+- Updated `docs/INSTALLATION.md` with runtime requirements, release/publish checks, lockfile drift guidance, and process-group cleanup notes.
+- Updated `docs/ARCHITECTURE.md` with release flow, publish guard, runtime compatibility, and MMAS process-group boundary.
+- Updated `docs/SECURITY-MODEL.md` with npm publish safety, proxy hardening, private config permissions, and MMAS cleanup semantics.
+- Updated `docs/MMAS.md` with process-group cleanup, Atlas timeout cleanup, PID/PGID state, and current CLI behavior.
 
 ## [2.7.1] - 2026-07-02
 
