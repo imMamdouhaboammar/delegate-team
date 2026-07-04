@@ -19,6 +19,7 @@
     "test": "vitest run && bash tests/test-v2.7.0.sh",
     "selftest": "python3 orchestrator/scripts/orchestrate.py --selftest",
     "typecheck": "tsc --noEmit",
+    "version:check": "node scripts/check-version-sync.mjs",
     "size": "npm pack --dry-run",
     "publish:dry": "npm publish --dry-run --access public",
     "agents-health": "bash bin/agents-health.sh",
