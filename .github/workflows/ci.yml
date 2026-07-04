@@ -155,8 +155,28 @@ jobs:
         run: |
           set -euo pipefail
           PACK_JSON=$(mktemp)
-          npm pack --json > "$PACK_JSON"
-          PACK_FILE=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))[0]['filename'])" "$PACK_JSON")
+          PACK_STDERR=$(mktemp)
+          if ! npm pack --json --ignore-scripts > "$PACK_JSON" 2> "$PACK_STDERR"; then
+            echo "  ✗ npm pack command failed"
+            echo "  stdout:"
+            cat "$PACK_JSON" || true
+            echo "  stderr:"
+            cat "$PACK_STDERR" || true
+            exit 1
+          fi
+          if ! python3 -m json.tool "$PACK_JSON" > /dev/null 2>&1; then
+            echo "  ✗ npm pack output is not valid JSON"
+            echo "  stdout:"
+            cat "$PACK_JSON"
+            echo "  stderr:"
+            cat "$PACK_STDERR" || true
+            exit 1
+          fi
+          PACK_FILE=$(python3 -c "import json,sys; data=json.load(open(sys.argv[1])); print(data[0]['filename'] if data else '')" "$PACK_JSON")
+          if [ -z "$PACK_FILE" ] || [ ! -f "$PACK_FILE" ]; then
+            echo "  ✗ could not resolve packed tarball: $PACK_FILE"
+            exit 1
+          fi
           tar -tzf "$PACK_FILE" | sort > /tmp/npm-pack-files.txt
 
           for required in \
@@ -176,8 +196,28 @@ jobs:
         run: |
           set -euo pipefail
           PACK_JSON=$(mktemp)
-          npm pack --json > "$PACK_JSON"
-          PACK_FILE=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))[0]['filename'])" "$PACK_JSON")
+          PACK_STDERR=$(mktemp)
+          if ! npm pack --json --ignore-scripts > "$PACK_JSON" 2> "$PACK_STDERR"; then
+            echo "  ✗ npm pack command failed"
+            echo "  stdout:"
+            cat "$PACK_JSON" || true
+            echo "  stderr:"
+            cat "$PACK_STDERR" || true
+            exit 1
+          fi
+          if ! python3 -m json.tool "$PACK_JSON" > /dev/null 2>&1; then
+            echo "  ✗ npm pack output is not valid JSON"
+            echo "  stdout:"
+            cat "$PACK_JSON"
+            echo "  stderr:"
+            cat "$PACK_STDERR" || true
+            exit 1
+          fi
+          PACK_FILE=$(python3 -c "import json,sys; data=json.load(open(sys.argv[1])); print(data[0]['filename'] if data else '')" "$PACK_JSON")
+          if [ -z "$PACK_FILE" ] || [ ! -f "$PACK_FILE" ]; then
+            echo "  ✗ could not resolve packed tarball: $PACK_FILE"
+            exit 1
+          fi
           TMP_DIR=$(mktemp -d)
           pushd "$TMP_DIR" >/dev/null
           npm init -y >/dev/null
