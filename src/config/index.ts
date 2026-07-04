@@ -1,10 +1,44 @@
-import { join, resolve, dirname } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { join, resolve, dirname, parse } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// In ESM, when bundled to dist/cli.js, __dirname will be dist/
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-export const WORKSPACE_ROOT = resolve(__dirname, ".."); 
+
+function hasDelegateTeamPackageJson(dir: string): boolean {
+  const packagePath = join(dir, 'package.json');
+  if (!existsSync(packagePath)) return false;
+
+  try {
+    const pkg = JSON.parse(readFileSync(packagePath, 'utf8'));
+    return pkg.name === 'delegate-team';
+  } catch {
+    return false;
+  }
+}
+
+function findWorkspaceRoot(startDir: string): string {
+  const override = process.env.DT_RUNTIME_ROOT;
+  if (override) {
+    const resolvedOverride = resolve(override);
+    if (hasDelegateTeamPackageJson(resolvedOverride)) return resolvedOverride;
+    console.warn(`[dt] Ignoring DT_RUNTIME_ROOT because no delegate-team package.json was found: ${resolvedOverride}`);
+  }
+
+  let current = resolve(startDir);
+  const root = parse(current).root;
+
+  while (true) {
+    if (hasDelegateTeamPackageJson(current)) return current;
+    if (current === root) break;
+    current = dirname(current);
+  }
+
+  // Fallback for the bundled npm layout: dist/config/index.js -> package root.
+  return resolve(startDir, '..', '..');
+}
+
+export const WORKSPACE_ROOT = findWorkspaceRoot(__dirname);
 
 export const DELEGATE_TEAM_PATH = join(WORKSPACE_ROOT, "delegate-team");
 export const VERTEX_CODER_PATH = join(WORKSPACE_ROOT, "vertex-coder");
