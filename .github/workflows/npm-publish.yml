@@ -10,7 +10,7 @@ name: npm publish
 # Security posture:
 # - Prefer npm Trusted Publishing with OIDC.
 # - Keep NPM_TOKEN only as a temporary fallback until Trusted Publishing is configured.
-# - Validate the packed artifact before publishing.
+# - Validate version manifests, changelog, and packed artifact before publishing.
 # - Publish with provenance.
 
 on:
@@ -85,6 +85,41 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+        shell: bash
+
+      - name: Version sync guard
+        run: npm run version:check
+        shell: bash
+
+      - name: Warn about package-lock version drift
+        id: lockfile
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          if (!fs.existsSync('package-lock.json')) {
+            console.log('lockfile_warning=package-lock.json missing' >> process.env.GITHUB_OUTPUT);
+            console.log('::warning::package-lock.json is missing. Run npm install --package-lock-only and commit it.');
+            process.exit(0);
+          }
+          const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+          const warnings = [];
+          if (lock.version && lock.version !== pkg.version) {
+            warnings.push(`package-lock.json root version is ${lock.version}, package.json is ${pkg.version}`);
+          }
+          if (lock.packages?.['']?.version && lock.packages[''].version !== pkg.version) {
+            warnings.push(`package-lock.json packages[""].version is ${lock.packages[''].version}, package.json is ${pkg.version}`);
+          }
+          if (warnings.length === 0) {
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, 'lockfile_warning=\n');
+            console.log(`package-lock.json is in sync with package.json ${pkg.version}`);
+            process.exit(0);
+          }
+          const message = `${warnings.join('; ')}. Regenerate with: npm install --package-lock-only`;
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `lockfile_warning=${message}\n`);
+          console.log(`::warning::${message}`);
+          NODE
         shell: bash
 
       - name: Resolve package metadata and publish decision
@@ -332,6 +367,7 @@ jobs:
             echo "Already published: \`${{ steps.meta.outputs.package_published }}\`"
             echo "Should publish: \`${{ steps.meta.outputs.should_publish }}\`"
             echo "Reason: ${{ steps.meta.outputs.reason }}"
+            echo "Lockfile warning: ${{ steps.lockfile.outputs.lockfile_warning }}"
             echo ""
             echo "npm: https://www.npmjs.com/package/${{ steps.meta.outputs.pkg_name }}/v/${{ steps.meta.outputs.pkg_version }}"
             echo "repo: https://github.com/${GITHUB_REPOSITORY}"
