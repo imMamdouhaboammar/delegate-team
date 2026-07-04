@@ -1,26 +1,26 @@
-# `dt` CLI — Delegation Gateway
+# `dt` CLI - Delegation Gateway
 
-> This is the ORIGINAL product of this repo. The supersystem v2 release added
-> the orchestrator, scaffolder, MMAS, and integrations on top — but `dt` itself
-> is unchanged.
+> This is the original product of this repo. The supersystem v2 release added
+> the orchestrator, scaffolder, MMAS, and integrations on top. `dt` remains the
+> low-level execution gateway.
 
-`dt` is a local CLI that lets Claude Code delegate coding tasks to specialized
-agent backends. It can route a task to:
+`dt` is a local CLI that lets Claude Code, scripts, or a human operator route
+coding tasks to specialized agent backends. It can route a task to:
 
-- **VertexCoder** — Gemini family (`gemini-3.1-pro`, `gemini-3.5-flash`)
-- **Codex** — `codex-gpt-5.5-high` via the `codex` CLI
-- **MiniMax** — `MiniMax-M3`, `M2.7`, `M2.7-highspeed` via `mmx` CLI
-- **OpenCode** — `opencode-glm-5.2-max`, `opencode-qwen-max`, `opencode-kimi-k2.7-code-max`
-- **MetaGPT-style team** — multi-role composition
+- **VertexCoder**: Gemini family via Google SDK / Vertex path.
+- **Codex**: Codex CLI path.
+- **MiniMax**: MiniMax backends via `mmx` / adapter CLIs.
+- **OpenCode**: OpenCode-routed models.
+- **MetaGPT-style team**: multi-role composition for complex tasks.
 
-While keeping Claude Code (or the human) as the final reviewer.
+Claude Code or the human remains the final reviewer.
 
 ## What `dt` is
 
 - A local delegation gateway for AI coding agents.
-- A routing layer between Claude Code and multiple coding backends.
-- A policy layer for budgets, workspace boundaries, failover, and review.
-- A MetaGPT-style team runner for complex tasks.
+- A routing layer between a task and multiple coding backends.
+- A policy layer for workspace boundaries, failover, and review.
+- A setup helper for local config, credentials, and backend health checks.
 
 ## What `dt` is not
 
@@ -33,16 +33,19 @@ While keeping Claude Code (or the human) as the final reviewer.
 
 | Feature | Description |
 |---|---|
-| **Failover ring** | `dt` attempts best-effort fallback across configured backends. If another backend is available, `dt` can retry the task automatically. |
-| **Lean Token Protocol** | A targeted, compact contract. The routing engine minimizes file ingestion size, feeding only the context that actually matters. |
-| **Autopilot setup** | `dt setup` creates local Python virtual environments and checks cloud credentials. |
-| **Dynamic auth** | Zero hardcoded keys. `dt` queries your active local sessions and safely stores configurations locally. |
-| **Skill linker** | Instantly injects `dt`'s orchestrators directly into local Claude Code and Gemini CLI paths. |
+| **Failover ring** | Attempts best-effort fallback across configured backends. |
+| **Dry-run dispatch** | `dt run "<task>" --dry-run` prints backend choice and fallback chain without executing. |
+| **JSON doctor** | `dt doctor --json` emits machine-readable backend health for scripts and CI. |
+| **Autopilot setup** | `dt setup` creates local Python virtual environments and writes local config. |
+| **Non-interactive setup** | `dt setup --project <id> --skip-auth --skip-gcp-enable --skip-provision --yes`. |
+| **Dynamic auth** | No hardcoded keys. Config files are local and written with private permissions. |
+| **Skill linker** | Symlinks orchestrators into local Claude Code and Gemini CLI paths. |
 
 ## Build
 
 ```bash
-npm install
+npm ci
+npm run version:check
 npm run build
 ./install.sh --dt
 ```
@@ -50,38 +53,56 @@ npm run build
 ## Usage
 
 ```bash
-dt run "<task>"                           # Auto-routing + failover
-dt run "<task>" --backend minimax-coder   # Force a specific backend
-dt run "<task>" --team                    # MetaGPT-style multi-role
+dt run "<task>"                         # auto-routing + failover
+dt run "<task>" --dry-run               # inspect plan only
+dt run "<task>" --backend minimax       # force a backend
+dt run "<task>" --team                  # MetaGPT-style team route
 
-dt setup                                  # First-time setup
-dt doctor                                 # Health check
+dt setup                                # interactive first-time setup
+dt setup --project my-project --skip-auth --skip-gcp-enable --skip-provision --yes
+
+dt doctor                               # human health check
+dt doctor --json                        # automation-safe health check
+
+dt route --explain "<task>"             # routing trace
+dt route --last                         # newest saved trace
 ```
 
 ## Architecture
 
-Unlike standard tools that just "support MetaGPT" or fire prompts at an API,
-`dt` introduces a **supervised delegation runtime**:
+Unlike tools that only fire prompts at an API, `dt` introduces a supervised
+delegation runtime:
 
 ```
-[Claude Code]  ─→  [dt gateway]  ─→  [vertex-coder / god-agent / minimax-coder / metagpt / fallback]
-                          │
-                          ↓ review
-                  [human user / Claude Code]
+[Claude Code / human / script] -> [dt gateway] -> [vertex-coder / god-agent / minimax-coder / metagpt / fallback]
+                                      |
+                                      v
+                              [review surface]
 ```
 
-See:
-- `DELEGATION_PROTOCOL.md` — Lean Token Protocol specification
-- `ROLE_ROUTING.md` — How tasks get routed across roles
-- `SECURITY.md` — Auth + scope policy
-- `TRACE_SCHEMA.md` — Telemetry + observability
-- `AGENT_ACCESS_GUIDE.md` — How agents access this repo
+## Local config and permissions
+
+`dt setup` writes:
+
+- `~/.config/dt/config.json` with `0600`
+- `~/.metagpt/config2.yaml` with `0600`
+- containing directories with `0700`
+
+The local proxy binds to `127.0.0.1` and requires a proxy token.
 
 ## Compatibility with supersystem v2
 
 `dt` is the execution engine referenced by:
 
-- `/mavis-ship` orchestrator (when the routed stage is "heavy multi-file")
-- `/delegate-team` slash command (in any Claude Code session)
+- `/mavis-ship` orchestrator when the routed stage needs backend execution.
+- `/delegate-team` slash command in Claude Code.
+- MMAS when specialist agents delegate implementation or review tasks.
 
-Both automatically discover `dt` once it's built and on PATH.
+Both automatically discover `dt` once it is built and on PATH.
+
+## See also
+
+- `docs/INSTALLATION.md`: lane-based install and release checks.
+- `docs/ARCHITECTURE.md`: layer map and trust boundaries.
+- `docs/SECURITY-MODEL.md`: local security model.
+- `docs/MMAS.md`: multi-agent runtime.
