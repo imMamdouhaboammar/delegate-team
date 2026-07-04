@@ -97,12 +97,20 @@ jobs:
           set -euo pipefail
           node <<'NODE'
           const fs = require('fs');
+          const output = process.env.GITHUB_OUTPUT;
           const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+
+          function setOutput(value) {
+            fs.appendFileSync(output, `lockfile_warning=${value}\n`);
+          }
+
           if (!fs.existsSync('package-lock.json')) {
-            console.log('lockfile_warning=package-lock.json missing' >> process.env.GITHUB_OUTPUT);
-            console.log('::warning::package-lock.json is missing. Run npm install --package-lock-only and commit it.');
+            const message = 'package-lock.json missing. Run: npm install --package-lock-only';
+            setOutput(message);
+            console.log(`::warning::${message}`);
             process.exit(0);
           }
+
           const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
           const warnings = [];
           if (lock.version && lock.version !== pkg.version) {
@@ -111,13 +119,15 @@ jobs:
           if (lock.packages?.['']?.version && lock.packages[''].version !== pkg.version) {
             warnings.push(`package-lock.json packages[""].version is ${lock.packages[''].version}, package.json is ${pkg.version}`);
           }
+
           if (warnings.length === 0) {
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, 'lockfile_warning=\n');
+            setOutput('');
             console.log(`package-lock.json is in sync with package.json ${pkg.version}`);
             process.exit(0);
           }
+
           const message = `${warnings.join('; ')}. Regenerate with: npm install --package-lock-only`;
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `lockfile_warning=${message}\n`);
+          setOutput(message);
           console.log(`::warning::${message}`);
           NODE
         shell: bash
