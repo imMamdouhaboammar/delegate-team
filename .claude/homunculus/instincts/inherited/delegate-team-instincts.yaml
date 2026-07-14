@@ -1,0 +1,321 @@
+# Instincts generated from https://github.com/imMamdouhaboammar/delegate-team
+# Generated: 2026-07-14T10:04:03.281Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: delegate-team-commit-conventional
+trigger: "when writing a commit message"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: https://github.com/imMamdouhaboammar/delegate-team
+---
+
+# Delegate Team Commit Conventional
+
+## Action
+
+Use conventional commit format with prefixes: ci, docs
+
+## Evidence
+
+- 3 commits analyzed
+- Detected conventional commit pattern
+- Examples: ci: add gitleaks secret scanning gate, docs: document secret scanning response process
+
+---
+id: delegate-team-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/imMamdouhaboammar/delegate-team
+---
+
+# Delegate Team Commit Length
+
+## Action
+
+Keep commit messages concise (~40 characters)
+
+## Evidence
+
+- Average commit message length: 40 chars
+- Based on 3 commits
+
+---
+id: delegate-team-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/imMamdouhaboammar/delegate-team
+---
+
+# Delegate Team Naming Files
+
+## Action
+
+Use kebab-case naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: kebab-case
+
+---
+id: delegate-team-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/imMamdouhaboammar/delegate-team
+---
+
+# Delegate Team Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: delegate-team-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/imMamdouhaboammar/delegate-team
+---
+
+# Delegate Team Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: delegate-team-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/imMamdouhaboammar/delegate-team
+---
+
+# Delegate Team Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: delegate-team-instinct-file-naming
+trigger: "When creating a new file"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: imMamdouhaboammar/delegate-team
+---
+
+# Delegate Team Instinct File Naming
+
+## Action
+
+Name the file using kebab-case (e.g., my-component.ts)
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.files
+
+---
+id: delegate-team-instinct-function-naming
+trigger: "When defining a function"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: imMamdouhaboammar/delegate-team
+---
+
+# Delegate Team Instinct Function Naming
+
+## Action
+
+Use camelCase for function names (e.g., processInput)
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.functions
+
+---
+id: delegate-team-instinct-class-naming
+trigger: "When defining a class"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: imMamdouhaboammar/delegate-team
+---
+
+# Delegate Team Instinct Class Naming
+
+## Action
+
+Use PascalCase for class names (e.g., UserService)
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.classes
+
+---
+id: delegate-team-instinct-constant-naming
+trigger: "When declaring a constant"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: imMamdouhaboammar/delegate-team
+---
+
+# Delegate Team Instinct Constant Naming
+
+## Action
+
+Use SCREAMING_SNAKE_CASE for constant names (e.g., MAX_RETRIES)
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.constants
+
+---
+id: delegate-team-instinct-import-style
+trigger: "When importing modules"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: imMamdouhaboammar/delegate-team
+---
+
+# Delegate Team Instinct Import Style
+
+## Action
+
+Use relative import paths (e.g., import { X } from './module')
+
+## Evidence
+
+- Pattern in codeStyle.importStyle
+
+---
+id: delegate-team-instinct-export-style
+trigger: "When exporting from a module"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: imMamdouhaboammar/delegate-team
+---
+
+# Delegate Team Instinct Export Style
+
+## Action
+
+Use named exports (e.g., export { myFunction })
+
+## Evidence
+
+- Pattern in codeStyle.exportStyle
+
+---
+id: delegate-team-instinct-test-location
+trigger: "When adding new tests"
+confidence: 0.7
+domain: testing
+source: repo-analysis
+source_repo: imMamdouhaboammar/delegate-team
+---
+
+# Delegate Team Instinct Test Location
+
+## Action
+
+Place test files in a separate test directory, not alongside source files
+
+## Evidence
+
+- Pattern in architecture.folderStructure.testLocation
+
+---
+id: delegate-team-instinct-commit-prefix
+trigger: "When writing a commit message"
+confidence: 0.9
+domain: git
+source: repo-analysis
+source_repo: imMamdouhaboammar/delegate-team
+---
+
+# Delegate Team Instinct Commit Prefix
+
+## Action
+
+Use a conventional commit prefix such as 'ci:' or 'docs:'
+
+## Evidence
+
+- Seen in commit: ci: add gitleaks secret scanning gate
+- Seen in commit: docs: document secret scanning response process
+- Pattern in commits.prefixes
+
+---
+id: delegate-team-instinct-commit-length
+trigger: "When writing a commit message"
+confidence: 0.7
+domain: git
+source: repo-analysis
+source_repo: imMamdouhaboammar/delegate-team
+---
+
+# Delegate Team Instinct Commit Length
+
+## Action
+
+Keep the commit message concise, around 40 characters on average
+
+## Evidence
+
+- Pattern in commits.averageLength
+
+---
+id: delegate-team-instinct-secret-scan-workflow
+trigger: "When configuring CI workflows"
+confidence: 0.8
+domain: workflow
+source: repo-analysis
+source_repo: imMamdouhaboammar/delegate-team
+---
+
+# Delegate Team Instinct Secret Scan Workflow
+
+## Action
+
+Include a secret scanning step using gitleaks as defined in .github/workflows/secret-scan.yml
+
+## Evidence
+
+- Pattern in architecture.configFiles: .github/workflows/secret-scan.yml
+- Seen in commit: ci: add gitleaks secret scanning gate
+- Seen in commit: ci: define explicit gitleaks policy
+
