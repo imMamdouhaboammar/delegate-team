@@ -1,0 +1,16 @@
+title = "delegate-team gitleaks policy"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Repository-wide non-secret fixtures and generated metadata"
+paths = [
+  '''(^|/)package-lock\.json$''',
+  '''(^|/)node_modules/''',
+  '''(^|/)dist/''',
+  '''(^|/)coverage/'''
+]
+
+# Keep suppressions narrow and reviewable. Add future exceptions only for
+# deterministic test fixtures that cannot authenticate against any service.
