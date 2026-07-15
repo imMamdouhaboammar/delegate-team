@@ -12,12 +12,12 @@ vi.mock('node:fs', async () => {
   return {
     ...actual,
     existsSync: vi.fn(actual.existsSync),
-    mkdirSync: vi.fn(actual.mkdirSync),
-    rmSync: vi.fn(actual.rmSync),
-    symlinkSync: vi.fn(actual.symlinkSync),
-    writeFileSync: vi.fn(actual.writeFileSync),
     readFileSync: vi.fn(actual.readFileSync),
-    unlinkSync: vi.fn(actual.unlinkSync),
+    mkdirSync: vi.fn(),
+    rmSync: vi.fn(),
+    symlinkSync: vi.fn(),
+    writeFileSync: vi.fn(),
+    unlinkSync: vi.fn(),
   };
 });
 
