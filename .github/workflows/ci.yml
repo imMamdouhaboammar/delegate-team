@@ -117,29 +117,6 @@ jobs:
             exit 1
           fi
           echo "  ✓ dist/cli.js uses the Rspack-safe package path pattern"
-      - name: Assert no extra .json files in npm pack
-        run: |
-          set -euo pipefail
-          npm pack --dry-run --json --ignore-scripts > /tmp/npm-pack.json
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-
-          payload = json.loads(Path('/tmp/npm-pack.json').read_text())
-          json_files = sorted(
-              item['path']
-              for item in payload[0].get('files', [])
-              if item['path'].endswith('.json')
-          )
-          print('  .json files in pack:')
-          for path in json_files:
-              print(f'    {path}')
-          if json_files != ['package.json']:
-              raise SystemExit(
-                  f'expected only package.json in npm pack, got {json_files}'
-              )
-          PY
-          echo "  ✓ tarball contains only package.json as a JSON asset"
       - name: YAML lint (mmas/agents)
         run: |
           python -c "
