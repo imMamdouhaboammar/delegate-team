@@ -1,5 +1,5 @@
-# .npmignore — patterns npm should skip when packing delegate-team@2.7.0
-# (mirrors .gitignore, but applied specifically for npm pack)
+# .npmignore — patterns npm should skip when packing delegate-team
+# Runtime files listed in package.json#files must remain packable.
 
 # Dependencies
 node_modules/
@@ -8,7 +8,7 @@ node_modules/
 coverage/
 
 # Build
-dist/
+# dist/ is intentionally packaged because the dt binaries execute dist/cli.js.
 
 # Virtual environments (vertex-coder/.venv is huge)
 .venv/
@@ -55,7 +55,7 @@ mmas/__pycache__/
 # Routing traces
 dt_traces/
 
-# Agent-kernel develpment/ backlog (internal)
+# Agent-kernel development backlog (internal)
 agent-kernel/develpment/
 
 # Vendor caches

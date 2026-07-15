@@ -7,6 +7,7 @@ import { runMetaGPTRouter } from './commands/metagpt.js';
 import { runServe } from './proxy/server.js';
 import { runRouteExplain } from './commands/route.js';
 import { runKernelStatus, runKernelVersion } from './commands/kernel.js';
+import { parsePort } from './utils/port.js';
 import fs from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -182,7 +183,13 @@ program
   .alias('proxy')
   .description('Start the LLM Gateway Proxy Server')
   .action((port) => {
-    runServe(port ? parseInt(port, 10) : 3000);
+    try {
+      runServe(parsePort(port));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`\n❌ ${message}\n`);
+      process.exitCode = 64;
+    }
   });
 
 // Check for unknown commands before parsing to prevent dangerous fallbacks

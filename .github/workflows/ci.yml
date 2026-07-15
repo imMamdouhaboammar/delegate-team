@@ -83,15 +83,8 @@ jobs:
           python -m py_compile mmas/spawn-team.py mmas/hash-edit.py
 
   # ───────────────────────────────────────────────────────────────────────
-  # Bundlephobia regression guard — BundlePhobia recently migrated from
-  # webpack to Rspack. Rspack treats `new URL('../package.json',
-  # import.meta.url)` in source as an asset reference and tries to bundle
-  # package.json as a JSON asset — but Rspack requires chunk assets to
-  # have a `.bundle` suffix, so it fails with:
-  #   "Found an asset without the `.bundle` suffix. A loader customization
-  #    might be needed to recognize this asset type<HASH>.json"
-  # Source MUST use fileURLToPath + dirname + join instead.
-  # See v2.5.1 release notes.
+  # Bundlephobia regression guard. npm runtime packaging is checked by the
+  # dedicated npm-pack-integrity workflow so failures remain diagnostic.
   # ───────────────────────────────────────────────────────────────────────
   bundlephobia-guard:
     name: Bundlephobia regression guard
@@ -117,117 +110,13 @@ jobs:
       - name: Assert no bundler-unsafe new URL('../package.json') in dist
         run: |
           set -e
-          # The pattern `new URL("../package.json", import.meta.url)` triggers
-          # BundlePhobia's Rspack to try to bundle package.json as an asset,
-          # which fails the .bundle suffix check.
+          # The pattern below makes Rspack treat package.json as an asset.
           if grep -E "new URL\([\"']\.\./package\.json[\"'],\s*import\.meta\.url\)" dist/cli.js; then
-            echo "  ✗ FOUND bundler-unsafe pattern: new URL('../package.json', import.meta.url)"
-            echo "  BundlePhobia's Rspack bundler will fail with"
-            echo "  'Found an asset without the \`.bundle\` suffix' error."
+            echo "  ✗ FOUND bundler-unsafe package.json URL pattern"
             echo "  Use fileURLToPath + dirname + join instead."
             exit 1
           fi
-          echo "  ✓ dist/cli.js uses fileURLToPath + dirname + join (Rspack-safe)"
-      - name: Assert no extra .json files in npm pack
-        run: |
-          set -e
-          # Only package.json should be a .json in the tarball. Any extra
-          # .json file is a candidate for BundlePhobia to choke on.
-          # Filter to `npm notice` lines only — the prepack script
-          # (`npm run build` -> `tsup`) prints e.g.
-          #   `CLI Using tsconfig: tsconfig.json`
-          # to stderr; without filtering, that banner is matched by
-          # `grep -oE '\S+\.json'` and the test falsely fails.
-          PACK_JSONS=$(npm pack --dry-run 2>&1 | grep '^npm notice' | grep -oE '\S+\.json' | sort -u)
-          echo "  .json files in pack:"
-          echo "$PACK_JSONS" | sed 's/^/    /'
-          COUNT=$(echo "$PACK_JSONS" | wc -l | tr -d ' ')
-          if [ "$COUNT" -ne 1 ]; then
-            echo "  ✗ expected exactly 1 .json file (package.json), got $COUNT"
-            exit 1
-          fi
-          if [ "$(echo "$PACK_JSONS" | head -1)" != "package.json" ]; then
-            echo "  ✗ unexpected .json file in tarball"
-            exit 1
-          fi
-          echo "  ✓ tarball contains only package.json as .json asset"
-      - name: Assert required runtime files in npm pack
-        run: |
-          set -euo pipefail
-          PACK_JSON=$(mktemp)
-          PACK_STDERR=$(mktemp)
-          if ! npm pack --json --ignore-scripts > "$PACK_JSON" 2> "$PACK_STDERR"; then
-            echo "  ✗ npm pack command failed"
-            echo "  stdout:"
-            cat "$PACK_JSON" || true
-            echo "  stderr:"
-            cat "$PACK_STDERR" || true
-            exit 1
-          fi
-          if ! python3 -m json.tool "$PACK_JSON" > /dev/null 2>&1; then
-            echo "  ✗ npm pack output is not valid JSON"
-            echo "  stdout:"
-            cat "$PACK_JSON"
-            echo "  stderr:"
-            cat "$PACK_STDERR" || true
-            exit 1
-          fi
-          PACK_FILE=$(python3 -c "import json,sys; data=json.load(open(sys.argv[1])); print(data[0]['filename'] if data else '')" "$PACK_JSON")
-          if [ -z "$PACK_FILE" ] || [ ! -f "$PACK_FILE" ]; then
-            echo "  ✗ could not resolve packed tarball: $PACK_FILE"
-            exit 1
-          fi
-          tar -tzf "$PACK_FILE" | sort > /tmp/npm-pack-files.txt
-
-          for required in \
-            package/dist/cli.js \
-            package/bin/mavis-ship-uni \
-            package/bin/autopilot.sh \
-            package/bin/agents-health.sh \
-            package/delegate-team/scripts/relay.mjs \
-            package/delegate-team/scripts/opencode-router.mjs; do
-            if ! grep -Fxq "$required" /tmp/npm-pack-files.txt; then
-              echo "  ✗ missing runtime file in npm tarball: $required"
-              exit 1
-            fi
-            echo "  ✓ $required"
-          done
-      - name: Install npm tarball smoke test
-        run: |
-          set -euo pipefail
-          PACK_JSON=$(mktemp)
-          PACK_STDERR=$(mktemp)
-          if ! npm pack --json --ignore-scripts > "$PACK_JSON" 2> "$PACK_STDERR"; then
-            echo "  ✗ npm pack command failed"
-            echo "  stdout:"
-            cat "$PACK_JSON" || true
-            echo "  stderr:"
-            cat "$PACK_STDERR" || true
-            exit 1
-          fi
-          if ! python3 -m json.tool "$PACK_JSON" > /dev/null 2>&1; then
-            echo "  ✗ npm pack output is not valid JSON"
-            echo "  stdout:"
-            cat "$PACK_JSON"
-            echo "  stderr:"
-            cat "$PACK_STDERR" || true
-            exit 1
-          fi
-          PACK_FILE=$(python3 -c "import json,sys; data=json.load(open(sys.argv[1])); print(data[0]['filename'] if data else '')" "$PACK_JSON")
-          if [ -z "$PACK_FILE" ] || [ ! -f "$PACK_FILE" ]; then
-            echo "  ✗ could not resolve packed tarball: $PACK_FILE"
-            exit 1
-          fi
-          TMP_DIR=$(mktemp -d)
-          pushd "$TMP_DIR" >/dev/null
-          npm init -y >/dev/null
-          npm install "$GITHUB_WORKSPACE/$PACK_FILE" --ignore-scripts >/dev/null
-          ./node_modules/.bin/dt --version
-          ./node_modules/.bin/delegate-team --help >/dev/null
-          test -f ./node_modules/delegate-team/delegate-team/scripts/relay.mjs
-          test -f ./node_modules/delegate-team/delegate-team/scripts/opencode-router.mjs
-          popd >/dev/null
-          echo "  ✓ packed artifact installs and exposes runtime scripts"
+          echo "  ✓ dist/cli.js uses the Rspack-safe package path pattern"
       - name: YAML lint (mmas/agents)
         run: |
           python -c "
