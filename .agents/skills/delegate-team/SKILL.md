@@ -1,4 +1,13 @@
-```markdown
+---
+name: delegate-team
+description: |
+  Repo-specific development patterns and workflows for the delegate-team
+  TypeScript supersystem. Use when working in this repository to follow
+  the existing file-naming, import/export style, conventional commit
+  format, and testing conventions. Provides guidance for /commit and
+  /test workflows.
+---
+
 # delegate-team Development Patterns
 
 > Auto-generated skill from repository analysis
@@ -93,4 +102,3 @@ This skill teaches the core development patterns and conventions used in the `de
 |-----------|-----------------------------------------|
 | /commit   | Guide for conventional commit workflow  |
 | /test     | Run all test files in the repository    |
-```
