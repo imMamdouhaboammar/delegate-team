@@ -69,15 +69,9 @@ This skill teaches the core development patterns and conventions used in the `de
 **Command:** `/test`
 
 1. Identify test files matching `*.test.*`
-2. Run your test runner (framework not specified; adjust as needed):
+2. Run vitest (the project's test runner — see package.json devDependencies):
     ```
-    # Example with Jest
-    npx jest
-    ```
-    or
-    ```
-    # Example with Mocha
-    npx mocha "**/*.test.ts"
+    npx vitest run
     ```
 
 ## Testing Patterns
