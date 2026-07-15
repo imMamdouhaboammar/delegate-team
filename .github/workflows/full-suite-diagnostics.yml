@@ -1,0 +1,39 @@
+name: Full Suite Diagnostics
+
+on:
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: full-suite-diagnostics-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+      - run: npm ci
+      - name: Run full suite
+        id: full-suite
+        continue-on-error: true
+        run: npx vitest run --reporter=verbose > test-output.log 2>&1
+      - name: Upload full suite output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-suite-output
+          path: test-output.log
+          if-no-files-found: error
+      - name: Preserve failing status
+        if: steps['full-suite'].outcome == 'failure'
+        run: exit 1
