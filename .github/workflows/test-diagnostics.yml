@@ -1,0 +1,31 @@
+name: Test Diagnostics
+
+on:
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-diagnostics-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+      - run: npm ci
+      - name: Runtime path tests
+        run: npx vitest run tests/runtime-paths.test.ts --reporter=verbose
+      - name: Port tests
+        run: npx vitest run tests/port.test.ts --reporter=verbose
+      - name: Full suite with compact output
+        run: npx vitest run --reporter=dot --silent
