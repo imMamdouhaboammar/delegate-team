@@ -34,6 +34,7 @@ describe('Temp file cleanup', () => {
     spawnSyncMock.mockReturnValue({ status: 0 }); // success
 
     (fs.existsSync as any).mockReturnValue(true);
+    (fs.readFileSync as any).mockReturnValue('generated brief content');
 
     runDispatch('test task', {});
 
