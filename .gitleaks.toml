@@ -1,0 +1,8 @@
+title = "delegate-team gitleaks policy"
+
+[extend]
+useDefault = true
+
+# Keep suppressions narrow and reviewable. Add a finding fingerprint to
+# .gitleaksignore only after confirming the value is deterministic and cannot
+# authenticate to any service. Do not exclude generated directories globally.
