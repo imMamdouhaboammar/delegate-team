@@ -1,26 +1,35 @@
 # ECC for Codex CLI
 
-This supplements the root `AGENTS.md` with a repo-local ECC baseline.
+This file supplements the root `AGENTS.md` with a repository-local ECC baseline. Root governance and current repository code remain authoritative.
 
-## Repo Skill
+## Repository skill
 
-- Repo-generated Codex skill: `.agents/skills/delegate-team/SKILL.md`
-- Claude-facing companion skill: `.claude/skills/delegate-team/SKILL.md`
-- Keep user-specific credentials and private MCPs in `~/.codex/config.toml`, not in this repo.
+- Codex-facing skill: `.agents/skills/delegate-team/SKILL.md`
+- Claude-facing companion: `.claude/skills/delegate-team/SKILL.md`
+- Keep user credentials and private MCP configuration outside the repository.
 
-## MCP Baseline
+## MCP baseline
 
-Treat `.codex/config.toml` as the default ECC-safe baseline for work in this repository.
-The generated baseline enables GitHub, Context7, Exa, Memory, Playwright, and Sequential Thinking.
+Treat `.codex/config.toml` as an optional repository baseline. Review every server before use and keep secrets in user-level configuration or approved environment storage.
 
-## Multi-Agent Support
+## Multi-agent support
 
 - Explorer: read-only evidence gathering
-- Reviewer: correctness, security, and regression review
-- Docs researcher: API and release-note verification
+- Reviewer: read-only correctness, security, and regression review
+- Docs researcher: read-only verification against primary documentation
 
-## Workflow Files
+The role configurations are stored under `.codex/agents/` and use read-only sandboxes.
 
-- No dedicated workflow command files were generated for this repo.
+## Development workflow
 
-Use these workflow files as reusable task scaffolds when the detected repository workflows recur.
+No dedicated ECC command files are included. Use the repository skill and existing repository commands instead:
+
+```bash
+npm ci
+npm run typecheck
+npm run build
+npm test
+npm run version:check
+```
+
+For package changes, also run `npm pack --dry-run`. Do not treat generated ECC metadata as proof that repository checks passed.
