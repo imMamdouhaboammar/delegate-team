@@ -33,7 +33,7 @@ export function createBackendTimeout(timeoutMs: number, backend: string): Promis
 export function readBackendTimeoutMs(envValue: string | undefined): number {
   if (!envValue) return DEFAULT_BACKEND_TIMEOUT_MS;
 
-  const parsed = Number.parseInt(envValue, 10);
+  const parsed = Number(envValue);
   if (!Number.isSafeInteger(parsed) || parsed <= 0) {
     return DEFAULT_BACKEND_TIMEOUT_MS;
   }
