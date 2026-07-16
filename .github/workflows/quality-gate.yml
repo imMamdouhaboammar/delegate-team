@@ -74,6 +74,16 @@ jobs:
           - tests/fallback.test.ts
           - tests/port.test.ts
           - tests/runtime-paths.test.ts
+          - tests/cli.test.ts
+          - tests/security.test.ts
+          - tests/doctor-json.test.ts
+          - tests/package-files.test.ts
+          - tests/v26-smoke.test.ts
+          - tests/manifest-version.test.ts
+          - tests/test_metagpt_adapter.test.ts
+          - tests/dispatch-dry-run.test.ts
+          - tests/mmas-process-groups.test.ts
+          - tests/router.test.ts
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
