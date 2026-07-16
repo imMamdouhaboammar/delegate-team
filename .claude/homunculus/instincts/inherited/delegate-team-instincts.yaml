@@ -1,103 +1,131 @@
-# Instincts generated from https://github.com/imMamdouhaboammar/delegate-team
-# Generated: 2026-07-14T10:04:03.281Z
-# Version: 2.0
-# NOTE: This file supplements (does not replace) any existing curated instincts.
-# High-confidence manually curated instincts should be preserved alongside these.
+# Project-scoped instincts for imMamdouhaboammar/delegate-team
+# Consolidated from repository governance, package scripts, CI, and reviewed history.
 ---
-id: delegate-team-commit-conventional
-trigger: "when writing a commit message"
+id: delegate-team-focused-commits
+trigger: "when preparing a commit"
+confidence: 0.95
+domain: git
+source: repo-analysis
+scope: project
+project_name: delegate-team
+source_repo: https://github.com/imMamdouhaboammar/delegate-team
+---
+# Create focused reviewed commits
+
+## Action
+Stage only intended paths, inspect the staged diff, use a Conventional Commit message, and do not push automatically.
+
+## Evidence
+- `AGENTS.md` defines repository conventions and versioning boundaries.
+- Recent repository history uses focused Conventional Commit messages.
+- Review authority and remote updates must remain explicit.
+---
+id: delegate-team-kebab-case-files
+trigger: "when creating a repository component, script, skill directory, or MMAS agent definition"
+confidence: 0.95
+domain: code-style
+source: repo-analysis
+scope: project
+project_name: delegate-team
+source_repo: https://github.com/imMamdouhaboammar/delegate-team
+---
+# Follow repository naming rules
+
+## Action
+Use lowercase kebab-case for components and scripts, keep `SKILL.md` uppercase, align skill directories with their frontmatter name, and name MMAS agents as `mmas/agents/<role>.yaml`.
+
+## Evidence
+- `AGENTS.md` documents the exact naming conventions for these surfaces.
+---
+id: delegate-team-relative-local-imports
+trigger: "when importing a repository-local TypeScript module"
 confidence: 0.85
-domain: git
+domain: code-style
 source: repo-analysis
+scope: project
+project_name: delegate-team
 source_repo: https://github.com/imMamdouhaboammar/delegate-team
 ---
-id: delegate-team-instinct-commit-length
-trigger: "When writing a commit message"
-confidence: 0.7
-domain: git
-source: repo-analysis
-source_repo: imMamdouhaboammar/delegate-team
+# Preserve local module boundaries
+
+## Action
+Prefer relative imports for repository-local modules and reuse existing utilities before creating a parallel implementation.
+
+## Evidence
+- Existing `src/` modules use relative imports for local code.
+- Root governance requires inspection and reuse of established repository boundaries.
 ---
-id: delegate-team-naming-files
-trigger: "when creating a new file"
+id: delegate-team-named-exports
+trigger: "when adding or changing a TypeScript module export"
 confidence: 0.8
 domain: code-style
 source: repo-analysis
+scope: project
+project_name: delegate-team
 source_repo: https://github.com/imMamdouhaboammar/delegate-team
 ---
-id: delegate-team-import-relative
-trigger: "when importing modules"
-confidence: 0.75
-domain: code-style
-source: repo-analysis
-source_repo: https://github.com/imMamdouhaboammar/delegate-team
+# Keep exports explicit
+
+## Action
+Prefer named exports and preserve established public interfaces unless a breaking change is explicitly approved and documented.
+
+## Evidence
+- Existing TypeScript modules expose named functions and constants.
+- CLI and package interfaces are public compatibility surfaces.
 ---
-id: delegate-team-instinct-export-style
-trigger: "When exporting from a module"
-confidence: 0.8
-domain: code-style
-source: repo-analysis
-source_repo: imMamdouhaboammar/delegate-team
----
-id: delegate-team-test-separate
-trigger: "when writing tests"
-confidence: 0.8
+id: delegate-team-canonical-validation
+trigger: "before claiming a code, CI, packaging, or runtime change is complete"
+confidence: 1.0
 domain: testing
 source: repo-analysis
+scope: project
+project_name: delegate-team
 source_repo: https://github.com/imMamdouhaboammar/delegate-team
 ---
-id: delegate-team-instinct-file-naming
-trigger: "When creating a new file"
+# Run repository-defined validation
+
+## Action
+Use `npm ci`, `npm run typecheck`, `npm run build`, `npm test`, and `npm run version:check` as applicable. For package changes, also run `npm pack --dry-run`.
+
+## Evidence
+- `package.json` defines these canonical scripts.
+- `.github/workflows/ci.yml` executes them across the supported Node matrix.
+- `npm test` includes both Vitest and `tests/test-v2.7.0.sh`.
+---
+id: delegate-team-regression-tests
+trigger: "when changing observable behavior or fixing a bug"
 confidence: 0.9
-domain: code-style
-source: repo-analysis
-source_repo: imMamdouhaboammar/delegate-team
----
-id: delegate-team-instinct-function-naming
-trigger: "When defining a function"
-confidence: 0.9
-domain: code-style
-source: repo-analysis
-source_repo: imMamdouhaboammar/delegate-team
----
-id: delegate-team-instinct-class-naming
-trigger: "When defining a class"
-confidence: 0.9
-domain: code-style
-source: repo-analysis
-source_repo: imMamdouhaboammar/delegate-team
----
-id: delegate-team-instinct-constant-naming
-trigger: "When declaring a constant"
-confidence: 0.9
-domain: code-style
-source: repo-analysis
-source_repo: imMamdouhaboammar/delegate-team
----
-id: delegate-team-instinct-import-style
-trigger: "When importing modules"
-confidence: 0.8
-domain: code-style
-source: repo-analysis
-source_repo: imMamdouhaboammar/delegate-team
----
-id: delegate-team-instinct-test-location
-trigger: "When adding new tests"
-confidence: 0.7
 domain: testing
 source: repo-analysis
-source_repo: imMamdouhaboammar/delegate-team
+scope: project
+project_name: delegate-team
+source_repo: https://github.com/imMamdouhaboammar/delegate-team
 ---
-id: delegate-team-instinct-commit-prefix
-trigger: "When writing a commit message"
-confidence: 0.9
-domain: git
-source: repo-analysis
-source_repo: imMamdouhaboammar/delegate-team
+# Protect behavior with regression coverage
+
+## Action
+Add focused coverage under `tests/` for the changed behavior and its failure path when practical. Preserve the shell integration suite and do not weaken assertions to obtain a passing result.
+
+## Evidence
+- TypeScript tests are maintained under `tests/`.
+- `tests/test-v2.7.0.sh` provides shell integration coverage.
+- CI runs both test layers through `npm test`.
 ---
-id: delegate-team-instinct-secret-scan-workflow
-trigger: "When configuring CI workflows"
-confidence: 0.8
-domain: workflow
+id: delegate-team-secret-scan-safety
+trigger: "when configuring secret scanning or responding to a detected credential"
+confidence: 1.0
+domain: security
 source: repo-analysis
-source_repo: imMamdouhaboammar/delegate-team
+scope: project
+project_name: delegate-team
+source_repo: https://github.com/imMamdouhaboammar/delegate-team
+---
+# Keep secret findings contained
+
+## Action
+Use redaction, avoid broad allowlists, prevent credential persistence, do not upload findings as artifacts, and rotate a potentially exposed credential before repository cleanup.
+
+## Evidence
+- `.github/workflows/secret-scan.yml` defines the repository gate.
+- `.gitleaks.toml` keeps suppressions narrow.
+- `docs/SECRET-SCANNING.md` documents incident handling and local reproduction.
