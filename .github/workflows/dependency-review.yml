@@ -3,10 +3,12 @@ name: Dependency Review
 on:
   pull_request:
     branches:
+      - main
       - master
 
 permissions:
   contents: read
+  pull-requests: write
 
 concurrency:
   group: dependency-review-${{ github.workflow }}-${{ github.ref }}
@@ -19,9 +21,12 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      pull-requests: write
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Reject vulnerable dependency changes
         uses: actions/dependency-review-action@v4
