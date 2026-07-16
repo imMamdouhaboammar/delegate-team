@@ -5,6 +5,7 @@ import { runLinkSkill, runSetup, runAuth, runGcpEnable, runVertexProvision } fro
 import { runDispatch, runVertex } from './commands/run.js';
 import { runMetaGPTRouter } from './commands/metagpt.js';
 import { runServe } from './proxy/server.js';
+import { installBackendRequestTimeout } from './proxy/request-timeout.js';
 import { runRouteExplain } from './commands/route.js';
 import { runKernelStatus, runKernelVersion } from './commands/kernel.js';
 import { parsePort } from './utils/port.js';
@@ -184,7 +185,9 @@ program
   .description('Start the LLM Gateway Proxy Server')
   .action((port) => {
     try {
+      const timeoutMs = installBackendRequestTimeout();
       runServe(parsePort(port));
+      console.log(`[PROXY] Backend timeout: ${timeoutMs}ms`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error(`\n❌ ${message}\n`);
