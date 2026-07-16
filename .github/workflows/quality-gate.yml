@@ -47,11 +47,14 @@ jobs:
       - name: Check types
         run: npm run typecheck
 
-      - name: Run tests
-        run: npm test
-
       - name: Build package
         run: npm run build
+
+      - name: Run Vitest suite
+        run: npx vitest run
+
+      - name: Run shell integration suite
+        run: bash tests/test-v2.7.0.sh
 
       - name: Verify version synchronization
         run: npm run version:check
