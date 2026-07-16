@@ -1,3 +1,5 @@
+import https from 'node:https';
+
 export const DEFAULT_BACKEND_TIMEOUT_MS = 30_000;
 
 export class BackendTimeoutError extends Error {
@@ -37,4 +39,42 @@ export function readBackendTimeoutMs(envValue: string | undefined): number {
   }
 
   return parsed;
+}
+
+let installedTimeoutMs: number | undefined;
+
+function backendNameFromRequestArgs(args: unknown[]): string {
+  const first = args[0];
+  const rawUrl = typeof first === 'string'
+    ? first
+    : first instanceof URL
+      ? first.toString()
+      : undefined;
+
+  if (!rawUrl) return 'upstream';
+
+  try {
+    return new URL(rawUrl).hostname || 'upstream';
+  } catch {
+    return 'upstream';
+  }
+}
+
+export function installBackendRequestTimeout(timeoutMs = readBackendTimeoutMs(process.env.DT_PROXY_BACKEND_TIMEOUT_MS)): number {
+  if (installedTimeoutMs !== undefined) return installedTimeoutMs;
+
+  const originalRequest = https.request.bind(https);
+  https.request = ((...args: Parameters<typeof https.request>) => {
+    const request = originalRequest(...args);
+    const backend = backendNameFromRequestArgs(args);
+
+    request.setTimeout(timeoutMs, () => {
+      request.destroy(new BackendTimeoutError(backend, timeoutMs));
+    });
+
+    return request;
+  }) as typeof https.request;
+
+  installedTimeoutMs = timeoutMs;
+  return installedTimeoutMs;
 }
