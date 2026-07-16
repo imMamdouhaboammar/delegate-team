@@ -62,6 +62,39 @@ jobs:
       - name: Inspect publish payload
         run: npm pack --dry-run
 
+  regression-diagnostics:
+    name: Regression ${{ matrix.test }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - tests/cleanup.test.ts
+          - tests/fallback.test.ts
+          - tests/port.test.ts
+          - tests/runtime-paths.test.ts
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Build package
+        run: npm run build
+
+      - name: Run isolated regression test
+        run: npx vitest run ${{ matrix.test }}
+
   python-syntax:
     name: Python syntax
     runs-on: ubuntu-latest
