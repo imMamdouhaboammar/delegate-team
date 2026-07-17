@@ -3,6 +3,12 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.0.4] - 2026-07-17
+
+### Fixed
+- Fixed `package.json` `files` array to explicitly include scripts while maintaining parent directories.
+- Updated Node.js engine requirement to `>=24`.
+
 ## [3.0.3] - 2026-07-17
 
 ### Fixed
