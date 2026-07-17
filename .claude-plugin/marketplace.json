@@ -6,7 +6,7 @@
     "name": "Mamdouh Aboammar",
     "email": "maintainers@delegate-team.dev"
   },
-  "version": "3.0.2",
+  "version": "3.0.3",
   "homepage": "https://github.com/imMamdouhaboammar/delegate-team",
   "repository": "https://github.com/imMamdouhaboammar/delegate-team",
   "license": "MIT",
@@ -20,7 +20,7 @@
   "plugins": [
     {
       "name": "delegate-team",
-      "version": "3.0.2",
+      "version": "3.0.3",
       "description": "Main Delegate Team plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team",
@@ -31,7 +31,7 @@
     },
     {
       "name": "dt",
-      "version": "3.0.2",
+      "version": "3.0.3",
       "description": "dt gateway CLI plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/src",
@@ -41,7 +41,7 @@
     },
     {
       "name": "delegate-team-orchestrator",
-      "version": "3.0.2",
+      "version": "3.0.3",
       "description": "Orchestrator plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/orchestrator",
@@ -51,7 +51,7 @@
     },
     {
       "name": "delegate-team-mmas",
-      "version": "3.0.2",
+      "version": "3.0.3",
       "description": "MMAS plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/mmas",
@@ -61,7 +61,7 @@
     },
     {
       "name": "delegate-team-scaffolder",
-      "version": "3.0.2",
+      "version": "3.0.3",
       "description": "Skill scaffolder plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/scaffolder",
@@ -71,7 +71,7 @@
     },
     {
       "name": "delegate-team-god-agent",
-      "version": "3.0.2",
+      "version": "3.0.3",
       "description": "Backend dispatcher plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/god-agent",
@@ -81,7 +81,7 @@
     },
     {
       "name": "delegate-team-minimax-coder",
-      "version": "3.0.2",
+      "version": "3.0.3",
       "description": "MiniMax coder plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/minimax-coder",
@@ -91,7 +91,7 @@
     },
     {
       "name": "delegate-team-vertex-coder",
-      "version": "3.0.2",
+      "version": "3.0.3",
       "description": "Vertex coder plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/vertex-coder",
@@ -101,7 +101,7 @@
     },
     {
       "name": "delegate-team-agent-kernel",
-      "version": "3.0.2",
+      "version": "3.0.3",
       "description": "Agent kernel plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/agent-kernel",

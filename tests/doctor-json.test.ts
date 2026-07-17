@@ -20,7 +20,7 @@ describe('doctor json output', () => {
       expect(typeof row.auth.ok).toBe('boolean');
       expect(typeof row.auth.label).toBe('string');
     }
-  });
+  }, 15000);
 
   it('runCheck json mode emits parseable JSON without ANSI escape codes', () => {
     const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);

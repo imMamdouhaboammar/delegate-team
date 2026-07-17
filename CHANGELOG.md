@@ -3,6 +3,11 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.0.3] - 2026-07-17
+
+### Fixed
+- Fixed `collectHealth` test timing out in CI by adding a 15-second timeout, allowing real backend checks to complete reliably without mocking.
+
 ## [3.0.2] - 2026-07-17
 
 ### Fixed
