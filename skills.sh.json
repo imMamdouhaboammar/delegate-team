@@ -7,7 +7,7 @@
       "description": "Single-command orchestrators that route natural-language tasks through the full engineering chain.",
       "skills": [
         "delegate-team",
-        "mavis-ship"
+        "apeiron"
       ]
     },
     {
@@ -48,7 +48,7 @@
     },
     {
       "title": "Companion frameworks",
-      "description": "Methodology + UI quality + metric-driven iteration + memory layers that compose under mavis-ship.",
+      "description": "Methodology + UI quality + metric-driven iteration + memory layers that compose under Apeiron.",
       "skills": [
         "agent-kernel",
         "superpowers",
@@ -60,7 +60,7 @@
   ],
   "featured": [
     "delegate-team",
-    "mavis-ship",
+    "apeiron",
     "dt",
     "agent-kernel",
     "grok-delegate"

@@ -9,11 +9,11 @@
 #   2. catalog.py integration list        → 38 entries
 #   3. catalog.py skills                  → 10+ bundled (repo) + N environment
 #   4. bin/autopilot.sh --help            → exits 0, shows usage
-#   5. bin/mavis-ship-uni --list-runtimes → shows 7+ runtimes
-#   6. bin/mavis-ship-uni --detect-only   → detects shell (default)
-#   7. bin/agents-health.sh               → reports X/Y in CI-friendly mode
-#   8. orchestrate.py --prewarm <task>    → emits JSON manifest
-#   9. mavis-ship/SKILL.md exists         → standalone bundle present
+#   5. bin/apeiron-uni --list-runtimes → shows 7+ runtimes
+#   6. bin/apeiron-uni --detect-only   → detects shell (default)
+#   7. bin/agents-health.sh            → reports X/Y in CI-friendly mode
+#   8. orchestrate.py --prewarm <task> → emits JSON manifest
+#   9. apeiron/SKILL.md exists         → standalone bundle present
 #  10. package.json version               → 2.7.0
 #
 # Usage:
@@ -105,7 +105,7 @@ fi
 # ─────────────────────────────────────────────────────────────────────────
 # Counts skills from:
 #   1. Bundled in the repo (always present):
-#      - mavis-ship/scripts/, orchestrator/scripts/, scaffolder/, mmas/, etc.
+#      - apeiron/scripts/, orchestrator/scripts/, scaffolder/, mmas/, etc.
 #      - All SKILL.md files anywhere in the repo
 #   2. Optional environment skills (if ~/.mavis/skills, ~/.agents/skills,
 #      ~/.claude/skills are present in the runner environment).
@@ -169,41 +169,37 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────────
-# Test 5: bin/mavis-ship-uni --list-runtimes
+# Test 5: bin/apeiron-uni --list-runtimes
 # ─────────────────────────────────────────────────────────────────────────
-log "Test 5: bin/mavis-ship-uni --list-runtimes (7+ runtimes expected)"
-if [ -x "$ROOT/bin/mavis-ship-uni" ]; then
-    out=$("$ROOT/bin/mavis-ship-uni" --list-runtimes 2>&1 || true)
+log "Test 5: bin/apeiron-uni --list-runtimes (7+ runtimes expected)"
+if [ -x "$ROOT/bin/apeiron-uni" ]; then
+    out=$("$ROOT/bin/apeiron-uni" --list-runtimes 2>&1 || true)
     rt_count=$(/bin/echo "$out" | /usr/bin/grep -c "→")
     if [ "$rt_count" -ge 7 ]; then
-        pass "mavis-ship-uni: $rt_count runtimes detected (expected ≥ 7)"
+        pass "apeiron-uni: $rt_count runtimes detected (expected ≥ 7)"
     else
-        fail "mavis-ship-uni: got $rt_count runtimes (expected ≥ 7)"
+        fail "apeiron-uni: got $rt_count runtimes (expected ≥ 7)"
     fi
 else
-    fail "mavis-ship-uni: not executable or missing"
+    fail "apeiron-uni: not executable or missing"
 fi
 
-# ─────────────────────────────────────────────────────────────────────────
-# Test 6: bin/mavis-ship-uni --detect-only (default = shell)
-# ─────────────────────────────────────────────────────────────────────────
-log "Test 6: bin/mavis-ship-uni --detect-only (default = shell)"
-if [ -x "$ROOT/bin/mavis-ship-uni" ]; then
-    out=$("$ROOT/bin/mavis-ship-uni" --detect-only "test" 2>&1 | /usr/bin/tail -1 || true)
+# Test 6: bin/apeiron-uni --detect-only (default = shell)
+log "Test 6: bin/apeiron-uni --detect-only (default = shell)"
+if [ -x "$ROOT/bin/apeiron-uni" ]; then
+    out=$("$ROOT/bin/apeiron-uni" --detect-only "test" 2>&1 | /usr/bin/tail -1 || true)
     if [ "$out" = "shell" ]; then
-        pass "mavis-ship-uni: detected default runtime = shell"
+        pass "apeiron-uni: detected default runtime = shell"
     else
-        fail "mavis-ship-uni: got '$out' (expected 'shell')"
+        fail "apeiron-uni: got '$out' (expected 'shell')"
     fi
 else
-    fail "mavis-ship-uni: not executable or missing"
+    fail "apeiron-uni: not executable or missing"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────
 # Test 7: bin/agents-health.sh (X/Y format)
 # ─────────────────────────────────────────────────────────────────────────
-# The agents-health.sh script must output a "Summary: X/Y agents ready" line
-# regardless of how many symlinks are present (0/10 is valid on a fresh runner).
 log "Test 7: bin/agents-health.sh (X/Y format expected)"
 if [ -x "$ROOT/bin/agents-health.sh" ]; then
     # Run without --quiet so the Summary line is printed
@@ -239,17 +235,17 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────────
-# Test 9: mavis-ship/SKILL.md exists (standalone bundle)
+# Test 9: apeiron/SKILL.md exists (standalone bundle)
 # ─────────────────────────────────────────────────────────────────────────
-log "Test 9: mavis-ship/SKILL.md exists (standalone bundle)"
-if [ -f "$ROOT/mavis-ship/SKILL.md" ]; then
-    if /usr/bin/head -3 "$ROOT/mavis-ship/SKILL.md" | /usr/bin/grep -q "name: mavis-ship"; then
-        pass "mavis-ship/SKILL.md: exists with valid frontmatter"
+log "Test 9: apeiron/SKILL.md exists (standalone bundle)"
+if [ -f "$ROOT/apeiron/SKILL.md" ]; then
+    if /usr/bin/head -3 "$ROOT/apeiron/SKILL.md" | /usr/bin/grep -q "name: apeiron"; then
+        pass "apeiron/SKILL.md: exists with valid frontmatter"
     else
-        fail "mavis-ship/SKILL.md: exists but frontmatter is invalid"
+        fail "apeiron/SKILL.md: exists but frontmatter is invalid"
     fi
 else
-    fail "mavis-ship/SKILL.md: missing"
+    fail "apeiron/SKILL.md: missing"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────

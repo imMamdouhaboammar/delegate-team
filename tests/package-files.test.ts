@@ -23,7 +23,7 @@ describe('npm package file whitelist', () => {
     expect(pkg.bin).toMatchObject({
       dt: 'dist/cli.js',
       'delegate-team': 'dist/cli.js',
-      'mavis-ship-uni': 'bin/mavis-ship-uni',
+      'apeiron-uni': 'bin/apeiron-uni',
       autopilot: 'bin/autopilot.sh',
       'agents-health': 'bin/agents-health.sh',
     });

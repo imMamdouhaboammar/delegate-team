@@ -4,7 +4,7 @@
 # Usage:
 #   ./install.sh                    # Detect what's installed, install missing
 #   ./install.sh --all              # Install everything
-#   ./install.sh --orchestrator     # /mavis-ship skill
+#   ./install.sh --orchestrator     # /Apeiron skill
 #   ./install.sh --scaffolder       # mavis-skill-scaffold CLI
 #   ./install.sh --mmas             # Multi-agent team framework
 #   ./install.sh --kernel           # agent-kernel (memory + governance layer)
@@ -171,33 +171,33 @@ install_dt() {
 }
 
 install_orchestrator() {
-    log "Installing orchestrator/ → ~/.mavis/skills/mavis-ship + symlinks..."
-    ensure_dir "$HOME/.mavis/skills/mavis-ship/scripts"
-    copy_if_changed "$ROOT/orchestrator/SKILL.md" "$HOME/.mavis/skills/mavis-ship/SKILL.md"
-    copy_if_changed "$ROOT/orchestrator/scripts/orchestrate.sh" "$HOME/.mavis/skills/mavis-ship/scripts/orchestrate.sh"
-    run_cmd "chmod +x orchestrate.sh" chmod +x "$HOME/.mavis/skills/mavis-ship/scripts/orchestrate.sh"
+    log "Installing orchestrator/ → ~/.mavis/skills/apeiron + symlinks..."
+    ensure_dir "$HOME/.mavis/skills/apeiron/scripts"
+    copy_if_changed "$ROOT/orchestrator/SKILL.md" "$HOME/.mavis/skills/apeiron/SKILL.md"
+    copy_if_changed "$ROOT/orchestrator/scripts/orchestrate.sh" "$HOME/.mavis/skills/apeiron/scripts/orchestrate.sh"
+    run_cmd "chmod +x orchestrate.sh" chmod +x "$HOME/.mavis/skills/apeiron/scripts/orchestrate.sh"
 
     # Symlink for global discovery
-    link_if_missing "$HOME/.mavis/skills/mavis-ship" "$HOME/.claude/skills/mavis-ship"
+    link_if_missing "$HOME/.mavis/skills/apeiron" "$HOME/.claude/skills/apeiron"
 
     # Slash command (Claude Code-native entry point)
     ensure_dir "$HOME/.claude/commands"
-    link_if_missing "$HOME/.mavis/skills/mavis-ship/SKILL.md" "$HOME/.claude/commands/mavis-ship.md"
+    link_if_missing "$HOME/.mavis/skills/apeiron/SKILL.md" "$HOME/.claude/commands/Apeiron.md"
 
     # CLI on PATH
     for bindir in "$HOME/.local/bin" "$HOME/bin"; do
         if [ "$DRY_RUN" = 1 ]; then
             drylog "ensure $bindir exists"
-            drylog "ln -sf $bindir/mavis-orchestrate"
+            drylog "ln -sf $bindir/apeiron"
             continue
         fi
         if [ -d "$bindir" ] || mkdir -p "$bindir" 2>/dev/null; then
-            link_if_missing "$HOME/.mavis/skills/mavis-ship/scripts/orchestrate.sh" "$bindir/mavis-orchestrate"
-            chmod +x "$bindir/mavis-orchestrate" 2>/dev/null || true
+            link_if_missing "$HOME/.mavis/skills/apeiron/scripts/orchestrate.sh" "$bindir/apeiron"
+            chmod +x "$bindir/apeiron" 2>/dev/null || true
         fi
     done
 
-    [ "$DRY_RUN" = 1 ] || ok "orchestrator installed. Run /mavis-ship \"<task>\" or mavis-orchestrate \"<task>\""
+    [ "$DRY_RUN" = 1 ] || ok "orchestrator installed. Run /Apeiron \"<task>\" or apeiron \"<task>\""
 }
 
 install_scaffolder() {
@@ -332,12 +332,12 @@ verify() {
     echo
     printf '%-40s ' "dt CLI on PATH:"
     command -v dt >/dev/null && echo "yes" || echo "no (run: ./install.sh --dt)"
-    printf '%-40s ' "/mavis-ship skill:"
-    [ -e "$HOME/.mavis/skills/mavis-ship/SKILL.md" ] && echo "installed" || echo "missing"
-    printf '%-40s ' "/mavis-ship slash command:"
-    [ -L "$HOME/.claude/commands/mavis-ship.md" ] && echo "installed" || echo "missing"
-    printf '%-40s ' "mavis-orchestrate CLI:"
-    command -v mavis-orchestrate >/dev/null && echo "yes" || echo "no"
+    printf '%-40s ' "/Apeiron skill:"
+    [ -e "$HOME/.mavis/skills/apeiron/SKILL.md" ] && echo "installed" || echo "missing"
+    printf '%-40s ' "/Apeiron slash command:"
+    [ -L "$HOME/.claude/commands/Apeiron.md" ] && echo "installed" || echo "missing"
+    printf '%-40s ' "apeiron CLI:"
+    command -v apeiron >/dev/null && echo "yes" || echo "no"
     printf '%-40s ' "mavis-skill-scaffold CLI:"
     command -v mavis-skill-scaffold >/dev/null && echo "yes" || echo "no"
     printf '%-40s ' "MMAS framework:"
@@ -361,9 +361,9 @@ verify() {
 
 uninstall() {
     log "Uninstalling (idempotent — only removes what we added)..."
-    mavis-trash "$HOME/.mavis/skills/mavis-ship" 2>/dev/null || true
-    mavis-trash "$HOME/.claude/skills/mavis-ship" 2>/dev/null || true
-    mavis-trash "$HOME/.claude/commands/mavis-ship.md" 2>/dev/null || true
+    mavis-trash "$HOME/.mavis/skills/apeiron" 2>/dev/null || true
+    mavis-trash "$HOME/.claude/skills/apeiron" 2>/dev/null || true
+    mavis-trash "$HOME/.claude/commands/Apeiron.md" 2>/dev/null || true
     mavis-trash "$HOME/.claude/commands/mavis-team.md" 2>/dev/null || true
     mavis-trash "$HOME/.mavis/skills/skill-scaffold" 2>/dev/null || true
     mavis-trash "$HOME/.mavis/bin/mavis-skill-scaffold" 2>/dev/null || true
@@ -456,7 +456,7 @@ main() {
     echo
     verify
     echo
-    ok "Install done. Try: /mavis-ship \"<your task>\" or agent-kernel remember \"<rule>\" --publish"
+    ok "Install done. Try: /Apeiron \"<your task>\" or agent-kernel remember \"<rule>\" --publish"
 }
 
 main "$@"

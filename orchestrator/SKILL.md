@@ -1,9 +1,9 @@
 ---
-name: mavis-ship
+name: apeiron
 description: |
-  The ONE-COMMAND orchestrator that wires the full Mavis arsenal for any task in any
+  The ONE-COMMAND orchestrator that wires the full delegate-team arsenal for any task in any
   project. Use when the user says "use everything you got", "use full engineering
-  arsenal", "go all-in", "/mavis-ship <task>", "/ship <task>", "use all capabilities",
+  arsenal", "go all-in", "/Apeiron <task>", "/ship <task>", "use all capabilities",
   "full stack", "end to end", "everything intelligently". Composes: Waza /think →
   unslop audit → superpowers writing-plans → autoresearch | /delegate-team | /mavis-team
   (routed by task signature) → Waza /check → quality-guard. Skip this skill only when
@@ -12,10 +12,10 @@ description: |
 allowed-tools: [Bash, Read, Write, Edit, Grep, Glob, TodoWrite]
 ---
 
-# /mavis-ship — the orchestrator
+# /Apeiron — the orchestrator
 
-> **The single switch** that exposes the full Mavis arsenal under one natural-language
-> command. Type `/mavis-ship "<task>"` and the orchestrator does the rest.
+> **The single switch** that exposes the full delegate-team arsenal under one natural-language
+> command. Type `/Apeiron "<task>"` and the orchestrator does the rest.
 
 ## Outcome contract
 
@@ -49,7 +49,7 @@ allowed-tools: [Bash, Read, Write, Edit, Grep, Glob, TodoWrite]
 ## The 7-layer chain
 
 ```
-[mavis-ship "<task>"]
+[Apeiron "<task>"]
     │
     ▼ 1. WAZA /think
    Pressure-test the idea. Decision-complete plan. User approves.
@@ -110,7 +110,7 @@ For automated routing decisions (skip the prompt-asking step), use the bundled
 `scripts/orchestrate.sh` which detects the task signature and prints the route:
 
 ```bash
-~/.mavis/skills/mavis-ship/scripts/orchestrate.sh "<task>"
+~/.mavis/skills/apeiron/scripts/orchestrate.sh "<task>"
 # → think → unslop → writing-plans → delegate-team → check → quality-guard
 ```
 
@@ -118,23 +118,23 @@ For automated routing decisions (skip the prompt-asking step), use the bundled
 
 ```bash
 # 1. Performance
-/mavis-ship "Make API p95 < 200ms"
+/Apeiron "Make API p95 < 200ms"
 # Route: /think → autoresearch:plan → autoresearch:fix → autoresearch:regression → /check
 
 # 2. UI feature  
-/mavis-ship "Build a CLI to convert CSV to JSON"  # not actually UI but CLI
+/Apeiron "Build a CLI to convert CSV to JSON"  # not actually UI but CLI
 # Route: /think → writing-plans → /delegate-team
 
 # 3. Bug fix
-/mavis-ship "Mobile header wrong on Safari iOS 17"
+/Apeiron "Mobile header wrong on Safari iOS 17"
 # Route: /think → systematic-debugging → /hunt → /delegate-team → /check
 
 # 4. Design only
-/mavis-ship "Design the auth flow before implementing"
+/Apeiron "Design the auth flow before implementing"
 # Route: /think → STOP (pressure-test only)
 
 # 5. Trivial
-/mavis-ship "rename getCurrentUser to getActiveUser across src/"
+/Apeiron "rename getCurrentUser to getActiveUser across src/"
 # Skip orchestrator. Run sed directly.
 ```
 
@@ -156,6 +156,6 @@ design only   ✓
 
 ## File routing
 
-When `/mavis-ship "<task>"` lands in this session, follow the chain literally.
+When `/Apeiron "<task>"` lands in this session, follow the chain literally.
 Track each stage with a todo. Don't batch stages — each stage's evidence
 feeds the next.

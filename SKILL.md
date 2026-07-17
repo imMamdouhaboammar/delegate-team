@@ -2,21 +2,21 @@
 name: delegate-team
 description: |
   Complete agentic engineering supersystem — one command orchestrates the entire
-  engineering chain. Use when the user asks for "the full Mavis arsenal", "use
-  everything you have", "/mavis-ship", "/delegate-team", "delegate to a backend",
+  engineering chain. Use when the user asks for "the full arsenal", "use
+  everything you have", "/Apeiron", "/delegate-team", "delegate to a backend",
   "spawn a multi-agent team", "make a CLI to scaffold skills", or any natural-language
   request that should drive a Claude Code or Codex session through the full
   brainstorm → plan → execute → verify → ship pipeline. Composes four companion
   frameworks (superpowers, Waza, unslop-preflight, autoresearch) plus the original
   `dt` gateway CLI, multi-agent team (MMAS) framework, skill scaffolder, the
-  /mavis-ship orchestrator (47-case selftest routing), and the v2.7.0 arsenal:
-  autopilot.sh (7-stage GOD command), mavis-ship-uni (smart universal wrapper that
+  /Apeiron orchestrator (47-case selftest routing), and the v2.7.0 arsenal:
+  autopilot.sh (7-stage GOD command), apeiron-uni (smart universal wrapper that
   detects the calling runtime), and 1890 auto-discovered skills across 3 sources.
 ---
 
 # delegate-team — the agentic engineering supersystem
 
-> **Install once. Run `dt run "<task>"` or `/mavis-ship "<task>"` anywhere.**
+> **Install once. Run `dt run "<task>"` or `/Apeiron "<task>"` anywhere.**
 
 This is the **main** skill for the `delegate-team` supersystem. It bundles and
 orchestrates six top-level components so a single natural-language task can run
@@ -28,34 +28,36 @@ A **bundle** that lets Claude Code / Codex / Cursor / any `npx skills add`-compa
 agent run the supersystem end-to-end:
 
 ```bash
-# One command, full chain (from Mavis session)
-/mavis-ship "Make API p95 < 200ms"
+# One command, full chain (from any session) — the DEFAULT entry point
+/Apeiron "Make API p95 < 200ms"
 
 # Same chain from any agent (codex / claude / gemini / opencode / mmx)
-# → mavis-ship-uni detects the runtime + dispatches autopilot --background
-mavis-ship-uni "Build a landing page with shadcn components"
+# → apeiron-uni detects the runtime + dispatches autopilot --background
+apeiron-uni "Build a landing page with shadcn components"
 
 # Plain shell (foreground — you watch the log)
-mavis-ship-uni "Refactor the user model for multi-tenancy"
+apeiron-uni "Refactor the user model for multi-tenancy"
 
 # Or invoke dt CLI for raw delegation
 dt run "<task>"
 ```
 
 When a Claude Code agent loads this skill, it treats every incoming task as
-potentially runnable through the supersystem and applies the orchestrator's
-routing logic before deciding what to do.
+potentially runnable through the supersystem and applies the `/Apeiron` orchestrator's
+routing logic before deciding what to do. `/Apeiron` is the **default** front door:
+if no narrower tool is explicitly requested, the supersystem routes the task through
+it automatically.
 
 ## Components wired (v2.8.0 — twelve)
 
 | Component | Path | Function | Status |
 |---|---|---|---|
-| `orchestrator/` | `./orchestrator/` | `/mavis-ship` skill + regex router (53-case selftest) | ✅ |
+| `orchestrator/` | `./orchestrator/` | `/Apeiron` skill + regex router (53-case selftest) | ✅ |
 | `orchestrator/scripts/orchestrate.py` | `./orchestrator/scripts/` | Router with 53 routing cases | ✅ |
 | `orchestrator/scripts/catalog.py` | `./orchestrator/scripts/` | 43 integrations + 1890 skills indexer | ✅ |
-| `mavis-ship/` | `./mavis-ship/` | Standalone mavis-ship skill bundle (SKILL.md + scripts) | ✅ NEW v2.7.0 |
+| `apeiron/` | `./apeiron/` | Standalone /Apeiron skill bundle (SKILL.md + scripts) | ✅ NEW v2.7.0 |
 | `bin/autopilot.sh` | `./bin/` | GOD command: 7-stage chain (PREWARM → BRAINSTORM → PLAN → EXECUTE → REVIEW → QUALITY-GUARD → REPORT) | ✅ NEW v2.7.0 |
-| `bin/mavis-ship-uni` | `./bin/` | Smart universal wrapper: detects Mavis / codex / claude / gemini / opencode / mmx / shell | ✅ NEW v2.7.0 |
+| `bin/apeiron-uni` | `./bin/` | Smart universal wrapper: detects Mavis / codex / claude / gemini / opencode / mmx / shell | ✅ NEW v2.7.0 |
 | `bin/agents-health.sh` | `./bin/` | Health check for the 10 coding agents in ~/delegate-team/bin/ | ✅ |
 | `scaffolder/` | `./scaffolder/` | `mavis-skill-scaffold` generator CLI | ✅ |
 | `mmas/` | `./mmas/` | Multi-agent team framework (8 agents + watchdog) | ✅ |
@@ -90,14 +92,14 @@ routing logic before deciding what to do.
 | "delegate this to grok / have codex do X / run it through opencode" | DELEGATE path → `<agent>-delegate` skill (review diff yourself); also `dt delegate <agent>` |
 | "build a CLI / make X faster / design Y" | routed by signature |
 
-See [`orchestrator/SKILL.md`](./orchestrator/SKILL.md) for the full routing matrix
+See [`orchestrator/SKILL.md`](./orchestrator/SKILL.md) (the /Apeiron skill) for the full routing matrix
 and decision logic.
 
 ## Hard-coded routing rules
 
 ```bash
 # Quick reference
-mavis-orchestrate "<task>"   # Prints the route, no execution
+apeiron "<task>"   # Prints the route, no execution
 ```
 
 Detection signals (regex scoring 0-3):
@@ -118,9 +120,9 @@ Detection signals (regex scoring 0-3):
 ```bash
 git clone https://github.com/imMamdouhaboammar/delegate-team
 cd delegate-team
-./install.sh --all            # Everything (incl. agent-kernel v0.0.7 + mavis-ship v2.7.0 arsenal)
-./install.sh --orchestrator   # Just /mavis-ship
-./install.sh --mavis-ship     # Just the mavis-ship standalone skill bundle (NEW v2.7.0)
+./install.sh --all            # Everything (incl. agent-kernel v0.0.7 + /Apeiron v2.7.0 arsenal)
+./install.sh --apeiron        # Just /Apeiron
+./install.sh --orchestrator   # Just /Apeiron (alias)
 ./install.sh --mmas           # Just the multi-agent framework
 ./install.sh --kernel         # Just agent-kernel (memory + governance)
 ./install.sh --integrations   # Just companion frameworks
@@ -139,14 +141,14 @@ npx skills list               # Should show: delegate-team
 ## Files in this manifest
 
 - `SKILL.md` — **THIS FILE** — main skill manifest
-- `orchestrator/SKILL.md` — /mavis-ship specific skill (v2.7.0)
+- `orchestrator/SKILL.md` — /Apeiron specific skill (v2.7.0)
 - `orchestrator/scripts/orchestrate.py` — 53-case router (selftest)
 - `orchestrator/scripts/catalog.py` — 43 integrations + 1890 skills indexer
 - `delegate-skills/SKILL.md` — delegate skills component (v2.8.0)
 - `delegate-skills/*-delegate/` — grok/codex/opencode/kimi/agy delegate skills (v2.8.0)
-- `mavis-ship/SKILL.md` — standalone mavis-ship skill bundle (NEW v2.7.0)
+- `apeiron/SKILL.md` — standalone /Apeiron skill bundle (NEW v2.7.0)
 - `bin/autopilot.sh` — 7-stage GOD command (NEW v2.7.0)
-- `bin/mavis-ship-uni` — smart universal wrapper (NEW v2.7.0)
+- `bin/apeiron-uni` — smart universal wrapper (NEW v2.7.0)
 - `bin/agents-health.sh` — health check for 10 coding agents
 - `scaffolder/SKILL.md` — mavis-skill-scaffold specific skill
 - `mmas/SKILL.md` — multi-agent team specific skill

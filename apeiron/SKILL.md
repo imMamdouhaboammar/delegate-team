@@ -1,14 +1,14 @@
 ---
-name: mavis-ship
+name: apeiron
 description: |
-  The ONE-COMMAND orchestrator that wires the full Mavis arsenal for any task in any
+  The ONE-COMMAND orchestrator that wires the full delegate-team arsenal for any task in any
   project. Use when the user says "use everything you got", "use full engineering
-  arsenal", "go all-in", "/mavis-ship <task>", "/ship <task>", "use all capabilities",
+  arsenal", "go all-in", "/Apeiron <task>", "/ship <task>", "use all capabilities",
   "full stack", "end to end", "everything intelligently". Composes 38 curated
   integrations (superpowers, Waza, unslop, autoresearch, agent-kernel, ...) and routes
   tasks through 7-stage autopilot chain (PREWARM → BRAINSTORM → PLAN → EXECUTE →
   REVIEW → QUALITY-GUARD → REPORT). Auto-discovers 1890+ skills across 3 sources
-  (mavis, agents, claude) with intelligent dedupe. Includes mavis-ship-uni — the
+  (mavis, agents, claude) with intelligent dedupe. Includes apeiron-uni — the
   smart universal wrapper that detects the calling runtime (Mavis / codex / claude /
   gemini / opencode / mmx / shell) and dispatches the right flow. Skip this skill
   only when the user wants a SPECIFIC tool (e.g. "run /autoresearch with metric X"
@@ -16,10 +16,10 @@ description: |
 allowed-tools: [Bash, Read, Write, Edit, Grep, Glob, TodoWrite, Task, Skill, WebFetch, WebSearch]
 ---
 
-# /mavis-ship — the orchestrator
+# /Apeiron — the orchestrator
 
-> **The single switch** that exposes the full Mavis arsenal under one natural-language
-> command. Type `/mavis-ship "<task>"` and the orchestrator does the rest.
+> **The single switch** that exposes the full delegate-team arsenal under one natural-language
+> command. Type `/Apeiron "<task>"` and the orchestrator does the rest.
 
 ## What this skill IS
 
@@ -33,7 +33,7 @@ Bundles:
 3. **`autopilot.sh`** — the GOD command: 7-stage chain (PREWARM → BRAINSTORM with
    superpowers + codex gpt-5.5-high → PLAN → EXECUTE → REVIEW → QUALITY-GUARD →
    REPORT). Runs in foreground or `--background`.
-4. **`mavis-ship-uni`** — smart universal wrapper: detects calling runtime and
+4. **`apeiron-uni`** — smart universal wrapper: detects calling runtime and
    dispatches the right flow (Mavis → prewarm; agents → autopilot --background;
    shell → autopilot foreground).
 
@@ -71,21 +71,21 @@ Bundles:
 ### From any Mavis session (canonical):
 
 ```bash
-mavis-ship "<task>"
+Apeiron "<task>"
 # → orchestrate emits JSON manifest → Mavis loads skills → executes
 ```
 
 ### From any agent (codex, claude, gemini, opencode, mmx):
 
 ```bash
-mavis-ship-uni "<task>"
+apeiron-uni "<task>"
 # → autopilot --background (returns PID + log path; agent can move on)
 ```
 
 ### From plain shell:
 
 ```bash
-mavis-ship-uni "<task>"
+apeiron-uni "<task>"
 # → autopilot foreground (you watch the log scroll)
 ```
 
@@ -108,7 +108,7 @@ autopilot.sh --dry-run "<task>"
 ## The 7-layer chain (autopilot.sh)
 
 ```
-[mavis-ship "<task>"]
+[Apeiron "<task>"]
     │
     ▼ 1. PREWARM (orchestrate.py + catalog.py)
        Detect task signature → load relevant skills → emit manifest JSON
@@ -166,23 +166,23 @@ return ["think", "writing-plans", "delegate-team", "check", "quality-guard"]
 
 ```bash
 # 1. Performance (PERFORMANCE path)
-mavis-ship "Make API p95 < 200ms"
+Apeiron "Make API p95 < 200ms"
 # → autoresearch loop is the engine, then quality-guard
 
 # 2. UI feature (UI DELIVERY path)
-mavis-ship "Build a beautiful settings page with dark mode"
+Apeiron "Build a beautiful settings page with dark mode"
 # → unslop audit is BLOCKING (score≥70) before delegate-team
 
 # 3. Bug fix (BUG path)
-mavis-ship "Mobile header wrong on Safari iOS 17"
+Apeiron "Mobile header wrong on Safari iOS 17"
 # → debug-issue before any patch, then quality-guard
 
 # 4. Plain feature (FEATURE path)
-mavis-ship "Build a TypeScript CLI that converts CSV to JSON"
+Apeiron "Build a TypeScript CLI that converts CSV to JSON"
 # → delegate-team (→ mini-coder-max), then quality-guard
 
 # 5. Trivial (TRIVIAL path)
-mavis-ship "rename getCurrentUser to getActiveUser across src/"
+Apeiron "rename getCurrentUser to getActiveUser across src/"
 # → handle locally, skip the chain
 ```
 
@@ -196,7 +196,7 @@ mavis-ship "rename getCurrentUser to getActiveUser across src/"
 
 ## Helper scripts
 
-The mavis-ship-uni + autopilot.sh scripts are also part of this arsenal but live in
+The apeiron-uni + autopilot.sh scripts are also part of this arsenal but live in
 `~/delegate-team/bin/` (the central symlink bin). They are installed alongside this
 skill by `install.sh` (the delegate-team installer).
 
@@ -216,7 +216,7 @@ skill by `install.sh` (the delegate-team installer).
 | Agent | Install | Status |
 |---|---|---|
 | Mavis session | `install.sh --all` | ✅ canonical |
-| Claude Code | `npx skills add imMamdouhaboammar/delegate-team` | ✅ via `~/.claude/skills/mavis-ship/` |
+| Claude Code | `npx skills add imMamdouhaboammar/delegate-team` | ✅ via `~/.claude/skills/apeiron/` |
 | Codex | `npx skills add ...` | ✅ via `~/.codex/skills/` |
 | Cursor | `npx skills add ...` | ✅ via `~/.agents/skills/` |
 | Copilot, Windsurf, OpenCode, 60+ more | `npx skills add ...` | ✅ via `~/.{tool}/skills/` |
@@ -227,4 +227,4 @@ MIT — see https://github.com/imMamdouhaboammar/delegate-team
 
 ## Repository
 
-https://github.com/imMamdouhaboammar/delegate-team/tree/master/mavis-ship
+https://github.com/imMamdouhaboammar/delegate-team/tree/master/apeiron

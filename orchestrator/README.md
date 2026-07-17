@@ -1,16 +1,16 @@
-# orchestrator/ — `/mavis-ship` skill
+# orchestrator/ — `/Apeiron` skill
 
-> The single switch that orchestrates the entire Mavis engineering arsenal.
+> The single switch that orchestrates the entire delegate-team engineering arsenal.
 
 ## What this is
 
 One canonical file (`SKILL.md`) + one CLI router (`scripts/orchestrate.sh`).
 
-It's the **front door** of the supersystem. Users type `/mavis-ship "<task>"` (or call
-`mavis-orchestrate "<task>"`) and get the full chain:
+It's the **front door** of the supersystem. Users type `/Apeiron "<task>"` (or call
+`apeiron "<task>"`) and get the full chain:
 
 ```
-/mavis-ship "<task>"
+/Apeiron "<task>"
     │
     ▼ 1. WAZA /think         ← design + pressure-test
     ▼ 2. unslop audit        ← BLOCKING if UI (score ≥70)
@@ -31,24 +31,24 @@ It's the **front door** of the supersystem. Users type `/mavis-ship "<task>"` (o
 Handled by parent `./install.sh`:
 
 ```bash
-./install.sh --orchestrator
+./install.sh --apeiron
 # or
 ./install.sh --all
 ```
 
 The installer:
-- copies `SKILL.md` + `scripts/orchestrate.sh` to `~/.mavis/skills/mavis-ship/`
+- copies `SKILL.md` + `scripts/orchestrate.sh` to `~/.mavis/skills/apeiron/`
 - creates symlinks in `~/.claude/skills/` (skill loader) + `~/.claude/commands/`
-  (slash command) + `~/.local/bin/mavis-orchestrate` (CLI on PATH)
+  (slash command) + `~/.local/bin/apeiron` (CLI on PATH)
 
 ## Usage
 
 ```bash
 # Slash command (Claude Code-native)
-/mavis-ship "Make API p95 < 200ms"
+/Apeiron "Make API p95 < 200ms"
 
 # CLI (returns routing decision without execution)
-mavis-orchestrate "Build a landing page with shadcn"
+apeiron "Build a landing page with shadcn"
 
 # Skill loader (programmatic)
 # Claude Code auto-loads SKILL.md when the orchestrator triggers
@@ -74,5 +74,5 @@ See `SKILL.md` for the full composition table and decision logic.
 - `SKILL.md` — Canonical skill manifest (single source of truth, 6.6 KB)
 - `scripts/orchestrate.sh` — Regex-based task-signature router (4.5 KB)
 
-Both are also symlinked from `~/.claude/skills/mavis-ship/` and
-`~/.mavis/skills/mavis-ship/` after install.
+Both are also symlinked from `~/.claude/skills/apeiron/` and
+`~/.mavis/skills/apeiron/` after install.

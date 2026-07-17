@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# autopilot.sh — the GOD command. Drives the full mavis-ship chain end-to-end
+# autopilot.sh — the GOD command. Drives the full Apeiron chain end-to-end
 # without Mavis supervision. The user invokes it, walks away, and comes back
 # to a finished module + final report.
 #
@@ -51,8 +51,8 @@ EOF
     esac
 done
 
-# The orchestrator script lives at ~/.mavis/skills/mavis-ship/scripts/orchestrate.sh
-ORCHESTRATE="${ORCHESTRATE_OVERRIDE:-$HOME/.mavis/skills/mavis-ship/scripts/orchestrate.sh}"
+# The orchestrator script lives at ~/.mavis/skills/apeiron/scripts/orchestrate.sh
+ORCHESTRATE="${ORCHESTRATE_OVERRIDE:-$HOME/.mavis/skills/apeiron/scripts/orchestrate.sh}"
 if [ ! -f "$ORCHESTRATE" ]; then
     /bin/echo "ERROR: orchestrator not found at $ORCHESTRATE" >&2
     /bin/echo "  Set ORCHESTRATE_OVERRIDE env var to its full path." >&2
@@ -192,7 +192,7 @@ run_chain() {
     log "STAGE 2/7: BRAINSTORM (superpowers:brainstorming + codex gpt-5.5-high)"
     log "  The mix: superpowers enforces 'no diving into code without a design'."
     log "  Codex gpt-5.5-high provides the highest-quality ideation."
-    BRAINSTORM_PROMPT="You are running in /mavis-ship autopilot mode. \
+    BRAINSTORM_PROMPT="You are running in /Apeiron autopilot mode. \
 Task: $TASK. \
 Verdict: $VERDICT. \
 Use the superpowers:brainstorming skill — pressure-test the idea, \
@@ -216,7 +216,7 @@ recommendation / risks). Be specific, not generic."
     hr
     log "STAGE 3/7: PLAN (superpowers:writing-plans)"
     log "  Converting brainstorm into a checkpoint-style plan."
-    PLAN_PROMPT="You are running in /mavis-ship autopilot mode. \
+    PLAN_PROMPT="You are running in /Apeiron autopilot mode. \
 Task: $TASK. \
 Verdict: $VERDICT. \
 Brainstorm is in brainstorm.md. \
@@ -267,7 +267,7 @@ each with 2-5 sub-tasks, each sub-task with explicit verification criteria."
     hr
     log "STAGE 7/7: REPORT (final markdown)"
     cat > "$REPORT" <<EOF
-# mavis-ship autopilot — final report
+# Apeiron autopilot — final report
 
 **Task:**    $TASK
 **Verdict:** $VERDICT

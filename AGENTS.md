@@ -7,7 +7,7 @@ Codex, OpenCode, Gemini, etc.) when working with code in this repository.
 
 `delegate-team` is the **agentic engineering supersystem** — a single GitHub
 repo that bundles six top-level components and four companion frameworks behind
-one entry command (`/mavis-ship "<task>"`). It's structured for SKILLS.sh and
+one entry command (`/Apeiron "<task>"`). It's structured for SKILLS.sh and
 Claude Code plugin marketplace discovery.
 
 ## Repository Structure
@@ -24,7 +24,7 @@ delegate-team/
 ├── tsconfig.json
 ├── tsup.config.ts
 │
-├── orchestrator/           # /mavis-ship skill + orchestrate.sh CLI
+├── orchestrator/           # /Apeiron skill + orchestrate.sh CLI
 │   ├── SKILL.md            # discoverable as a sub-skill
 │   ├── scripts/orchestrate.sh
 │   └── README.md
@@ -76,7 +76,7 @@ delegate-team/
 | Skill name | Path | Triggers |
 |---|---|---|
 | `delegate-team` | `./SKILL.md` | "full arsenal", "use everything", "everything intelligently" |
-| `mavis-ship` | `./orchestrator/SKILL.md` | "/mavis-ship", orchestrator-related routing queries |
+| `apeiron` | `./orchestrator/SKILL.md` | "/Apeiron", orchestrator-related routing queries |
 | `skill-scaffold` | `./scaffolder/SKILL.md` | "create a new skill", "scaffold mavis skill" |
 | `mmas` | `./mmas/SKILL.md` | "spawn team", "multi-agent", "boss mode" |
 | `dt` | covered by main `delegate-team` | "delegate task", "use Codex", "use MiniMax" |

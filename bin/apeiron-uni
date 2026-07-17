@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# mavis-ship-uni — the smart universal wrapper.
+# apeiron-uni — the smart universal wrapper.
 #
 # Detects the calling runtime and dispatches to the right flow:
 #
@@ -22,33 +22,33 @@
 #     and the user can watch the log scroll.
 #
 # Usage:
-#   mavis-ship-uni "<task>"                       # smart dispatch
-#   mavis-ship-uni --force-autopilot "<task>"     # skip detection, go straight to autopilot
-#   mavis-ship-uni --force-prewarm "<task>"       # skip detection, go straight to orchestrate prewarm
-#   mavis-ship-uni --detect-only                  # just print the detected runtime
-#   mavis-ship-uni --list-runtimes                # show detection rules
+#   apeiron-uni "<task>"                       # smart dispatch
+#   apeiron-uni --force-autopilot "<task>"     # skip detection, go straight to autopilot
+#   apeiron-uni --force-prewarm "<task>"       # skip detection, go straight to orchestrate prewarm
+#   apeiron-uni --detect-only                  # just print the detected runtime
+#   apeiron-uni --list-runtimes                # show detection rules
 #
 # Per-runtime output (the user sees what the wrapper is doing):
 #
-#   [22:05:30] [mavis-ship-uni] Detected runtime: mavis
-#   [22:05:30] [mavis-ship-uni] → flow: orchestrate --prewarm (Mavis session decides)
-#   [22:05:30] [mavis-ship-uni] → JSON manifest emitted
+#   [22:05:30] [apeiron-uni] Detected runtime: mavis
+#   [22:05:30] [apeiron-uni] → flow: orchestrate --prewarm (Mavis session decides)
+#   [22:05:30] [apeiron-uni] → JSON manifest emitted
 #
-#   [22:05:30] [mavis-ship-uni] Detected runtime: codex
-#   [22:05:30] [mavis-ship-uni] → flow: autopilot --background (so codex can return immediately)
-#   [22:05:30] [mavis-ship-uni] Background autopilot started
-#   [22:05:30] [mavis-ship-uni] PID: 12345
-#   [22:05:30] [mavis-ship-uni] Log:  /tmp/mavis-autopilot-.../chain.log
-#   [22:05:30] [mavis-ship-uni] Report: /tmp/mavis-autopilot-.../report.md
+#   [22:05:30] [apeiron-uni] Detected runtime: codex
+#   [22:05:30] [apeiron-uni] → flow: autopilot --background (so codex can return immediately)
+#   [22:05:30] [apeiron-uni] Background autopilot started
+#   [22:05:30] [apeiron-uni] PID: 12345
+#   [22:05:30] [apeiron-uni] Log:  /tmp/mavis-autopilot-.../chain.log
+#   [22:05:30] [apeiron-uni] Report: /tmp/mavis-autopilot-.../report.md
 #
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ORCHESTRATE="$HOME/.mavis/skills/mavis-ship/scripts/orchestrate.sh"
+ORCHESTRATE="$HOME/.mavis/skills/apeiron/scripts/orchestrate.sh"
 AUTOPILOT="$SCRIPT_DIR/autopilot.sh"
 
 # ---------- pretty output ----------
-log() { /bin/echo "[$(/bin/date +%H:%M:%S)] [mavis-ship-uni] $*" >&2; }
+log() { /bin/echo "[$(/bin/date +%H:%M:%S)] [apeiron-uni] $*" >&2; }
 hr()  { /bin/echo "------------------------------------------------------------" >&2; }
 
 # ---------- runtime detection ----------
@@ -134,16 +134,16 @@ dispatch_shell() {
 # ---------- main ----------
 usage() {
     cat <<EOF
-mavis-ship-uni — the smart universal wrapper
+apeiron-uni — the smart universal wrapper
 
 Usage:
-  mavis-ship-uni "<task>"                       # smart dispatch (default)
-  mavis-ship-uni --detect-only                  # just print detected runtime
-  mavis-ship-uni --list-runtimes                # show detection rules
-  mavis-ship-uni --force-autopilot "<task>"     # skip detection, autopilot --background
-  mavis-ship-uni --force-prewarm "<task>"       # skip detection, orchestrate --prewarm
-  mavis-ship-uni --force-shell "<task>"         # skip detection, autopilot foreground
-  mavis-ship-uni --help                          # this message
+  apeiron-uni "<task>"                       # smart dispatch (default)
+  apeiron-uni --detect-only                  # just print detected runtime
+  apeiron-uni --list-runtimes                # show detection rules
+  apeiron-uni --force-autopilot "<task>"     # skip detection, autopilot --background
+  apeiron-uni --force-prewarm "<task>"       # skip detection, orchestrate --prewarm
+  apeiron-uni --force-shell "<task>"         # skip detection, autopilot foreground
+  apeiron-uni --help                          # this message
 EOF
 }
 

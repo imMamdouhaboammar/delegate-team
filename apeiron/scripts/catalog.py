@@ -682,6 +682,71 @@ INTEGRATIONS: List[Integration] = [
         detect_paths=["~/delegate-team/bin/mavis-ship-uni"],
         detect_bins=["mavis-ship-uni"],
     ),
+    # ----- Delegate skills (delegate-skills/ component) -----
+    # Each wraps a CLI implementer agent behind the same loop: write a brief,
+    # dispatch via scripts/relay.mjs, review the diff, land it yourself.
+    # `dt delegate <agent>` resolves delegate-skills/<agent>-delegate/.
+    Integration(
+        id="grok-delegate",
+        name="grok-delegate",
+        repo="https://github.com/imMamdouhaboammar/delegate-team",
+        kind="skill",
+        role="Delegate a coding task to the Grok Build CLI, then review + commit",
+        summary="Hand a bounded coding task to Grok (grok CLI) as a background "
+                "implementer, then review its diff and land it yourself. The "
+                "relay sets workspace-write autonomy by default and never "
+                "commits. Use for 'delegate this to Grok' / 'have grok do X'.",
+        install_cmd="(local — installed by `./install.sh --delegate-skills`)",
+        detect_skill_names=["grok-delegate"],
+    ),
+    Integration(
+        id="codex-delegate",
+        name="codex-delegate",
+        repo="https://github.com/imMamdouhaboammar/delegate-team",
+        kind="skill",
+        role="Delegate a coding task to Codex, then review + commit",
+        summary="Hand a bounded coding task to Codex as a background implementer, "
+                "then review its diff and land it yourself. Use for 'delegate "
+                "this to Codex' / 'have codex do X'.",
+        install_cmd="(local — installed by `./install.sh --delegate-skills`)",
+        detect_skill_names=["codex-delegate"],
+    ),
+    Integration(
+        id="opencode-delegate",
+        name="opencode-delegate",
+        repo="https://github.com/imMamdouhaboammar/delegate-team",
+        kind="skill",
+        role="Delegate a coding task to OpenCode, then review + commit",
+        summary="Hand a bounded coding task to OpenCode as a background "
+                "implementer, then review its diff and land it yourself. Use "
+                "for 'delegate this to opencode' / 'run it through opencode'.",
+        install_cmd="(local — installed by `./install.sh --delegate-skills`)",
+        detect_skill_names=["opencode-delegate"],
+    ),
+    Integration(
+        id="kimi-delegate",
+        name="kimi-delegate",
+        repo="https://github.com/imMamdouhaboammar/delegate-team",
+        kind="skill",
+        role="Delegate a coding task to Kimi, then review + commit",
+        summary="Hand a bounded coding task to Kimi as a background implementer, "
+                "then review its diff and land it yourself. Use for 'delegate "
+                "this to kimi'.",
+        install_cmd="(local — installed by `./install.sh --delegate-skills`)",
+        detect_skill_names=["kimi-delegate"],
+    ),
+    Integration(
+        id="agy-delegate",
+        name="agy-delegate",
+        repo="https://github.com/imMamdouhaboammar/delegate-team",
+        kind="skill",
+        role="Delegate a coding task to AGY, then review + commit",
+        summary="Hand a bounded coding task to AGY as a background implementer, "
+                "then review its diff and land it yourself. Use for 'delegate "
+                "this to agy'.",
+        install_cmd="(local — installed by `./install.sh --delegate-skills`)",
+        detect_skill_names=["agy-delegate"],
+    ),
 ]
 
 

@@ -28,6 +28,14 @@ import unicodedata
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+# The neural mesh (neural-mesh.json) is the connective tissue shared with the
+# dt CLI. Imported lazily-safe: load_mesh() returns None if the file is absent.
+try:
+    from neural_mesh import load_mesh
+except ImportError:  # pragma: no cover — running from a different cwd
+    def load_mesh(*_args, **_kwargs):  # type: ignore
+        return None
+
 VERSION = "4.3.0"
 
 
@@ -202,6 +210,26 @@ DELEGATE_SIGS = [
     r"\bintegrate\b", r"\bservice\b", r"\bmodule\b",
 ]
 
+# Explicit delegation to a specific CLI implementer agent.
+# "delegate this to grok" / "have codex do X" / "run it through opencode" etc.
+DELEGATE_TO_PATS = [
+    r"\bdelegate (?:this|it|the task|the work)?\s*(?:to|via|through|with)\s+(\w+)\b",
+    r"\bhave\s+(\w+)\s+(?:do|implement|build|fix|write|refactor|handle)\b",
+    r"\brun (?:it|this|the task)?\s*(?:through|via|with)\s+(\w+)\b",
+    r"\buse\s+(\w+)\s+delegate\b",
+    r"\bask\s+(\w+)\s+to\b",
+]
+
+# Map a captured agent alias → delegate skill id.
+DELEGATE_AGENT_ALIASES = {
+    "grok": "grok-delegate",
+    "codex": "codex-delegate",
+    "opencode": "opencode-delegate",
+    "open-code": "opencode-delegate",
+    "kimi": "kimi-delegate",
+    "agy": "agy-delegate",
+}
+
 # Multi-agent team signals (MMAS)
 MMAS_STRONG = [
     r"\bsquad\b", r"\bswarm\b", r"\bcrew\b",
@@ -229,6 +257,8 @@ MMAS_WEAK = [
 def score_task(task: str) -> Dict[str, int]:
     """Return a dict of stage→score. Empty dict means 'trivial'."""
     n = normalize(task)
+    # Reset per-call: explicit delegate-to target (carried to pick_verdict).
+    score_task.delegate_to = None  # type: ignore[attr-defined]
 
     # ----- MEMORY override (highest priority — recall from agent-kernel) -----
     # If the user explicitly says "remember this" or asks "what did we do",
@@ -296,6 +326,23 @@ def score_task(task: str) -> Dict[str, int]:
     # ----- /delegate-team -----
     if any_pat(DELEGATE_SIGS, n):
         scores["delegate"] += 3
+
+    # ----- Explicit delegate-to-<agent> (delegate-skills component) -----
+    # Captures the named CLI implementer (grok/codex/opencode/kimi/agy) and
+    # resolves it to the matching delegate skill. Stored on the function so the
+    # verdict can name the skill.
+    resolved_agent = None
+    for pat in DELEGATE_TO_PATS:
+        m = re.search(pat, n)
+        if m:
+            alias = (m.group(1) or "").lower()
+            resolved_agent = DELEGATE_AGENT_ALIASES.get(alias)
+            if resolved_agent:
+                break
+    score_task.delegate_to = resolved_agent  # type: ignore[attr-defined]
+    if resolved_agent:
+        # Strong signal: an explicit delegate request beats the generic FEATURE bump.
+        scores["delegate"] = max(scores["delegate"], 4)
 
     # ----- Default FEATURE bump -----
     # If the task is clearly a build (think ≥ 2) and nothing more specific
@@ -390,6 +437,11 @@ def pick_verdict(n: str, scores: Dict[str, int]) -> str:
         return "UI DELIVERY path — unslop audit (score≥70) is BLOCKING before delegate-team."
     if scores.get("mmas", 0) >= 3:
         return "MULTI-AGENT TEAM path — mavis-team (MMAS) with Atlas+ agents."
+    # Explicit delegate-to-<agent> (delegate-skills component): name the skill
+    # and remind the orchestrator it stays the reviewer (the relay never commits).
+    if getattr(score_task, "delegate_to", None):
+        return (f"DELEGATE path — {score_task.delegate_to} skill "
+                f"(write brief, review diff, land it yourself).")
     if scores.get("systematic", 0) >= 3:
         return "BUG path — debug-issue before any patch, then quality-guard."
     if scores.get("delegate", 0) >= 2:
@@ -989,12 +1041,40 @@ def detect_verdict_key(scores: Dict[str, int]) -> str:
     return "FEATURE"  # default chain
 
 
+def _delegate_dispatch(task: str, agent: str) -> str:
+    """Build the `dt delegate <agent>` command for an explicit delegate verdict.
+
+    The agent→skill mapping is resolved from the neural mesh (neural-mesh.json),
+    the single source of truth shared with the dt CLI. If the mesh is absent,
+    fall back to the inline alias table so dispatch never breaks.
+    """
+    quoted = '"' + task.replace('"', '\\"') + '"'
+    mesh = load_mesh()
+    if mesh:
+        target = mesh.delegate_target_for(agent)
+        if target:
+            # e.g. "grok-delegate" -> agent "grok"
+            agent = target.replace("-delegate", "")
+    # Fallback alias resolution (keeps the behaviour without the mesh file).
+    agent = DELEGATE_AGENT_ALIASES.get(agent, agent)
+    if agent.endswith("-delegate"):
+        agent = agent[: -len("-delegate")]
+    return (
+        f"# DELEGATE path — the orchestrator stays the reviewer; the relay\n"
+        f"# writes the brief, the CLI agent implements, you land the diff.\n"
+        f"# Dispatch:  dt delegate {agent} --brief /tmp/mavis-brief.txt\n"
+        f"# Task:      {quoted}\n"
+        f"# Inspect:   dt mesh --trace   (see the ROUTES_TO synapse fire)"
+    )
+
+
 def dispatch_for_verdict(n: str, scores: Dict[str, int], team: bool = False) -> str:
     """Return the suggested `dt run` command for the verdict.
 
     Everything routes through `dt` (the delegate-team CLI). The orchestrator
-    only picks the right `--backend` flag. Users can override the backend at
-    exec time.
+    only picks the right `--backend` flag (or `dt delegate <agent>` for an
+    explicit DELEGATE verdict, resolved from the neural mesh). Users can
+    override the backend at exec time.
     """
     if not scores:
         return ""
@@ -1039,6 +1119,11 @@ def dispatch_for_verdict(n: str, scores: Dict[str, int], team: bool = False) -> 
             "# appends the new fact, and acknowledges the recall.\n"
             "# Inspect: `dt kernel` to see the memory home + episode/rule counts."
         )
+    if getattr(score_task, "delegate_to", None):
+        # Explicit delegate-to-<agent> (delegate-skills component).
+        # The orchestrator now emits a real `dt delegate <agent>` command,
+        # resolved from the neural mesh's ROUTES_TO synapses.
+        return _delegate_dispatch(n, score_task.delegate_to)
     if key == "MULTI-AGENT" or team:
         return (
             f"# MMAS path: dt run --team {quoted}\n"
@@ -1120,6 +1205,11 @@ SELFTEST_CASES: List[Tuple[str, str, str]] = [
     ("debug why the API is slow",           "BUG",           "debug + slow — bug wins"),
     ("optimize the dashboard page",         "UI",            "optimize + dashboard (UI wins)"),
     ("Make API p95 latency < 200ms",        "PERFORMANCE",   "p95 + latency"),
+    # ----- Explicit delegate-to-<agent> (delegate-skills component) -----
+    ("delegate this to grok",                "DELEGATE",      "delegate to grok → grok-delegate skill"),
+    ("have codex implement the parser",      "DELEGATE",      "have codex do X → codex-delegate skill"),
+    ("run it through opencode",              "DELEGATE",      "run through opencode → opencode-delegate skill"),
+    ("use kimi delegate the refactor",       "DELEGATE",      "use kimi delegate → kimi-delegate skill"),
 ]
 
 

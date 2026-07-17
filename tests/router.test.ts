@@ -14,7 +14,7 @@ describe('Router Routing', () => {
     (fs.existsSync as any).mockReturnValue(true);
   });
 
-  it('routes to metagpt when router score is 8', () => {
+  it('routes to mmas when router score is 8', () => {
     const spawnSyncMock = cp.spawnSync as any;
     spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
       if (args.some((a: string) => a.includes('opencode-router.mjs'))) {
@@ -25,8 +25,8 @@ describe('Router Routing', () => {
 
     runDispatch('architecture task', {});
 
-    const metagptCall = spawnSyncMock.mock.calls.find((c: any) => c[1].some((arg: string) => arg.includes('metagpt')));
-    expect(metagptCall).toBeDefined();
+    const mmasCall = spawnSyncMock.mock.calls.find((c: any) => c[1].some((arg: string) => arg.includes('mmas')));
+    expect(mmasCall).toBeDefined();
   });
 
   it('routes to vertexcoder when router score is 6', () => {

@@ -63,7 +63,7 @@ type DispatchOptions = {
 export function runDispatch(rawPrompt: string | undefined, options: DispatchOptions) {
   let backend = options.backend;
   if (options.team) {
-    backend = "metagpt";
+    backend = "mmas";
   }
   let briefFile = options.brief;
   
@@ -97,6 +97,7 @@ ${rawPrompt}
 
   // 2. Resolve default backend via Router if not specified
   let forceMetagpt = false;
+  let forceMmas = false;
   let autoRouted = false;
   let routeReason = "explicit backend";
   if (!backend) {
@@ -113,9 +114,9 @@ ${rawPrompt}
         console.log(`${C.bold}${C.cyan}Router Complexity Score: ${routeData.score}${C.reset}`);
         // Choose best backend based on score
         if (routeData.score >= 8) {
-          backend = "metagpt";
+          backend = "mmas";
           autoRouted = true;
-          console.log(`  🎯 Routing to: ${C.bold}${C.magenta}metagpt${C.reset} (MetaGPT Team Orchestrator for complex tasks)`);
+          console.log(`  🎯 Routing to: ${C.bold}${C.magenta}mmas${C.reset} (Mavis Multi-Agent System for complex tasks)`);
         } else if (routeData.score > 5) {
           backend = "vertexcoder";
           console.log(`  🎯 Routing to: ${C.bold}${C.green}vertexcoder${C.reset} (Premium Gemini AI via GCP SDK)`);
@@ -147,11 +148,13 @@ ${rawPrompt}
   
   if (backend === "metagpt") {
     forceMetagpt = true;
+  } else if (backend === "mmas") {
+    forceMmas = true;
   } else {
     forwardArgs.push("--backend", backend as string);
   }
 
-  const plannedChain = forceMetagpt ? ["metagpt"] : [backend as string, ...resolveFallbackChain(backend as string)];
+  const plannedChain = forceMmas ? ["mmas"] : (forceMetagpt ? ["metagpt"] : [backend as string, ...resolveFallbackChain(backend as string)]);
 
   // Fire a ROUTES_TO synapse from the dispatcher so the neural trace records
   // the primary routing decision in one connected bus.
@@ -176,7 +179,19 @@ ${rawPrompt}
 
   // 3. Dispatch & Automatic Fallback Ring
   let success = false;
-  if (forceMetagpt) {
+  if (backend === "mmas") {
+    console.log(`\n${C.bold}${C.magenta}🚀 Dispatching task to Multi-Agent System: [MMAS]${C.reset}`);
+    const dtCli = process.argv[1] || process.argv[0];
+    const mmasArgs = ["mmas", "spawn", rawPrompt || briefText];
+    if (options.dryRun) {
+      mmasArgs.push("--plan-only");
+    }
+    if (!options.allowInstall) {
+      mmasArgs.push("--no-write");
+    }
+    const proc = spawnSync(process.execPath, [dtCli, ...mmasArgs], { stdio: "inherit" });
+    success = proc.status === 0;
+  } else if (forceMetagpt) {
     console.log(`\n${C.bold}${C.magenta}🚀 Dispatching task to team orchestrator: [METAGPT]${C.reset}`);
     // We import runMetaGPTRouter dynamically to avoid circular dependencies if any, but since it's just a run we can spawn the CLI
     const dtCli = process.argv[1] || process.argv[0]; 

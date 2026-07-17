@@ -136,8 +136,8 @@ describe('installer safety modes', () => {
     expect(() => execFileSync('bash', ['-n', INSTALL])).not.toThrow();
   });
 
-  it('--dry-run does not modify ~/.mavis/skills/mavis-ship/SKILL.md', () => {
-    const skillPath = join(process.env.HOME || '', '.mavis', 'skills', 'mavis-ship', 'SKILL.md');
+  it('--dry-run does not modify ~/.mavis/skills/apeiron/SKILL.md', () => {
+    const skillPath = join(process.env.HOME || '', '.mavis', 'skills', 'apeiron', 'SKILL.md');
     let before = '';
     let beforeMtime = 0;
     if (existsSync(skillPath)) {

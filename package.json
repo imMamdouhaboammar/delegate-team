@@ -7,7 +7,7 @@
   "bin": {
     "dt": "dist/cli.js",
     "delegate-team": "dist/cli.js",
-    "mavis-ship-uni": "bin/mavis-ship-uni",
+    "apeiron-uni": "bin/apeiron-uni",
     "autopilot": "bin/autopilot.sh",
     "agents-health": "bin/agents-health.sh"
   },
@@ -40,10 +40,10 @@
     "orchestrator/scripts/orchestrate.py",
     "orchestrator/scripts/orchestrate.sh",
     "orchestrator/scripts/catalog.py",
-    "mavis-ship/SKILL.md",
-    "mavis-ship/scripts/orchestrate.py",
-    "mavis-ship/scripts/orchestrate.sh",
-    "mavis-ship/scripts/catalog.py",
+    "apeiron/SKILL.md",
+    "apeiron/scripts/orchestrate.py",
+    "apeiron/scripts/orchestrate.sh",
+    "apeiron/scripts/catalog.py",
     "vertex-coder/SKILL.md",
     "vertex-coder/requirements.txt",
     "vertex-coder/*.py",

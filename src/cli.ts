@@ -4,6 +4,8 @@ import { runCheck } from './commands/check.js';
 import { runLinkSkill, runSetup, runAuth, runGcpEnable, runVertexProvision } from './commands/setup.js';
 import { runDispatch, runVertex } from './commands/run.js';
 import { runMetaGPTRouter } from './commands/metagpt.js';
+import { runMMAS, resolveMMASScript } from './commands/mmas.js';
+import { runApeiron } from './commands/apeiron.js';
 import { runServe } from './proxy/server.js';
 import { installBackendRequestTimeout } from './proxy/request-timeout.js';
 import { runRouteExplain } from './commands/route.js';
@@ -11,6 +13,7 @@ import { runKernelStatus, runKernelVersion } from './commands/kernel.js';
 import { parsePort } from './utils/port.js';
 import { runDelegate, DELEGATE_AGENTS } from './commands/delegate.js';
 import { runMesh } from './commands/mesh.js';
+import { WORKSPACE_ROOT } from './config/index.js';
 import fs from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -134,6 +137,68 @@ program
   });
 
 program
+  .command('apeiron [task...]')
+  .alias('ship')
+  .description('Run the Apeiron universal orchestrator autopilot')
+  .option('-b, --backend <backend>', 'Override execution backend')
+  .option('--background', 'Run in background (returns PID and log path)')
+  .option('--dry-run', 'Print the execution plan without executing')
+  .action(async (taskArray, options) => {
+    const task = Array.isArray(taskArray) ? taskArray.join(" ") : taskArray;
+    const code = await runApeiron(task, options);
+    process.exit(code);
+  });
+
+program
+  .command('mmas [task...]')
+  .description('Interface with Mavis Multi-Agent System (MMAS)')
+  .option('--team <agents>', 'Comma-separated agent names')
+  .option('--atlas', 'Spawn Atlas alone to pick the team')
+  .option('--status <task_id>', 'Show status of a running task')
+  .option('--stop <task_id>', 'Stop a running task')
+  .option('--report <task_id>', 'Print post-hoc summary report')
+  .option('--list', 'List available agents')
+  .option('--plan-only', 'Print planned team and exit before spawning')
+  .option('--no-write', 'Do not write edits to disk')
+  .option('--write-mode <mode>', 'Write mode (workspace, logs-only, none)', 'workspace')
+  .option('--timeout <seconds>', 'Per-agent timeout')
+  .action(async (taskArray, options) => {
+    const taskArgs = Array.isArray(taskArray) ? taskArray : [];
+    let subArgs: string[] = [];
+
+    if (taskArgs[0] === 'list') {
+      subArgs = ['list'];
+    } else if (taskArgs[0] === 'status') {
+      subArgs = ['status', taskArgs[1]];
+    } else if (taskArgs[0] === 'stop') {
+      subArgs = ['stop', taskArgs[1]];
+    } else if (taskArgs[0] === 'report') {
+      subArgs = ['report', taskArgs[1]];
+    } else {
+      // Default to spawn
+      const task = taskArgs.join(' ');
+      const code = await runMMAS(task, options);
+      process.exit(code);
+      return;
+    }
+
+    // Run subcommands by spawning Python script
+    const scriptPath = resolveMMASScript();
+    const { spawn } = await import('node:child_process');
+    const child = spawn('python3', [scriptPath, ...subArgs], {
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        DELEGATE_TEAM_ROOT: WORKSPACE_ROOT,
+      }
+    });
+
+    child.on('close', (code) => {
+      process.exit(code || 0);
+    });
+  });
+
+program
   .command('run [prompt...]')
   .alias('dispatch')
   .description('Dispatch a task to a backend agent with automatic routing & failover')
@@ -150,7 +215,7 @@ program
 
 program
   .command('route')
-  .description('Inspect /mavis-ship routing decisions without executing')
+  .description('Inspect /Apeiron routing decisions without executing')
   .argument('[task...]', 'Task to route (omit when using --last)')
   .option('--explain', 'Print structured JSON trace')
   .option('--last', 'Print the most recent trace from dt_traces/routing/')
@@ -246,7 +311,7 @@ program
 
 // Check for unknown commands before parsing to prevent dangerous fallbacks
 if (process.argv.length > 2 && !process.argv[2].startsWith('-')) {
-  const isCommand = ['check', 'status', 'doctor', 'link-skill', 'setup', 'init', 'auth', 'gcp-enable', 'vertex-provision', 'vx', 'vertex', 'metagpt', 'mg', 'run', 'dispatch', 'serve', 'proxy', 'route', 'kernel', 'kernel-version', 'delegate', 'mesh', 'help'].includes(process.argv[2]);
+  const isCommand = ['check', 'status', 'doctor', 'link-skill', 'setup', 'init', 'auth', 'gcp-enable', 'vertex-provision', 'vx', 'vertex', 'metagpt', 'mg', 'run', 'dispatch', 'serve', 'proxy', 'route', 'kernel', 'kernel-version', 'delegate', 'mesh', 'help', 'apeiron', 'ship', 'mmas'].includes(process.argv[2]);
   if (!isCommand) {
     console.error(`\n❌ Error: Unknown command '${process.argv[2]}'.`);
     console.error(`Run 'dt --help' to see available commands.\n`);

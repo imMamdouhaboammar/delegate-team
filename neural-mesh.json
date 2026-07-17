@@ -15,7 +15,7 @@
     },
     {
       "id": "orchestrator",
-      "label": "/mavis-ship orchestrator",
+      "label": "/Apeiron orchestrator",
       "kind": "orchestrator",
       "layer": 2,
       "summary": "Single-command natural-language routing of any task; emits a structured route verdict.",
