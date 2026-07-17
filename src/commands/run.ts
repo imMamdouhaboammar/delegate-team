@@ -5,6 +5,21 @@ import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { C } from '../utils/index.js';
 import { FALLBACK_RING } from '../fallback/ring.js';
+import { NeuralMesh } from '../neural/mesh.js';
+import { emitSynapse } from '../neural/trace-bus.js';
+
+// The failover chain is now mesh-driven. Fall back to the hardcoded ring only
+// if the neural mesh cannot be loaded (keeps dt run resilient).
+function resolveFallbackChain(backend: string): string[] {
+  try {
+    const mesh = NeuralMesh.fromPath();
+    const chain = mesh.fallbackChain(backend);
+    if (chain.length > 0) return chain;
+  } catch {
+    /* mesh unavailable — fall through */
+  }
+  return FALLBACK_RING[backend] || [];
+}
 import { RELAY_SCRIPT, ROUTER_SCRIPT, VERTEX_DIRECT_SCRIPT, VERTEX_INTERACTIVE_SCRIPT, VERTEX_VENV_PYTHON } from '../config/index.js';
 
 export function runVertex(mode: string, args: string[]) {
@@ -136,7 +151,14 @@ ${rawPrompt}
     forwardArgs.push("--backend", backend as string);
   }
 
-  const plannedChain = forceMetagpt ? ["metagpt"] : [backend as string, ...(FALLBACK_RING[backend as string] || [])];
+  const plannedChain = forceMetagpt ? ["metagpt"] : [backend as string, ...resolveFallbackChain(backend as string)];
+
+  // Fire a ROUTES_TO synapse from the dispatcher so the neural trace records
+  // the primary routing decision in one connected bus.
+  emitSynapse('dt-cli', backend as string, 'ROUTES_TO', {
+    signal: routeReason,
+    meta: { autoRouted, dryRun: !!options.dryRun },
+  });
 
   if (options.dryRun) {
     console.log(`\n${C.bold}${C.cyan}Dry run dispatch plan${C.reset}`);
@@ -200,6 +222,11 @@ ${rawPrompt}
         
         const nextBackend = currentChain[attempt + 1];
         if (nextBackend) {
+          // Fire a FALLBACKS_TO synapse so the neural trace records the handoff.
+          emitSynapse(activeBackend, nextBackend, 'FALLBACKS_TO', {
+            signal: `failover ring (attempt ${attempt + 1})`,
+            weight: 1.0,
+          });
           console.log(`${C.bold}${C.yellow}🔄 Activating Automated Failover Ring → Routing to next backup: [${nextBackend.toUpperCase()}]${C.reset}`);
         }
       }

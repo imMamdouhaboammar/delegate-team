@@ -28,6 +28,14 @@ import unicodedata
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+# The neural mesh (neural-mesh.json) is the connective tissue shared with the
+# dt CLI. Imported lazily-safe: load_mesh() returns None if the file is absent.
+try:
+    from neural_mesh import load_mesh
+except ImportError:  # pragma: no cover — running from a different cwd
+    def load_mesh(*_args, **_kwargs):  # type: ignore
+        return None
+
 VERSION = "4.3.0"
 
 
@@ -1033,12 +1041,40 @@ def detect_verdict_key(scores: Dict[str, int]) -> str:
     return "FEATURE"  # default chain
 
 
+def _delegate_dispatch(task: str, agent: str) -> str:
+    """Build the `dt delegate <agent>` command for an explicit delegate verdict.
+
+    The agent→skill mapping is resolved from the neural mesh (neural-mesh.json),
+    the single source of truth shared with the dt CLI. If the mesh is absent,
+    fall back to the inline alias table so dispatch never breaks.
+    """
+    quoted = '"' + task.replace('"', '\\"') + '"'
+    mesh = load_mesh()
+    if mesh:
+        target = mesh.delegate_target_for(agent)
+        if target:
+            # e.g. "grok-delegate" -> agent "grok"
+            agent = target.replace("-delegate", "")
+    # Fallback alias resolution (keeps the behaviour without the mesh file).
+    agent = DELEGATE_AGENT_ALIASES.get(agent, agent)
+    if agent.endswith("-delegate"):
+        agent = agent[: -len("-delegate")]
+    return (
+        f"# DELEGATE path — the orchestrator stays the reviewer; the relay\n"
+        f"# writes the brief, the CLI agent implements, you land the diff.\n"
+        f"# Dispatch:  dt delegate {agent} --brief /tmp/mavis-brief.txt\n"
+        f"# Task:      {quoted}\n"
+        f"# Inspect:   dt mesh --trace   (see the ROUTES_TO synapse fire)"
+    )
+
+
 def dispatch_for_verdict(n: str, scores: Dict[str, int], team: bool = False) -> str:
     """Return the suggested `dt run` command for the verdict.
 
     Everything routes through `dt` (the delegate-team CLI). The orchestrator
-    only picks the right `--backend` flag. Users can override the backend at
-    exec time.
+    only picks the right `--backend` flag (or `dt delegate <agent>` for an
+    explicit DELEGATE verdict, resolved from the neural mesh). Users can
+    override the backend at exec time.
     """
     if not scores:
         return ""
@@ -1083,6 +1119,11 @@ def dispatch_for_verdict(n: str, scores: Dict[str, int], team: bool = False) -> 
             "# appends the new fact, and acknowledges the recall.\n"
             "# Inspect: `dt kernel` to see the memory home + episode/rule counts."
         )
+    if getattr(score_task, "delegate_to", None):
+        # Explicit delegate-to-<agent> (delegate-skills component).
+        # The orchestrator now emits a real `dt delegate <agent>` command,
+        # resolved from the neural mesh's ROUTES_TO synapses.
+        return _delegate_dispatch(n, score_task.delegate_to)
     if key == "MULTI-AGENT" or team:
         return (
             f"# MMAS path: dt run --team {quoted}\n"

@@ -1,0 +1,490 @@
+{
+  "$schema": "neural-mesh.schema.json",
+  "name": "delegate-team-neural-mesh",
+  "version": "1.0.0",
+  "description": "The connective tissue of delegate-team. Every component is a neuron; every intelligent link between them is a synapse. This file is the single source of truth shared by the TypeScript dt CLI and the Python orchestrator/catalog. Mutating it rewires the whole system.",
+  "neurons": [
+    {
+      "id": "dt-cli",
+      "label": "dt CLI",
+      "kind": "gateway",
+      "layer": 1,
+      "summary": "npm gateway, low-level dispatch + inspection surface.",
+      "runtime": "typescript",
+      "entry": "src/cli.ts"
+    },
+    {
+      "id": "orchestrator",
+      "label": "/mavis-ship orchestrator",
+      "kind": "orchestrator",
+      "layer": 2,
+      "summary": "Single-command natural-language routing of any task; emits a structured route verdict.",
+      "runtime": "python",
+      "entry": "orchestrator/scripts/orchestrate.py"
+    },
+    {
+      "id": "catalog",
+      "label": "Integration Arsenal",
+      "kind": "registry",
+      "layer": 2,
+      "summary": "40-entry integration catalog + mandatory global-skill pre-search and task matching.",
+      "runtime": "python",
+      "entry": "orchestrator/scripts/catalog.py"
+    },
+    {
+      "id": "role-router",
+      "label": "Role Router",
+      "kind": "router",
+      "layer": 1,
+      "summary": "Maps a role (architect/coder/ui/reviewer) to a preferred backend.",
+      "runtime": "typescript",
+      "entry": "src/utils/role-router.ts"
+    },
+    {
+      "id": "fallback-ring",
+      "label": "Failover Ring",
+      "kind": "router",
+      "layer": 1,
+      "summary": "Automatic backend failover chain used by dt run.",
+      "runtime": "typescript",
+      "entry": "src/fallback/ring.ts"
+    },
+    {
+      "id": "trace-bus",
+      "label": "Neural Trace Bus",
+      "kind": "bus",
+      "layer": 0,
+      "summary": "Unified event bus: every synapse fired by any neuron is recorded into one coherent trace.",
+      "runtime": "typescript",
+      "entry": "src/neural/trace-bus.ts"
+    },
+    {
+      "id": "delegate-grok",
+      "label": "Grok Delegate",
+      "kind": "delegate-skill",
+      "layer": 1,
+      "summary": "Delegate a bounded coding task to the Grok Build CLI, then review + commit.",
+      "runtime": "typescript",
+      "entry": "delegate-skills/grok-delegate/scripts/relay.mjs"
+    },
+    {
+      "id": "delegate-codex",
+      "label": "Codex Delegate",
+      "kind": "delegate-skill",
+      "layer": 1,
+      "summary": "Delegate a bounded coding task to Codex, then review + commit.",
+      "runtime": "typescript",
+      "entry": "delegate-skills/codex-delegate/scripts/relay.mjs"
+    },
+    {
+      "id": "delegate-opencode",
+      "label": "OpenCode Delegate",
+      "kind": "delegate-skill",
+      "layer": 1,
+      "summary": "Delegate a bounded coding task to OpenCode, then review + commit.",
+      "runtime": "typescript",
+      "entry": "delegate-skills/opencode-delegate/scripts/relay.mjs"
+    },
+    {
+      "id": "delegate-kimi",
+      "label": "Kimi Delegate",
+      "kind": "delegate-skill",
+      "layer": 1,
+      "summary": "Delegate a bounded coding task to Kimi, then review + commit.",
+      "runtime": "typescript",
+      "entry": "delegate-skills/kimi-delegate/scripts/relay.mjs"
+    },
+    {
+      "id": "delegate-agy",
+      "label": "AGY Delegate",
+      "kind": "delegate-skill",
+      "layer": 1,
+      "summary": "Delegate a bounded coding task to AGY, then review + commit.",
+      "runtime": "typescript",
+      "entry": "delegate-skills/agy-delegate/scripts/relay.mjs"
+    },
+    {
+      "id": "backend-codex",
+      "label": "Codex Backend (god-agent)",
+      "kind": "backend",
+      "layer": 5,
+      "summary": "OpenAI Codex + opencode dispatcher runtime.",
+      "runtime": "python",
+      "entry": "god-agent/model_router.py"
+    },
+    {
+      "id": "backend-minimax",
+      "label": "MiniMax Backend",
+      "kind": "backend",
+      "layer": 5,
+      "summary": "MiniMax coder via mmx CLI.",
+      "runtime": "python",
+      "entry": "minimax-coder/minimax_direct_coder.py"
+    },
+    {
+      "id": "backend-vertex",
+      "label": "Vertex Backend (Gemini)",
+      "kind": "backend",
+      "layer": 5,
+      "summary": "Google Gemini via google-genai SDK.",
+      "runtime": "python",
+      "entry": "vertex-coder/vertex_direct_coder.py"
+    },
+    {
+      "id": "backend-metagpt",
+      "label": "MetaGPT Team",
+      "kind": "backend",
+      "layer": 5,
+      "summary": "Multi-role software-company team runner (experimental).",
+      "runtime": "python",
+      "entry": "src/commands/metagpt.ts"
+    },
+    {
+      "id": "backend-opencode",
+      "label": "OpenCode Backend",
+      "kind": "backend",
+      "layer": 5,
+      "summary": "OpenCode router dispatcher runtime (balanced generalist).",
+      "runtime": "python",
+      "entry": "delegate-team/scripts/opencode-router.mjs"
+    },
+    {
+      "id": "backend-gemini",
+      "label": "Gemini CLI Backend",
+      "kind": "backend",
+      "layer": 5,
+      "summary": "Gemini CLI (429-prone, absolute last resort in every ring).",
+      "runtime": "node",
+      "entry": "delegate-team/scripts/gemini-router.mjs"
+    },
+    {
+      "id": "mmas",
+      "label": "MMAS Team Runtime",
+      "kind": "runtime",
+      "layer": 4,
+      "summary": "Spawns 1-8 specialist agents in parallel with a watchdog.",
+      "runtime": "python",
+      "entry": "mmas/spawn-team.py"
+    },
+    {
+      "id": "agent-kernel",
+      "label": "agent-kernel",
+      "kind": "memory",
+      "layer": 3,
+      "summary": "Local-first shared memory + governance layer.",
+      "runtime": "node",
+      "entry": "agent-kernel/dist/cli.mjs"
+    },
+    {
+      "id": "unslop",
+      "label": "unslop-preflight",
+      "kind": "gate",
+      "layer": 2,
+      "summary": "BLOCKING UI quality gate (score >= 70) applied before UI work.",
+      "runtime": "node",
+      "entry": "integrations/unslop-preflight"
+    },
+    {
+      "id": "superpowers",
+      "label": "superpowers",
+      "kind": "methodology",
+      "layer": 2,
+      "summary": "Hard-gate methodology: brainstorm -> plan -> TDD -> review -> ship.",
+      "runtime": "skill",
+      "entry": "integrations/superpowers.md"
+    },
+    {
+      "id": "autoresearch",
+      "label": "autoresearch",
+      "kind": "methodology",
+      "layer": 2,
+      "summary": "Metric-driven iteration loop (Karpathy-style).",
+      "runtime": "skill",
+      "entry": "integrations/autoresearch.md"
+    },
+    {
+      "id": "waza-check",
+      "label": "Waza /check",
+      "kind": "gate",
+      "layer": 2,
+      "summary": "Review/quality gate habit applied before landing.",
+      "runtime": "skill",
+      "entry": "integrations/waza.md"
+    }
+  ],
+  "synapses": [
+    {
+      "type": "ROUTES_TO",
+      "from": "orchestrator",
+      "to": "delegate-grok",
+      "weight": 0.9,
+      "signal": "verdict==DELEGATE && agent==grok"
+    },
+    {
+      "type": "ROUTES_TO",
+      "from": "orchestrator",
+      "to": "delegate-codex",
+      "weight": 0.9,
+      "signal": "verdict==DELEGATE && agent==codex"
+    },
+    {
+      "type": "ROUTES_TO",
+      "from": "orchestrator",
+      "to": "delegate-opencode",
+      "weight": 0.9,
+      "signal": "verdict==DELEGATE && agent==opencode"
+    },
+    {
+      "type": "ROUTES_TO",
+      "from": "orchestrator",
+      "to": "delegate-kimi",
+      "weight": 0.9,
+      "signal": "verdict==DELEGATE && agent==kimi"
+    },
+    {
+      "type": "ROUTES_TO",
+      "from": "orchestrator",
+      "to": "delegate-agy",
+      "weight": 0.9,
+      "signal": "verdict==DELEGATE && agent==agy"
+    },
+    {
+      "type": "ROUTES_TO",
+      "from": "role-router",
+      "to": "backend-codex",
+      "weight": 0.8,
+      "signal": "role==coder"
+    },
+    {
+      "type": "ROUTES_TO",
+      "from": "role-router",
+      "to": "backend-vertex",
+      "weight": 0.8,
+      "signal": "role==architect"
+    },
+    {
+      "type": "ROUTES_TO",
+      "from": "role-router",
+      "to": "backend-minimax",
+      "weight": 0.8,
+      "signal": "role==ui-implementer"
+    },
+    {
+      "type": "FALLBACKS_TO",
+      "from": "backend-codex",
+      "to": "backend-vertex",
+      "weight": 1.0,
+      "signal": "failover ring"
+    },
+    {
+      "type": "FALLBACKS_TO",
+      "from": "backend-codex",
+      "to": "backend-minimax",
+      "weight": 0.9,
+      "signal": "failover ring"
+    },
+    {
+      "type": "FALLBACKS_TO",
+      "from": "backend-codex",
+      "to": "backend-opencode",
+      "weight": 0.8,
+      "signal": "failover ring"
+    },
+    {
+      "type": "FALLBACKS_TO",
+      "from": "backend-codex",
+      "to": "backend-gemini",
+      "weight": 0.7,
+      "signal": "failover ring (last resort)"
+    },
+    {
+      "type": "FALLBACKS_TO",
+      "from": "backend-vertex",
+      "to": "backend-codex",
+      "weight": 1.0,
+      "signal": "failover ring"
+    },
+    {
+      "type": "FALLBACKS_TO",
+      "from": "backend-vertex",
+      "to": "backend-minimax",
+      "weight": 0.9,
+      "signal": "failover ring"
+    },
+    {
+      "type": "FALLBACKS_TO",
+      "from": "backend-vertex",
+      "to": "backend-opencode",
+      "weight": 0.8,
+      "signal": "failover ring"
+    },
+    {
+      "type": "FALLBACKS_TO",
+      "from": "backend-vertex",
+      "to": "backend-gemini",
+      "weight": 0.7,
+      "signal": "failover ring (last resort)"
+    },
+    {
+      "type": "FALLBACKS_TO",
+      "from": "backend-minimax",
+      "to": "backend-vertex",
+      "weight": 1.0,
+      "signal": "failover ring"
+    },
+    {
+      "type": "FALLBACKS_TO",
+      "from": "backend-minimax",
+      "to": "backend-codex",
+      "weight": 0.9,
+      "signal": "failover ring"
+    },
+    {
+      "type": "FALLBACKS_TO",
+      "from": "backend-minimax",
+      "to": "backend-opencode",
+      "weight": 0.8,
+      "signal": "failover ring"
+    },
+    {
+      "type": "FALLBACKS_TO",
+      "from": "backend-minimax",
+      "to": "backend-gemini",
+      "weight": 0.7,
+      "signal": "failover ring (last resort)"
+    },
+    {
+      "type": "FALLBACKS_TO",
+      "from": "backend-opencode",
+      "to": "backend-vertex",
+      "weight": 1.0,
+      "signal": "failover ring"
+    },
+    {
+      "type": "FALLBACKS_TO",
+      "from": "backend-gemini",
+      "to": "backend-vertex",
+      "weight": 1.0,
+      "signal": "failover ring (last resort)"
+    },
+    {
+      "type": "FALLBACKS_TO",
+      "from": "backend-gemini",
+      "to": "backend-codex",
+      "weight": 0.9,
+      "signal": "failover ring (last resort)"
+    },
+    {
+      "type": "FALLBACKS_TO",
+      "from": "backend-gemini",
+      "to": "backend-minimax",
+      "weight": 0.8,
+      "signal": "failover ring (last resort)"
+    },
+    {
+      "type": "FALLBACKS_TO",
+      "from": "backend-gemini",
+      "to": "backend-opencode",
+      "weight": 0.7,
+      "signal": "failover ring (last resort)"
+    },
+    {
+      "type": "DISCOVERS",
+      "from": "catalog",
+      "to": "delegate-grok",
+      "weight": 0.6,
+      "signal": "match_skills_to_task('grok')"
+    },
+    {
+      "type": "DISCOVERS",
+      "from": "catalog",
+      "to": "delegate-codex",
+      "weight": 0.6,
+      "signal": "match_skills_to_task('codex')"
+    },
+    {
+      "type": "DISCOVERS",
+      "from": "catalog",
+      "to": "unslop",
+      "weight": 0.5,
+      "signal": "task has UI keywords"
+    },
+    {
+      "type": "MEMORY_OF",
+      "from": "orchestrator",
+      "to": "agent-kernel",
+      "weight": 0.7,
+      "signal": "verdict==MEMORY"
+    },
+    {
+      "type": "MEMORY_OF",
+      "from": "backend-metagpt",
+      "to": "agent-kernel",
+      "weight": 0.5,
+      "signal": "episode capture"
+    },
+    {
+      "type": "COMPOSES",
+      "from": "mmas",
+      "to": "backend-codex",
+      "weight": 0.7,
+      "signal": "spawn specialist"
+    },
+    {
+      "type": "COMPOSES",
+      "from": "mmas",
+      "to": "backend-vertex",
+      "weight": 0.7,
+      "signal": "spawn specialist"
+    },
+    {
+      "type": "COMPOSES",
+      "from": "backend-metagpt",
+      "to": "backend-codex",
+      "weight": 0.6,
+      "signal": "team role"
+    },
+    {
+      "type": "GATE_BEFORE",
+      "from": "unslop",
+      "to": "delegate-grok",
+      "weight": 0.4,
+      "signal": "UI task"
+    },
+    {
+      "type": "GATE_BEFORE",
+      "from": "waza-check",
+      "to": "backend-metagpt",
+      "weight": 0.5,
+      "signal": "landing review"
+    },
+    {
+      "type": "METHOD_BEFORE",
+      "from": "superpowers",
+      "to": "backend-metagpt",
+      "weight": 0.5,
+      "signal": "plan gate"
+    },
+    {
+      "type": "METHOD_BEFORE",
+      "from": "autoresearch",
+      "to": "backend-vertex",
+      "weight": 0.5,
+      "signal": "perf loop"
+    },
+    {
+      "type": "EMITS_TO",
+      "from": "dt-cli",
+      "to": "trace-bus",
+      "weight": 1.0,
+      "signal": "every dt command"
+    },
+    {
+      "type": "EMITS_TO",
+      "from": "orchestrator",
+      "to": "trace-bus",
+      "weight": 1.0,
+      "signal": "every route verdict"
+    }
+  ]
+}

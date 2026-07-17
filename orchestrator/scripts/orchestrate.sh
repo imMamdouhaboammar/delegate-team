@@ -21,10 +21,20 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PY="$SCRIPT_DIR/orchestrate.py"
 CATALOG="$SCRIPT_DIR/catalog.py"
+MESH="$SCRIPT_DIR/neural_mesh.py"
 
 if [ ! -f "$PY" ]; then
     echo "orchestrate.py not found next to this script ($SCRIPT_DIR)" >&2
     exit 70
+fi
+
+# If the first argument is "mesh", forward to neural_mesh.py (introspection).
+if [ "${1:-}" = "mesh" ]; then
+    if [ ! -f "$MESH" ]; then
+        echo "neural_mesh.py not found next to this script ($SCRIPT_DIR)" >&2
+        exit 70
+    fi
+    exec python3 "$MESH" "${@:2}"
 fi
 
 # If the first argument is "integration", forward to catalog.py entirely

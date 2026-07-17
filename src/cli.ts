@@ -10,6 +10,7 @@ import { runRouteExplain } from './commands/route.js';
 import { runKernelStatus, runKernelVersion } from './commands/kernel.js';
 import { parsePort } from './utils/port.js';
 import { runDelegate, DELEGATE_AGENTS } from './commands/delegate.js';
+import { runMesh } from './commands/mesh.js';
 import fs from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -208,6 +209,26 @@ program
   });
 
 program
+  .command('mesh')
+  .description('Inspect the neural mesh: neurons, synapses, graph, and live trace bus')
+  .option('--json', 'Print the full mesh as JSON')
+  .option('--graph', 'Print a DOT graph of the mesh (pipe to dot -Tsvg)')
+  .option('--neurons', 'Show only neurons')
+  .option('--synapses', 'Show only synapses')
+  .option('--trace', 'Replay recent synapse events from the trace bus')
+  .option('--last', 'Print only the most recent synapse event')
+  .action((options) => {
+    const code = runMesh({
+      format: options.graph ? 'graph' : options.json ? 'json' : 'human',
+      last: options.last === true,
+      neurons: options.neurons === true ? true : undefined,
+      synapses: options.synapses === true ? true : undefined,
+      trace: options.trace === true,
+    });
+    process.exit(code);
+  });
+
+program
   .command('serve [port]')
   .alias('proxy')
   .description('Start the LLM Gateway Proxy Server')
@@ -225,7 +246,7 @@ program
 
 // Check for unknown commands before parsing to prevent dangerous fallbacks
 if (process.argv.length > 2 && !process.argv[2].startsWith('-')) {
-  const isCommand = ['check', 'status', 'doctor', 'link-skill', 'setup', 'init', 'auth', 'gcp-enable', 'vertex-provision', 'vx', 'vertex', 'metagpt', 'mg', 'run', 'dispatch', 'serve', 'proxy', 'route', 'kernel', 'kernel-version', 'delegate', 'help'].includes(process.argv[2]);
+  const isCommand = ['check', 'status', 'doctor', 'link-skill', 'setup', 'init', 'auth', 'gcp-enable', 'vertex-provision', 'vx', 'vertex', 'metagpt', 'mg', 'run', 'dispatch', 'serve', 'proxy', 'route', 'kernel', 'kernel-version', 'delegate', 'mesh', 'help'].includes(process.argv[2]);
   if (!isCommand) {
     console.error(`\n❌ Error: Unknown command '${process.argv[2]}'.`);
     console.error(`Run 'dt --help' to see available commands.\n`);

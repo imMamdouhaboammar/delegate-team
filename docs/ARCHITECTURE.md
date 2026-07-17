@@ -13,6 +13,10 @@ the per-component docs linked below.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
+│  0. Neural Mesh (neural-mesh.json + src/neural/) — the connective      │
+│     tissue: every component is a neuron, every link a synapse, all     │
+│     events flow through one trace bus. `dt mesh` inspects it.          │
+├──────────────────────────────────────────────────────────────────────┤
 │  1. dt CLI                       — npm gateway, low-level dispatch   │
 │  2. /mavis-ship orchestrator     — single-command natural-language     │
 │                                    routing of any task                  │
@@ -26,10 +30,25 @@ the per-component docs linked below.
 
 - npm package: `delegate-team`.
 - Surfaces: `dt run`, `dt run --dry-run`, `dt doctor --json`, `dt metagpt`,
-  `dt serve`, `dt route`.
+  `dt serve`, `dt route`, `dt mesh`, `dt delegate`.
 - Standalone: does not require `/mavis-ship`, agent-kernel, or MMAS.
-- Use when: you want to inspect or dispatch a task to a backend, or run the LLM
-  gateway proxy on `127.0.0.1:3000`.
+- Use when: you want to inspect or dispatch a task to a backend, run the LLM
+  gateway proxy on `127.0.0.1:3000`, or **inspect the whole system as one
+  connected piece** via `dt mesh`.
+
+### Layer 0 — Neural Mesh (the connective tissue)
+
+- Single source of truth: `neural-mesh.json` at the repo root. Both the
+  TypeScript `dt` CLI (`src/neural/`) and the Python orchestrator
+  (`orchestrator/scripts/neural_mesh.py`) read it.
+- Every component is a **neuron**; every intelligent link is a **synapse**
+  (typed + weighted). Routing tables (`ROLE_CAPABILITIES`, `FALLBACK_RING`) and
+  the `dt delegate` verdict are now *derived from the mesh* rather than
+  hardcoded, so editing one file rewires both runtimes.
+- Every action fires a **synapse event** onto a unified trace bus
+  (`~/.config/dt/neural/`). Replay any task's full neural path with
+  `dt mesh --trace`.
+- See [NEURAL-MESH.md](./NEURAL-MESH.md) for the full model.
 
 ### Layer 2 — /mavis-ship orchestrator
 
@@ -165,6 +184,7 @@ is already present.
 |---|---|
 | Install + verify | [INSTALLATION.md](./INSTALLATION.md) |
 | How routing works | [ROUTING.md](./ROUTING.md) |
+| Neural mesh (connected system) | [NEURAL-MESH.md](./NEURAL-MESH.md) |
 | Memory + governance | [AGENT-KERNEL-INTEGRATION.md](./AGENT-KERNEL-INTEGRATION.md) |
 | Multi-agent runtime | [MMAS.md](./MMAS.md) |
 | Security model | [SECURITY-MODEL.md](./SECURITY-MODEL.md) |

@@ -3,6 +3,44 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.9.0] - 2026-07-17
+
+### Added
+
+- **Neural Mesh** — the connective tissue that makes delegate-team one connected
+  piece. Every component is a **neuron**, every intelligent link a **synapse**,
+  and every action fires a **synapse event** onto a single unified **trace bus**.
+- `neural-mesh.json` at the repo root: the single source of truth for routing,
+  failover, and delegation — shared by both the TypeScript `dt` CLI
+  (`src/neural/`) and the Python orchestrator (`orchestrator/scripts/neural_mesh.py`).
+- `src/neural/mesh.ts` (engine), `src/neural/synapse.ts` (8-type vocabulary),
+  `src/neural/trace-bus.ts` (unified event bus at `~/.config/dt/neural/`).
+- `dt mesh` command: `--json`, `--graph` (DOT), `--neurons`, `--synapses`,
+  `--trace` (replay live synapse events), `--last`.
+- `orchestrate.sh mesh [neurons|synapses|graph]` forwards to `neural_mesh.py`.
+- Routing tables (`ROLE_CAPABILITIES`, `FALLBACK_RING`) and the `dt delegate`
+  verdict are now **derived from the mesh** instead of hardcoded. Editing
+  `neural-mesh.json` rewires both runtimes at once.
+
+### Changed
+
+- `role-router.ts` now resolves preferred backends from mesh `ROUTES_TO` synapses.
+- `dt run` resolves the failover chain from mesh `FALLBACKS_TO` synapses and emits
+  `ROUTES_TO` + `FALLBACKS_TO` synapse events onto the trace bus.
+- `orchestrate.py` `DELEGATE` verdict now emits a real `dt delegate <agent>`
+  command, resolved from the mesh's `ROUTES_TO` synapses.
+- `docs/ARCHITECTURE.md` gains a Layer 0 (Neural Mesh) and `docs/NEURAL-MESH.md`
+  documents the full model.
+
+### Tests
+
+- `tests/neural-mesh.test.ts` (11 cases): mesh loader, role/failover/delegate
+  resolution, catalog discovery, neighbor queries, synapse integrity.
+- `tests/neural-trace.test.ts` (3 cases): trace-bus emit + replay.
+- The mesh tests surfaced two real gaps (missing `backend-opencode` /
+  `backend-gemini` neurons, incomplete failover rings) which are now fixed in
+  `neural-mesh.json`.
+
 ## [2.8.0] - 2026-07-17
 
 ### Added

@@ -33,7 +33,13 @@ describe('Temp file cleanup', () => {
 
     runDispatch(undefined, { brief: 'my-brief.txt', backend: 'gemini' });
 
-    expect(fs.writeFileSync).not.toHaveBeenCalled();
+    // The neural trace bus (emitSynapse) writes a synapse event file; that is
+    // expected and independent of the brief lifecycle. Only the brief write
+    // must be skipped when a brief is provided.
+    const briefWrites = (fs.writeFileSync as any).mock.calls.filter(
+      (c: any[]) => typeof c[0] === 'string' && !c[0].includes('neural'),
+    );
+    expect(briefWrites.length).toBe(0);
     expect(fs.unlinkSync).not.toHaveBeenCalled();
   });
 });
