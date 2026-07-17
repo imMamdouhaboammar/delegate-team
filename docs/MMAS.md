@@ -74,7 +74,7 @@ dt mmas report <task_id>
 | `oracle` | vertex-coder | reviewer | Reviews architecture and edge cases |
 | `librarian` | minimax-coder | archivist | Maintains docs, summaries, indexes |
 | `reviewer` | minimax-coder | critic | Code review, style, lint |
-| `visionary` | god-agent | strategist | Long-term roadmap, trade-offs |
+| `visionary` | aonios-agent | strategist | Long-term roadmap, trade-offs |
 | `sentinel` | minimax-coder | guard | Policy + safety checks |
 
 Each agent is defined by a YAML file in `mmas/agents/<name>.yaml`.

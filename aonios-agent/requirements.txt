@@ -1,4 +1,4 @@
-# God Agent — Premium Multi-Model Coding Dispatcher
+# Aonios Agent — Premium Multi-Model Coding Dispatcher
 #
 # Routes heavy coding tasks to the highest-quality available model:
 #   - codex-gpt-5.5-high / codex-gpt-5.4-high    (via `codex exec`)
@@ -8,7 +8,7 @@
 #   - minimax-m3-high-thinking                   (via `opencode run`)
 #
 # Two modes mirror vertex-coder:
-#   - god_agent_direct.py       single-file, fast, codex/opencode
-#   - god_agent_interactive.py  multi-file autonomous, opencode only
+#   - aonios_agent_direct.py       single-file, fast, codex/opencode
+#   - aonios_agent_interactive.py  multi-file autonomous, opencode only
 #
 # No new Python dependencies — shells out to existing CLI tools.

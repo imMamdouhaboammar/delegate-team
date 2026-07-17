@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """
-god_agent_interactive.py — Multi-file autonomous God Agent.
+aonios_agent_interactive.py — Multi-file autonomous Aonios Agent.
 
 Analog of vertex-coder/vertex_interactive_agent.py. Hands off a complex coding
 task to a premium model that can use opencode's native tool ecosystem (file
 edit, grep, bash, dependency install, etc.) for autonomous multi-step work.
 
 Usage:
-    python3 god_agent_interactive.py "<prompt>" [model_key] [--skills skill1 skill2 ...]
-    echo "complex brief" | python3 god_agent_interactive.py - [model_key]
+    python3 aonios_agent_interactive.py "<prompt>" [model_key] [--skills skill1 skill2 ...]
+    echo "complex brief" | python3 aonios_agent_interactive.py - [model_key]
 
 Examples:
-    python3 god_agent_interactive.py "Build a complete Express.js backend with JWT auth and tests" minimax-m3-high-thinking
-    python3 god_agent_interactive.py "Refactor src/api/* to use async/await with proper error handling" opencode-glm-5.2-max
-    python3 god_agent_interactive.py "Implement OAuth2 PKCE flow" minimax-m3-high-thinking --skills test-driven-development security-and-hardening
+    python3 aonios_agent_interactive.py "Build a complete Express.js backend with JWT auth and tests" minimax-m3-high-thinking
+    python3 aonios_agent_interactive.py "Refactor src/api/* to use async/await with proper error handling" opencode-glm-5.2-max
+    python3 aonios_agent_interactive.py "Implement OAuth2 PKCE flow" minimax-m3-high-thinking --skills test-driven-development security-and-hardening
 """
 
 import os
@@ -30,7 +30,7 @@ except ImportError:
     from tools_registry import load_skill_instructions, read_memories, ToolsRegistry
 
 
-GOD_AGENT_SYSTEM_PROMPT = """You are **God Agent**, an elite, fully autonomous AI software engineering agent that creates, modifies, and debugs code on the user's macOS system. You run on premium reasoning models (GPT-5.5 high, GLM-5.2 max, Qwen 3.7 max, Kimi K2.7 code-max, or MiniMax M3 high-thinking). You are designed to be extremely fast, cost-effective, precise, and proactive.
+AONIOS_AGENT_SYSTEM_PROMPT = """You are **Aonios Agent**, an elite, fully autonomous AI software engineering agent that creates, modifies, and debugs code on the user's macOS system. You run on premium reasoning models (GPT-5.5 high, GLM-5.2 max, Qwen 3.7 max, Kimi K2.7 code-max, or MiniMax M3 high-thinking). You are designed to be extremely fast, cost-effective, precise, and proactive.
 
 ## CORE DIRECTIVES (THE SECRET SAUCE)
 
@@ -49,7 +49,7 @@ GOD_AGENT_SYSTEM_PROMPT = """You are **God Agent**, an elite, fully autonomous A
 - If library docs are missing or types are failing, read package definitions directly from node_modules/<pkg>/package.json or inspect internal files. Never guess.
 
 ### 5. PERSISTENT LOCAL MEMORY
-- Use save_memory / read_memories (.god_agent_memory.json) to retain user preferences, tech stack choices, architecture decisions across sessions.
+- Use save_memory / read_memories (.aonios_agent_memory.json) to retain user preferences, tech stack choices, architecture decisions across sessions.
 
 ### 6. ELITE REFERENCE STYLE
 - Reference files using path/file.ext:line_number format (e.g. src/app.py:145).
@@ -91,7 +91,7 @@ Current date: {today}
 def build_full_prompt(user_prompt: str, skills: list, memory: str) -> str:
     """Compose the full prompt sent to opencode run."""
     from datetime import date
-    sys_prompt = GOD_AGENT_SYSTEM_PROMPT.format(today=date.today().isoformat())
+    sys_prompt = AONIOS_AGENT_SYSTEM_PROMPT.format(today=date.today().isoformat())
 
     parts = [sys_prompt]
     if memory:
@@ -104,10 +104,10 @@ def build_full_prompt(user_prompt: str, skills: list, memory: str) -> str:
     return "\n".join(parts)
 
 
-def run_god_agent_interactive(prompt: str, model_key: str = "minimax-m3-high-thinking",
+def run_aonios_agent_interactive(prompt: str, model_key: str = "minimax-m3-high-thinking",
                               skills: list = None, timeout: int = 1800,
                               cwd: str = None) -> dict:
-    """Run the God Agent in interactive (multi-file, multi-turn) mode."""
+    """Run the Aonios Agent in interactive (multi-file, multi-turn) mode."""
 
     # 1. Resolve model
     try:
@@ -138,7 +138,7 @@ def run_god_agent_interactive(prompt: str, model_key: str = "minimax-m3-high-thi
     # 5. Execute
     cmd = spec["base_command"] + [full_prompt]
     print(f"==============================================================")
-    print(f"🚀 Launching God Agent (Interactive Mode)")
+    print(f"🚀 Launching Aonios Agent (Interactive Mode)")
     print(f"🎯 Model: {model_key} → {spec['cli']} {spec['model_flag']}")
     print(f"💼 Workspace: {cwd or os.getcwd()}")
     if skills:
@@ -172,7 +172,7 @@ def run_god_agent_interactive(prompt: str, model_key: str = "minimax-m3-high-thi
 
 def main():
     parser = argparse.ArgumentParser(
-        description="God Agent Interactive — multi-file autonomous premium-model agent",
+        description="Aonios Agent Interactive — multi-file autonomous premium-model agent",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""Interactive-mode models (must support multi-turn + tools):
   minimax-m3-high-thinking      MiniMax M3 high thinking (default, Apeiron flagship)
@@ -180,7 +180,7 @@ def main():
   opencode-qwen-max             Alibaba Qwen 3.7 max
   opencode-kimi-k2.7-code-max   Moonshot Kimi K2.7 code-max
 
-Codex models (gpt-5.5-high, gpt-5.4-high) are direct-only — use god_agent_direct.py for them.
+Codex models (gpt-5.5-high, gpt-5.4-high) are direct-only — use aonios_agent_direct.py for them.
 """,
     )
     parser.add_argument("prompt", help="Task prompt (use '-' to read from stdin)")
@@ -200,7 +200,7 @@ Codex models (gpt-5.5-high, gpt-5.4-high) are direct-only — use god_agent_dire
             print("❌ Empty prompt from stdin", file=sys.stderr)
             sys.exit(1)
 
-    result = run_god_agent_interactive(
+    result = run_aonios_agent_interactive(
         prompt=args.prompt,
         model_key=args.model,
         skills=args.skills,

@@ -1,13 +1,13 @@
 """
-tools_registry.py — Local tools registry for the God Agent.
+tools_registry.py — Local tools registry for the Aonios Agent.
 
-This is the Python-side registry of local tools that the God Agent (in interactive
+This is the Python-side registry of local tools that the Aonios Agent (in interactive
 mode) can advertise to the model. In practice, when we shell out to `opencode run`,
 the model already has native access to a rich tool ecosystem via opencode itself
 (file edit, grep, bash, etc.). This registry exists primarily to:
 
-1. Document what tools the God Agent intends to expose
-2. Provide a hook for callers (e.g., god_agent_interactive.py) to pre-stage local
+1. Document what tools the Aonios Agent intends to expose
+2. Provide a hook for callers (e.g., aonios_agent_interactive.py) to pre-stage local
    state (memory, skill loading) before the opencode run starts
 3. Mirror the vertex-coder/tools_registry.py structure for consistency
 
@@ -23,9 +23,9 @@ import subprocess
 from typing import Any, Dict, List, Optional
 
 
-GOD_AGENT_MEMORY_PATH = os.environ.get(
-    "GOD_AGENT_MEMORY",
-    os.path.join(os.getcwd(), ".god_agent_memory.json"),
+AONIOS_AGENT_MEMORY_PATH = os.environ.get(
+    "AONIOS_AGENT_MEMORY",
+    os.path.join(os.getcwd(), ".aonios_agent_memory.json"),
 )
 
 
@@ -35,36 +35,36 @@ GOD_AGENT_MEMORY_PATH = os.environ.get(
 
 def read_memories() -> str:
     """Return the memory file contents as a formatted string, or empty."""
-    if not os.path.exists(GOD_AGENT_MEMORY_PATH):
+    if not os.path.exists(AONIOS_AGENT_MEMORY_PATH):
         return ""
     try:
-        with open(GOD_AGENT_MEMORY_PATH, "r", encoding="utf-8") as f:
+        with open(AONIOS_AGENT_MEMORY_PATH, "r", encoding="utf-8") as f:
             data = json.load(f)
         if not data:
             return ""
-        lines = ["--- LOCAL GOD AGENT MEMORIES & PREFERENCES ---"]
+        lines = ["--- LOCAL AONIOS AGENT MEMORIES & PREFERENCES ---"]
         for k, v in data.items():
             lines.append(f"[{k}]")
             lines.append(str(v))
             lines.append("")
         return "\n".join(lines)
     except Exception as e:
-        print(f"⚠️  Failed to read God Agent memory: {e}")
+        print(f"⚠️  Failed to read Aonios Agent memory: {e}")
         return ""
 
 
 def save_memory(key: str, value: Any) -> Dict[str, Any]:
     """Save a key/value pair to local memory."""
     data = {}
-    if os.path.exists(GOD_AGENT_MEMORY_PATH):
+    if os.path.exists(AONIOS_AGENT_MEMORY_PATH):
         try:
-            with open(GOD_AGENT_MEMORY_PATH, "r", encoding="utf-8") as f:
+            with open(AONIOS_AGENT_MEMORY_PATH, "r", encoding="utf-8") as f:
                 data = json.load(f)
         except Exception:
             data = {}
     data[key] = value
     try:
-        with open(GOD_AGENT_MEMORY_PATH, "w", encoding="utf-8") as f:
+        with open(AONIOS_AGENT_MEMORY_PATH, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
         return {"ok": True, "key": key}
     except Exception as e:
@@ -75,7 +75,7 @@ def save_memory(key: str, value: Any) -> Dict[str, Any]:
 # Local tools inventory
 # ---------------------------------------------------------------------------
 
-# These are tools the God Agent EXPECTS to have access to during interactive
+# These are tools the Aonios Agent EXPECTS to have access to during interactive
 # sessions. Most are provided natively by `opencode run`; this list is a
 # contract/documentation of the tool surface area.
 LOCAL_TOOLS = {
@@ -109,12 +109,12 @@ LOCAL_TOOLS = {
         "provided_by": "opencode (via run_command)",
     },
     "save_memory": {
-        "description": "Persist a key/value pair to .god_agent_memory.json",
+        "description": "Persist a key/value pair to .aonios_agent_memory.json",
         "provided_by": "this registry",
         "implementation": save_memory,
     },
     "read_memories": {
-        "description": "Read all persistent God Agent memories",
+        "description": "Read all persistent Aonios Agent memories",
         "provided_by": "this registry",
         "implementation": read_memories,
     },
@@ -219,7 +219,7 @@ class ToolsRegistry:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="God Agent Tools Registry")
+    parser = argparse.ArgumentParser(description="Aonios Agent Tools Registry")
     sub = parser.add_subparsers(dest="cmd")
 
     p_list = sub.add_parser("list", help="List local tools exposed to the agent")
@@ -227,12 +227,12 @@ if __name__ == "__main__":
     p_load = sub.add_parser("load-skill", help="Pre-load skill instructions (preview)")
     p_load.add_argument("skills", nargs="+")
 
-    p_mem = sub.add_parser("memory", help="Show persistent God Agent memories")
+    p_mem = sub.add_parser("memory", help="Show persistent Aonios Agent memories")
 
     args = parser.parse_args()
 
     if args.cmd == "list":
-        print(f"\n🛠️  God Agent Local Tools ({len(LOCAL_TOOLS)})\n")
+        print(f"\n🛠️  Aonios Agent Local Tools ({len(LOCAL_TOOLS)})\n")
         for name, meta in LOCAL_TOOLS.items():
             print(f"  {name:25}  [{meta['provided_by']}]")
             print(f"     └─ {meta['description']}")

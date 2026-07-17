@@ -77,13 +77,12 @@ jobs:
         env:
           AI_REPORT_JSON: ${{ inputs.ai_report }}
         run: |
-          echo "Checking for formatting issues..."
+          echo "Checking for fixable issues..."
 
           # Run typecheck — capture errors
           npm run typecheck 2>&1 | head -50 > /tmp/typecheck_errors.txt || true
-          TS_ERRORS=$(wc -l < /tmp/typecheck_errors.txt)
 
-          # Parse AI report for auto_fixable issues
+          # Classify issues: mechanical (safe auto-fix) vs structural (needs Issue)
           node --input-type=module <<'JSEOF'
           import { appendFileSync, writeFileSync } from 'fs';
 
@@ -91,10 +90,23 @@ jobs:
           let report = {};
           try { report = JSON.parse(reportJson); } catch (_) {}
 
-          const fixableIssues = (report.issues || []).filter(i => i.auto_fixable === true);
+          const allIssues = report.issues || [];
+
+          // MECHANICAL fixes = safe tools can do it (eslint --fix, YAML normalize, etc.)
+          // auto_fixable:true AND NOT test-guard source (test restructuring needs human)
+          const mechanicalFixes = allIssues.filter(i =>
+            i.auto_fixable === true && i.source !== 'test-guard'
+          );
+
+          // STRUCTURAL fixes from test-guard = need a GitHub Issue, not auto-fix
+          const needsIssue = allIssues.filter(i =>
+            i.source === 'test-guard' || i.auto_fixable === false
+          );
 
           appendFileSync(process.env.GITHUB_OUTPUT,
-            `has_format_issues=${fixableIssues.length > 0 ? 'true' : 'false'}\n`);
+            `has_format_issues=${mechanicalFixes.length > 0 ? 'true' : 'false'}\n`);
+          appendFileSync(process.env.GITHUB_OUTPUT,
+            `needs_issue_count=${needsIssue.length}\n`);
 
           const delim = 'FIXABLE_EOF';
           appendFileSync(process.env.GITHUB_OUTPUT,
@@ -206,24 +218,37 @@ jobs:
             console.log(`  Processing: ${issue.id} in ${issue.file}`);
             const fileContent = readFileSync(issue.file, 'utf8');
 
+            // ── Ask AI for a search-replace patch, NOT the full file ──
+            // Sending full file content in JSON causes truncation bugs.
+            // Instead we ask for specific search/replace blocks.
+            const relevantLines = fileContent.split('\n')
+              .map((l, i) => `${i+1}: ${l}`)
+              .join('\n')
+              .slice(0, 2500);
+
             const prompt = `You are an automated code repair bot.
-          Fix this specific issue in the file:
+          Fix this specific issue using search-replace blocks.
 
-          Issue: ${JSON.stringify(issue, null, 2)}
+          ISSUE:
+          ${JSON.stringify({ id: issue.id, title: issue.title, description: issue.description, suggestion: issue.suggestion }, null, 2)}
 
-          File content (${issue.file}):
-          \`\`\`
-          ${fileContent.slice(0, 3000)}
-          \`\`\`
+          FILE (${issue.file}) — line-numbered:
+          ${relevantLines}
 
-          Return ONLY JSON (no markdown fences):
+          Return ONLY this JSON (no markdown fences, no full file content):
           {
-            "fixed_content": "the complete fixed file content",
-            "explanation": "what was changed",
             "confidence": 0-100,
-            "safe_to_apply": true
+            "safe_to_apply": true,
+            "explanation": "one sentence what changed",
+            "replacements": [
+              {
+                "search": "exact string to find (verbatim, including whitespace)",
+                "replace": "replacement string"
+              }
+            ]
           }
-          If you cannot safely fix, set safe_to_apply: false.`;
+          Keep each replacement minimal — change only what fixes the issue.
+          If you cannot safely fix it, set safe_to_apply: false and leave replacements empty.`;
 
             try {
               const res = await fetch(GATEWAY_URL, {
@@ -235,10 +260,10 @@ jobs:
                 },
                 body: JSON.stringify({
                   model:       MODEL,
-                  max_tokens:  4096,
+                  max_tokens:  1500,   // small — we only need replacements, not full file
                   temperature: 0.1,
                   messages: [
-                    { role: 'system', content: 'You are a code repair bot. Return only valid JSON.' },
+                    { role: 'system', content: 'You are a code repair bot. Return only valid JSON with search-replace blocks.' },
                     { role: 'user',   content: prompt },
                   ],
                 }),
@@ -247,15 +272,42 @@ jobs:
               if (!res.ok) throw new Error(`Gateway ${res.status}: ${await res.text()}`);
               const json    = await res.json();
               const rawText = json.choices?.[0]?.message?.content ?? '{}';
-              const cleaned = rawText.replace(/^```json\s*/, '').replace(/```\s*$/, '').trim();
-              const fix     = JSON.parse(cleaned);
+              const cleaned = rawText
+                .replace(/^```json\s*/m, '')
+                .replace(/^```\s*/m, '')
+                .replace(/```\s*$/m, '')
+                .trim();
 
-              if (fix.safe_to_apply && fix.confidence >= 70 && fix.fixed_content) {
-                writeFileSync(issue.file, fix.fixed_content);
-                console.log(`    ✓ Applied fix (confidence: ${fix.confidence}%): ${fix.explanation}`);
-                appliedFixes.push({ file: issue.file, explanation: fix.explanation, issue_id: issue.id });
+              let fix;
+              try { fix = JSON.parse(cleaned); }
+              catch (parseErr) {
+                // Try to extract JSON from response if wrapped in text
+                const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+                if (jsonMatch) fix = JSON.parse(jsonMatch[0]);
+                else throw parseErr;
+              }
+
+              if (fix.safe_to_apply && fix.confidence >= 65 && fix.replacements?.length > 0) {
+                // Apply search-replace patches
+                let patched = fileContent;
+                let appliedCount = 0;
+                for (const { search, replace } of fix.replacements) {
+                  if (patched.includes(search)) {
+                    patched = patched.replace(search, replace);
+                    appliedCount++;
+                  } else {
+                    console.log(`    ⚠ search string not found: "${search.slice(0,60)}..."`);
+                  }
+                }
+                if (appliedCount > 0) {
+                  writeFileSync(issue.file, patched);
+                  console.log(`    ✓ Applied ${appliedCount}/${fix.replacements.length} replacement(s) (confidence: ${fix.confidence}%): ${fix.explanation}`);
+                  appliedFixes.push({ file: issue.file, explanation: fix.explanation, issue_id: issue.id });
+                } else {
+                  console.log(`    ↩ No replacements matched in file — skipping`);
+                }
               } else {
-                console.log(`    ↩ Skipped (safe_to_apply=${fix.safe_to_apply}, confidence=${fix.confidence}%)`);
+                console.log(`    ↩ Skipped (safe=${fix.safe_to_apply}, confidence=${fix.confidence}%, replacements=${fix.replacements?.length ?? 0})`);
               }
             } catch (e) {
               console.error(`    ✗ AI fix failed for ${issue.id}: ${e.message}`);

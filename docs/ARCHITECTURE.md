@@ -83,7 +83,7 @@ the per-component docs linked below.
 
 ### Layer 5 — Backend agents
 
-- `god-agent/` — Codex + opencode dispatcher
+- `aonios-agent/` — Codex + opencode dispatcher
 - `minimax-coder/` — MiniMax via `mmx` CLI
 - `vertex-coder/` — Gemini via google-genai
 - `metagpt/` — multi-role team runner (experimental)

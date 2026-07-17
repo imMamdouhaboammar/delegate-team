@@ -12,7 +12,7 @@ description: |
   smart universal wrapper that detects the calling runtime (Apeiron / codex / claude /
   gemini / opencode / mmx / shell) and dispatches the right flow. Skip this skill
   only when the user wants a SPECIFIC tool (e.g. "run /autoresearch with metric X"
-  or "delegate to god-agent").
+  or "delegate to aonios-agent").
 allowed-tools: [Bash, Read, Write, Edit, Grep, Glob, TodoWrite, Task, Skill, WebFetch, WebSearch]
 ---
 
@@ -61,7 +61,7 @@ Bundles:
 | User said | Use instead |
 |---|---|
 | "run /autoresearch with metric X" | `/autoresearch` directly |
-| "delegate to god-agent" | `/delegate-team god-agent` directly |
+| "delegate to aonios-agent" | `/delegate-team aonios-agent` directly |
 | "spawn atlas + forge" | `/apeiron-team atlas forge` directly |
 | "explain X to me" | direct answer, no orchestration |
 | "research X" | `/read` + `/learn` only |

@@ -64,7 +64,7 @@ BACKEND_COMPATIBILITY = {
     "mock-backend": ["workspace", "logs-only", "none"],
     "minimax-coder": ["workspace"],
     "vertex-coder": ["workspace"],
-    "god-agent": ["workspace"],
+    "aonios-agent": ["workspace"],
     "agy": ["workspace"],
     "codex": ["workspace"],
     "grok": ["workspace"],
@@ -228,7 +228,7 @@ def build_agent_command(agent: dict, prompt: str, log_file: Path, write_mode: st
     if backend == "vertex-coder":
         return ["python3", str(VERTEX_CODER / "vertex_interactive_agent.py"), full_prompt, model]
 
-    if backend == "god-agent":
+    if backend == "aonios-agent":
         model_map = {
             "MiniMax-M3": "opencode-go/minimax-m3",
             "MiniMax-M2.7": "opencode-go/minimax-m2.7",

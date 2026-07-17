@@ -209,7 +209,7 @@ When the `expert-engineer` skill is active, MiniMax Coder is invoked when:
 5. Fast isolated sub-task — M2.7-highspeed while M3 keeps thinking
 
 The expert-engineer SKILL.md has a "Delegate heavy coding → /delegate-team" routing section
-that documents when to invoke minimax-coder vs god-agent vs vertex-coder.
+that documents when to invoke minimax-coder vs aonios-agent vs vertex-coder.
 
 **Apeiron can also use `mmx text chat` directly** — no need to invoke the Python scripts for one-off queries.
 
@@ -219,7 +219,7 @@ that documents when to invoke minimax-coder vs god-agent vs vertex-coder.
 
 - **Sibling backends**:
   - `${DELEGATE_TEAM_ROOT}/vertex-coder/` — Gemini-based (same structure)
-  - `${DELEGATE_TEAM_ROOT}/god-agent/` — Multi-CLI (codex + opencode)
+  - `${DELEGATE_TEAM_ROOT}/aonios-agent/` — Multi-CLI (codex + opencode)
 - **Orchestration gateway**: `dt` CLI at `/opt/homebrew/bin/dt`
 - **Apeiron expert-engineer**: `~/.apeiron/agents/apeiron/skills/expert-engineer/SKILL.md`
 - **Config source of truth**: `~/.minimax/config.yaml`

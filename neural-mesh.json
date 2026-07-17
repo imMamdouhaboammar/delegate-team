@@ -105,12 +105,12 @@
     },
     {
       "id": "backend-codex",
-      "label": "Codex Backend (god-agent)",
+      "label": "Codex Backend (aonios-agent)",
       "kind": "backend",
       "layer": 5,
       "summary": "OpenAI Codex + opencode dispatcher runtime.",
       "runtime": "python",
-      "entry": "god-agent/model_router.py"
+      "entry": "aonios-agent/model_router.py"
     },
     {
       "id": "backend-minimax",

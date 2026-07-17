@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-inspect_settings.py — Health check for all God Agent backends.
+inspect_settings.py — Health check for all Aonios Agent backends.
 
 Verifies:
 - Codex CLI installed + logged in
-- OpenCode CLI installed + at least one God Agent model reachable
+- OpenCode CLI installed + at least one Aonios Agent model reachable
 - Persistent memory location + writability
 
 Usage:
@@ -33,14 +33,14 @@ except ImportError:
     )
 
 
-GOD_AGENT_MEMORY_PATH = os.environ.get(
-    "GOD_AGENT_MEMORY",
-    os.path.join(os.getcwd(), ".god_agent_memory.json"),
+AONIOS_AGENT_MEMORY_PATH = os.environ.get(
+    "AONIOS_AGENT_MEMORY",
+    os.path.join(os.getcwd(), ".aonios_agent_memory.json"),
 )
 
-GOD_AGENT_CONFIG_PATH = os.environ.get(
-    "GOD_AGENT_CONFIG",
-    os.path.expanduser("~/.config/god-agent/models.json"),
+AONIOS_AGENT_CONFIG_PATH = os.environ.get(
+    "AONIOS_AGENT_CONFIG",
+    os.path.expanduser("~/.config/aonios-agent/models.json"),
 )
 
 
@@ -91,7 +91,7 @@ def check_opencode_models_sample() -> dict:
 
 def check_memory_writable() -> dict:
     """Check if the memory file location is writable."""
-    path = GOD_AGENT_MEMORY_PATH
+    path = AONIOS_AGENT_MEMORY_PATH
     directory = os.path.dirname(path) or "."
     exists = os.path.exists(path)
     writable_dir = os.access(directory, os.W_OK)
@@ -111,7 +111,7 @@ def check_memory_writable() -> dict:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="God Agent health check")
+    parser = argparse.ArgumentParser(description="Aonios Agent health check")
     parser.add_argument("--json", action="store_true", help="JSON output")
     args = parser.parse_args()
 
@@ -121,8 +121,8 @@ def main():
         "opencode_models": check_opencode_models_sample(),
         "memory": check_memory_writable(),
         "config_override": {
-            "path": GOD_AGENT_CONFIG_PATH,
-            "exists": os.path.exists(GOD_AGENT_CONFIG_PATH),
+            "path": AONIOS_AGENT_CONFIG_PATH,
+            "exists": os.path.exists(AONIOS_AGENT_CONFIG_PATH),
         },
     }
 
@@ -130,7 +130,7 @@ def main():
         print(json.dumps(report, indent=2))
         return 0
 
-    print("\n🏥  God Agent Health Check\n")
+    print("\n🏥  Aonios Agent Health Check\n")
 
     # CLIs
     print("📦 CLI backends:")
@@ -153,7 +153,7 @@ def main():
     print()
 
     # Opencode models
-    print("🤖 Opencode God Agent models:")
+    print("🤖 Opencode Aonios Agent models:")
     models = report["opencode_models"]
     if models.get("god_models_found"):
         for m in models["god_models_found"]:
@@ -194,7 +194,7 @@ def main():
         and report["memory"]["writable"]
     )
     if overall_ok:
-        print("✅  All systems operational. God Agent ready.\n")
+        print("✅  All systems operational. Aonios Agent ready.\n")
         return 0
     else:
         print("⚠️  Some backends are not ready. See details above.\n")

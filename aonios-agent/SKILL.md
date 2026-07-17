@@ -1,18 +1,18 @@
 ---
-name: god-agent
+name: aonios-agent
 description: |
   Route heavy coding tasks to premium multi-model backends (Codex GPT-5.5/5.4 high, GLM-5.2
   max, Qwen 3.7 max, Kimi K2.7 code-max, MiniMax M3 high-thinking). Mirrors vertex-coder's
   structure but shells out to local CLI binaries (codex, opencode) instead of Vertex AI.
   Two modes: direct (single-file) and interactive (multi-file autonomous with tool use).
   Use when delegating heavy code generation, debugging, or refactoring tasks to the strongest
-  available model. Triggers on: "delegate to god agent", "use the strongest model",
+  available model. Triggers on: "delegate to aonios agent", "use the strongest model",
   "premium model coding", "opencode glm", "codex gpt-5 high", "minimax m3 thinking",
-  "god agent direct", "god agent interactive". Do NOT use for trivial edits (do them locally)
+  "aonios agent direct", "aonios agent interactive". Do NOT use for trivial edits (do them locally)
   or when the user explicitly forbids external delegation.
 ---
 
-# God Agent
+# Aonios Agent
 
 > **Premium multi-model coding dispatcher.** Mirrors `vertex-coder`'s structure (direct
 > mode + interactive mode) but routes to whichever premium model is best for the job via
@@ -22,11 +22,11 @@ description: |
 
 1. **A model router** — picks the right CLI (`codex` vs `opencode`) and the right model flag
    for the requested premium model.
-2. **A direct coder** — `god_agent_direct.py` reads a file, sends it to a premium model,
+2. **A direct coder** — `aonios_agent_direct.py` reads a file, sends it to a premium model,
    extracts the markdown code block, writes it back.
-3. **An interactive agent** — `god_agent_interactive.py` hands off a multi-step task to
+3. **An interactive agent** — `aonios_agent_interactive.py` hands off a multi-step task to
    a premium model with full tool access (file edit, grep, bash, dependency install).
-4. **A configuration override surface** — `~/.config/god-agent/models.json` lets users
+4. **A configuration override surface** — `~/.config/aonios-agent/models.json` lets users
    customize model flags without editing code.
 
 ## What this skill is NOT
@@ -43,7 +43,7 @@ description: |
 ```text
 User task
    ↓
-God Agent (this skill)
+Aonios Agent (this skill)
    ↓
 model_router.resolve_model(key)
    ↓
@@ -84,14 +84,14 @@ python3 inspect_settings.py
 python3 list_models.py
 
 # Direct mode (single file)
-python3 god_agent_direct.py src/api/auth.ts "Add JWT validation middleware" minimax-m3-high-thinking
+python3 aonios_agent_direct.py src/api/auth.ts "Add JWT validation middleware" minimax-m3-high-thinking
 
 # Interactive mode (multi-file)
-python3 god_agent_interactive.py "Implement OAuth2 PKCE flow in src/auth/" opencode-glm-5.2-max \
+python3 aonios_agent_interactive.py "Implement OAuth2 PKCE flow in src/auth/" opencode-glm-5.2-max \
   --skills test-driven-development security-and-hardening
 
 # Read prompt from stdin
-echo "Refactor for clarity" | python3 god_agent_direct.py src/utils.ts - codex-gpt-5.5-high
+echo "Refactor for clarity" | python3 aonios_agent_direct.py src/utils.ts - codex-gpt-5.5-high
 ```
 
 ---
@@ -103,7 +103,7 @@ echo "Refactor for clarity" | python3 god_agent_direct.py src/utils.ts - codex-g
 **When**: One file, clear instruction, no multi-file dependencies.
 
 ```bash
-python3 god_agent_direct.py <file> "<instruction>" <model>
+python3 aonios_agent_direct.py <file> "<instruction>" <model>
 ```
 
 **Recommended model**: `minimax-m3-high-thinking` (default) — strongest reasoning for code.
@@ -113,7 +113,7 @@ python3 god_agent_direct.py <file> "<instruction>" <model>
 **When**: Touches multiple files, needs exploration, may run tests.
 
 ```bash
-python3 god_agent_interactive.py "<task>" minimax-m3-high-thinking \
+python3 aonios_agent_interactive.py "<task>" minimax-m3-high-thinking \
   --skills test-driven-development
 ```
 
@@ -125,7 +125,7 @@ python3 god_agent_interactive.py "<task>" minimax-m3-high-thinking \
 **When**: Quick fix, low stakes, want speed.
 
 ```bash
-python3 god_agent_direct.py <file> "<fix>" opencode-glm-5.2-max
+python3 aonios_agent_direct.py <file> "<fix>" opencode-glm-5.2-max
 ```
 
 **Recommended model**: `opencode-glm-5.2-max` (fast tier).
@@ -135,7 +135,7 @@ python3 god_agent_direct.py <file> "<fix>" opencode-glm-5.2-max
 **When**: Need a second opinion on tricky code.
 
 ```bash
-python3 god_agent_direct.py <file> "Review this code for race conditions and suggest fixes" codex-gpt-5.5-high
+python3 aonios_agent_direct.py <file> "Review this code for race conditions and suggest fixes" codex-gpt-5.5-high
 ```
 
 **Recommended model**: `codex-gpt-5.5-high` (different family = different blind spots).
@@ -144,7 +144,7 @@ python3 god_agent_direct.py <file> "Review this code for race conditions and sug
 
 ## Configuration override
 
-Default model flags can be overridden via `~/.config/god-agent/models.json`:
+Default model flags can be overridden via `~/.config/aonios-agent/models.json`:
 
 ```json
 {
@@ -161,13 +161,13 @@ Default model flags can be overridden via `~/.config/god-agent/models.json`:
 
 ## Integration with Apeiron / expert-engineer
 
-When the `expert-engineer` skill is active, God Agent is invoked when:
+When the `expert-engineer` skill is active, Aonios Agent is invoked when:
 
 1. The task is heavy (multi-file, complex reasoning, broad blast radius)
 2. The task benefits from premium-model reasoning (architecture, hard bugs)
 3. Local iteration would be expensive (large refactor, many test cycles)
 
-The expert-engineer SKILL.md contains a "Delegate heavy coding → God Agent" routing section
+The expert-engineer SKILL.md contains a "Delegate heavy coding → Aonios Agent" routing section
 that documents when to invoke this skill vs handle locally.
 
 ---
@@ -177,8 +177,8 @@ that documents when to invoke this skill vs handle locally.
 | File | Purpose |
 |---|---|
 | `model_router.py` | Maps model keys → CLI invocations. Single source of truth. |
-| `god_agent_direct.py` | Single-file coder (analog of `vertex_direct_coder.py`). |
-| `god_agent_interactive.py` | Multi-file autonomous agent (analog of `vertex_interactive_agent.py`). |
+| `aonios_agent_direct.py` | Single-file coder (analog of `vertex_direct_coder.py`). |
+| `aonios_agent_interactive.py` | Multi-file autonomous agent (analog of `vertex_interactive_agent.py`). |
 | `tools_registry.py` | Local tools inventory + persistent memory + skill loader. |
 | `list_models.py` | Pretty-print model registry with backend status. |
 | `inspect_settings.py` | Health check (CLIs installed, logged in, memory writable). |

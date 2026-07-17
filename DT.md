@@ -74,7 +74,7 @@ Unlike tools that only fire prompts at an API, `dt` introduces a supervised
 delegation runtime:
 
 ```
-[Claude Code / human / script] -> [dt gateway] -> [vertex-coder / god-agent / minimax-coder / metagpt / fallback]
+[Claude Code / human / script] -> [dt gateway] -> [vertex-coder / aonios-agent / minimax-coder / metagpt / fallback]
                                       |
                                       v
                               [review surface]

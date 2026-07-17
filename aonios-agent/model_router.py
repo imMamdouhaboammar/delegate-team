@@ -1,7 +1,7 @@
 """
-model_router.py — Maps God Agent model names to CLI invocations.
+model_router.py — Maps Aonios Agent model names to CLI invocations.
 
-The "God Agent" routes coding tasks to whichever premium model is best for the job.
+The "Aonios Agent" routes coding tasks to whichever premium model is best for the job.
 Unlike vertex-coder (which uses Google GenAI SDK), this layer shells out to local CLI
 binaries (`codex` and `opencode`) so each model runs in its own optimized runtime.
 
@@ -9,7 +9,7 @@ Design philosophy:
 - Literal passthrough: model names are passed to the CLI exactly as configured
   (per Mamdouh's instruction). No remapping, no guessing.
 - Per-model CLI selection: some models run via `codex exec`, others via `opencode run`.
-- Failover is the caller's responsibility (God Agent returns error, caller retries).
+- Failover is the caller's responsibility (Aonios Agent returns error, caller retries).
 
 To add a new model:
 1. Add an entry to MODEL_REGISTRY below.
@@ -107,9 +107,9 @@ MODEL_REGISTRY = {
 # Config override (lets users customize model strings without editing this file)
 # ---------------------------------------------------------------------------
 
-GOD_AGENT_CONFIG_PATH = os.environ.get(
-    "GOD_AGENT_CONFIG",
-    os.path.expanduser("~/.config/god-agent/models.json"),
+AONIOS_AGENT_CONFIG_PATH = os.environ.get(
+    "AONIOS_AGENT_CONFIG",
+    os.path.expanduser("~/.config/aonios-agent/models.json"),
 )
 
 
@@ -122,13 +122,13 @@ def _load_config_overrides() -> dict:
          }
        }
     """
-    if not os.path.exists(GOD_AGENT_CONFIG_PATH):
+    if not os.path.exists(AONIOS_AGENT_CONFIG_PATH):
         return {}
     try:
-        with open(GOD_AGENT_CONFIG_PATH, "r", encoding="utf-8") as f:
+        with open(AONIOS_AGENT_CONFIG_PATH, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
-        print(f"⚠️  Failed to load God Agent config override at {GOD_AGENT_CONFIG_PATH}: {e}",
+        print(f"⚠️  Failed to load Aonios Agent config override at {AONIOS_AGENT_CONFIG_PATH}: {e}",
               file=sys.stderr)
         return {}
 
@@ -153,7 +153,7 @@ def resolve_model(model_key: str) -> dict:
     """
     if model_key not in MODEL_REGISTRY:
         raise ValueError(
-            f"Unknown God Agent model: '{model_key}'. "
+            f"Unknown Aonios Agent model: '{model_key}'. "
             f"Available: {', '.join(sorted(MODEL_REGISTRY.keys()))}"
         )
 
@@ -240,7 +240,7 @@ def _print_table(rows, headers):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="God Agent Model Router")
+    parser = argparse.ArgumentParser(description="Aonios Agent Model Router")
     sub = parser.add_subparsers(dest="cmd")
 
     p_list = sub.add_parser("list", help="List all registered models")
@@ -254,7 +254,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.cmd == "list":
-        print("\n🤖  God Agent Model Registry\n")
+        print("\n🤖  Aonios Agent Model Registry\n")
         backends = check_all_backends()
 
         if args.mode == "all":

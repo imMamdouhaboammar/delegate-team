@@ -219,7 +219,7 @@ agent-kernel migrate json --publish     # v0.0.1 → v0.0.5 layout
 | `mmas/` | Shared rules + agent proposals | Reads `~/.agent-kernel/source/memories/*.json` |
 | `scaffolder/` | Register new skill as memory | `agent-kernel propose --type skill` |
 | `dt` CLI | Pull context before backend call | `agent-kernel memory search` |
-| `god-agent/` | Same as dt | Same |
+| `aonios-agent/` | Same as dt | Same |
 | `minimax-coder/` | Same as dt | Same |
 | `vertex-coder/` | Same as dt | Same |
 | `integrations/` | Reference doc only | Each integration doc links to kernel MEMORY.md |

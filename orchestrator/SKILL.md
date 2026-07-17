@@ -8,7 +8,7 @@ description: |
   unslop audit → superpowers writing-plans → autoresearch | /delegate-team | /apeiron-team
   (routed by task signature) → Waza /check → quality-guard. Skip this skill only when
   the user wants a SPECIFIC tool (e.g. "run /autoresearch with metric X" or "delegate
-  to god-agent").
+  to aonios-agent").
 allowed-tools: [Bash, Read, Write, Edit, Grep, Glob, TodoWrite]
 ---
 
@@ -41,7 +41,7 @@ allowed-tools: [Bash, Read, Write, Edit, Grep, Glob, TodoWrite]
 | User said | Use instead |
 |---|---|
 | "run /autoresearch with metric X" | `/autoresearch` directly |
-| "delegate to god-agent" | `/delegate-team god-agent` directly |
+| "delegate to aonios-agent" | `/delegate-team aonios-agent` directly |
 | "spawn atlas + forge" | `/apeiron-team atlas forge` directly |
 | "explain X to me" | direct answer, no orchestration |
 | "research X" | `/read` + `/learn` only |
@@ -62,7 +62,7 @@ allowed-tools: [Bash, Read, Write, Edit, Grep, Glob, TodoWrite]
     │
     ▼ 4. ROUTE (auto-decided by signature)
    ┌─ metric-driven      → autoresearch:plan + loop
-   ├─ heavy multi-file  → /delegate-team (minimax-coder | god-agent | vertex-coder)
+   ├─ heavy multi-file  → /delegate-team (minimax-coder | aonios-agent | vertex-coder)
    ├─ parallel special  → /apeiron-team (MMAS)
    └─ trivial            → execute locally, skip the rest
     │
