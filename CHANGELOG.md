@@ -3,6 +3,13 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.0.9] - 2026-07-17
+
+### Added
+- Extended the integrations catalog with 13 new repositories (e.g. `codegraph`, `ux-ui-agent-skills`, `garden-skills`, `hallmark`, `react-error-boundary`, `mattpocock/skills`, `agency-agents`, `repowise`, `Understand-Anything`, `Front-End-Checklist`, `rtk`, `awesome-agent-skills`, `agentic-awesome-skills`), increasing the registry to 56 integrations.
+- Built a smart auto-discovery heuristic engine (`dt integrations [path] --auto`) that scans workspace files for React, TS, frontend styles, Python, and repository scale to recommend and install the most useful integrations.
+- Updated the `graphify` integration repo URL to its canonical `Graphify-Labs/graphify` workspace.
+
 ## [3.0.8] - 2026-07-17
 
 ### Added

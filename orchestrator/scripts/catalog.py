@@ -194,14 +194,14 @@ INTEGRATIONS: List[Integration] = [
     Integration(
         id="graphify",
         name="graphify",
-        repo="https://github.com/safishamsi/graphify",
+        repo="https://github.com/Graphify-Labs/graphify",
         kind="graph",
         role="Graph-based code navigation (alternative to build-graph)",
         summary="Code-review-graph companion. Builds a call graph from the "
                 "codebase, then exposes semantic search, callers_of, callees_of "
                 "for fast token-efficient code navigation.",
         install_cmd=(
-            "git clone --depth 1 https://github.com/safishamsi/graphify "
+            "git clone --depth 1 https://github.com/Graphify-Labs/graphify "
             "/tmp/graphify && cd /tmp/graphify && npm install -g"
         ),
         detect_paths=["/tmp/graphify", "~/graphify"],
@@ -747,6 +747,182 @@ INTEGRATIONS: List[Integration] = [
         install_cmd="(local — installed by `./install.sh --delegate-skills`)",
         detect_skill_names=["agy-delegate"],
     ),
+    Integration(
+        id="codegraph",
+        name="codegraph",
+        repo="https://github.com/colbymchenry/codegraph",
+        kind="graph",
+        role="Codebase relationship visualizer and graph generator",
+        summary="Generates dependency and structure graphs from a codebase, enabling "
+                "agents to quickly understand project modules and boundaries.",
+        install_cmd=(
+            "git clone --depth 1 https://github.com/colbymchenry/codegraph /tmp/codegraph && "
+            "cd /tmp/codegraph && npm install -g"
+        ),
+        detect_bins=["codegraph"],
+    ),
+    Integration(
+        id="ux-ui-agent-skills",
+        name="ux-ui-agent-skills",
+        repo="https://github.com/plugin87/ux-ui-agent-skills",
+        kind="ui-taste",
+        role="UX/UI design and review skills for AI agents",
+        summary="Agent-tailored skills focusing on responsive styling checks, spacing, "
+                "dark-mode contrast, and visual layouts to prevent standard AI slop.",
+        install_cmd=(
+            "git clone --depth 1 https://github.com/plugin87/ux-ui-agent-skills /tmp/ux-ui-skills && "
+            "cp -r /tmp/ux-ui-skills/skills/* ~/.claude/skills/"
+        ),
+        detect_skill_names=["ux-ui-agent-skills", "responsive-ui-audit"],
+    ),
+    Integration(
+        id="garden-skills",
+        name="garden-skills",
+        repo="https://github.com/ConardLi/garden-skills",
+        kind="skills-collection",
+        role="Clean code and refactoring skills collection",
+        summary="Refactoring heuristics, dead-code removal, modular structure, "
+                "and formatting skills targeted at keeping agent changes tidy.",
+        install_cmd=(
+            "git clone --depth 1 https://github.com/ConardLi/garden-skills /tmp/garden && "
+            "cp -r /tmp/garden/skills/* ~/.claude/skills/"
+        ),
+        detect_skill_names=["garden-refactor", "dead-code-cleaner"],
+    ),
+    Integration(
+        id="hallmark",
+        name="hallmark",
+        repo="https://github.com/Nutlope/hallmark",
+        kind="skills-collection",
+        role="Hallmark signature UI review rules",
+        summary="A set of custom UI review rules and prompt modifications inspired "
+                "by signature polished aesthetics (e.g. Nutlope designs).",
+        install_cmd=(
+            "git clone --depth 1 https://github.com/Nutlope/hallmark /tmp/hallmark && "
+            "cp -r /tmp/hallmark/skills/* ~/.claude/skills/"
+        ),
+        detect_skill_names=["hallmark-ui-rules"],
+    ),
+    Integration(
+        id="react-error-boundary",
+        name="react-error-boundary",
+        repo="https://github.com/bvaughn/react-error-boundary",
+        kind="react",
+        role="React error boundary and recovery primitives",
+        summary="Simple and reusable component wrapper that provides a fallback "
+                "UI and error recovery triggers to prevent white screen crashes.",
+        install_cmd="npm install react-error-boundary",
+        detect_paths=["node_modules/react-error-boundary"],
+    ),
+    Integration(
+        id="mattpocock-skills",
+        name="mattpocock-skills",
+        repo="https://github.com/mattpocock/skills",
+        kind="skills-collection",
+        role="TypeScript engineering and type-safe skills",
+        summary="Deep TypeScript knowledge skills from Matt Pocock, resolving generic "
+                "inferences, strict mode compiler flags, and type utilities.",
+        install_cmd=(
+            "git clone --depth 1 https://github.com/mattpocock/skills /tmp/mattpocock && "
+            "cp -r /tmp/mattpocock/skills/* ~/.claude/skills/"
+        ),
+        detect_skill_names=["typescript-genius", "typecheck-solutions"],
+    ),
+    Integration(
+        id="agency-agents",
+        name="agency-agents",
+        repo="https://github.com/msitarzewski/agency-agents",
+        kind="agent",
+        role="Multi-agent roles and workflow orchestrations",
+        summary="Defines roles for product managers, senior engineers, and QA, "
+                "helping to launch a collaborative subagent swarm inside the workspace.",
+        install_cmd=(
+            "git clone --depth 1 https://github.com/msitarzewski/agency-agents ~/agency-agents && "
+            "cd ~/agency-agents && npm install"
+        ),
+        detect_paths=["~/agency-agents", "/tmp/agency-agents"],
+    ),
+    Integration(
+        id="repowise",
+        name="repowise",
+        repo="https://github.com/repowise-dev/repowise",
+        kind="cli",
+        role="Repository structure packer and context engineer",
+        summary="Packs files into a single structured prompt text with file outlines, "
+                "maximizing context window utilization for external LLM calls.",
+        install_cmd="npm install -g repowise",
+        detect_bins=["repowise"],
+    ),
+    Integration(
+        id="understand-anything",
+        name="understand-anything",
+        repo="https://github.com/Egonex-AI/Understand-Anything",
+        kind="skills-collection",
+        role="Deep comprehension and semantic analysis skills",
+        summary="Provides cognitive patterns and interrogation flows to help agents "
+                "read complex unfamiliar source structures without missing edge cases.",
+        install_cmd=(
+            "git clone --depth 1 https://github.com/Egonex-AI/Understand-Anything /tmp/understand && "
+            "cp -r /tmp/understand/skills/* ~/.claude/skills/"
+        ),
+        detect_skill_names=["understand-anything", "semantic-analysis"],
+    ),
+    Integration(
+        id="frontend-checklist",
+        name="frontend-checklist",
+        repo="https://github.com/thedaviddias/Front-End-Checklist",
+        kind="ui-taste",
+        role="Ultimate web checklist for frontend quality gates",
+        summary="A thorough check array covering SEO, performance, accessibility, "
+                "meta tags, and mobile responsive layouts for premium web apps.",
+        install_cmd=(
+            "git clone --depth 1 https://github.com/thedaviddias/Front-End-Checklist /tmp/fe-checklist && "
+            "ln -sf /tmp/fe-checklist ~/.frontend-checklist"
+        ),
+        detect_paths=["~/.frontend-checklist", "/tmp/fe-checklist"],
+    ),
+    Integration(
+        id="rtk",
+        name="rtk",
+        repo="https://github.com/rtk-ai/rtk",
+        kind="skills-collection",
+        role="Real-time knowledge and tool injection framework",
+        summary="A framework allowing dynamic injection of prompt snippets and API "
+                "docs directly into the agent's workspace before critical tasks.",
+        install_cmd=(
+            "git clone --depth 1 https://github.com/rtk-ai/rtk /tmp/rtk && "
+            "cp -r /tmp/rtk/skills/* ~/.claude/skills/"
+        ),
+        detect_skill_names=["rtk-inject", "tool-injection"],
+    ),
+    Integration(
+        id="awesome-agent-skills",
+        name="awesome-agent-skills",
+        repo="https://github.com/VoltAgent/awesome-agent-skills",
+        kind="skills-collection",
+        role="Curated repository of agent-specific capabilities",
+        summary="A collection of agent skill manifests and triggers gathered to "
+                "extend command surfaces across developer workflows.",
+        install_cmd=(
+            "git clone --depth 1 https://github.com/VoltAgent/awesome-agent-skills /tmp/awesome-agent-skills && "
+            "cp -r /tmp/awesome-agent-skills/skills/* ~/.claude/skills/"
+        ),
+        detect_skill_names=["awesome-agent-skills"],
+    ),
+    Integration(
+        id="agentic-awesome-skills",
+        name="agentic-awesome-skills",
+        repo="https://github.com/sickn33/agentic-awesome-skills",
+        kind="skills-collection",
+        role="Exotic agentic capabilities and custom integrations",
+        summary="Provides exotic plugins and agent prompt rules to optimize "
+                "reasoning steps, debug logic patterns, and handle terminal commands.",
+        install_cmd=(
+            "git clone --depth 1 https://github.com/sickn33/agentic-awesome-skills /tmp/agentic-awesome-skills && "
+            "cp -r /tmp/agentic-awesome-skills/skills/* ~/.claude/skills/"
+        ),
+        detect_skill_names=["agentic-reasoning", "exotic-commands"],
+    ),
 ]
 
 
@@ -1214,22 +1390,118 @@ def render_table(integrations: List[Integration], title: str) -> str:
     return "\n".join(lines)
 
 
+def auto_discover_project_needs(project_dir: str) -> dict:
+    """Scan project files to determine frameworks/languages/size."""
+    p = Path(os.path.expanduser(project_dir))
+    needs = {
+        "has_react": False,
+        "has_ts": False,
+        "has_frontend": False,
+        "has_large_codebase": False,
+        "has_python": False,
+    }
+    
+    if not p.exists():
+        return needs
+        
+    # Check tsconfig
+    if (p / "tsconfig.json").exists():
+        needs["has_ts"] = True
+        
+    # Check package.json
+    pkg_path = p / "package.json"
+    if pkg_path.exists():
+        try:
+            with open(pkg_path, "r", encoding="utf-8") as f:
+                content = f.read()
+                if "react" in content:
+                    needs["has_react"] = True
+                    needs["has_frontend"] = True
+                if "typescript" in content or "tsc" in content:
+                    needs["has_ts"] = True
+                if any(x in content for x in ("tailwind", "next", "vite", "vue", "svelte", "postcss", "sass")):
+                    needs["has_frontend"] = True
+        except:
+            pass
+            
+    # Check python config
+    if (p / "requirements.txt").exists() or (p / "pyproject.toml").exists():
+        needs["has_python"] = True
+        
+    # Count files to determine size
+    src_files = 0
+    extensions = (".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".java", ".cpp", ".rs", ".rb", ".php")
+    for root, dirs, files in os.walk(p):
+        if any(x in root for x in ("node_modules", ".venv", "venv", ".git", "dist", "build")):
+            continue
+        for file in files:
+            if file.endswith(extensions):
+                src_files += 1
+                if file.endswith((".tsx", ".jsx")):
+                    needs["has_react"] = True
+                    needs["has_frontend"] = True
+                if file.endswith(".ts"):
+                    needs["has_ts"] = True
+                if file.endswith(".py"):
+                    needs["has_python"] = True
+                if file.endswith((".html", ".css")):
+                    needs["has_frontend"] = True
+                    
+    if src_files > 10:
+        needs["has_large_codebase"] = True
+        
+    return needs
+
+
+def recommend_for_project(project_dir: str) -> List[Integration]:
+    needs = auto_discover_project_needs(project_dir)
+    recommended = []
+    
+    # Base methodology / reviews that are universally useful
+    universal_ids = {"superpowers", "autoresearch", "waza", "guard-skills"}
+    
+    for i in INTEGRATIONS:
+        # Skip local/delegate skills unless they match
+        if i.kind == "skill" or i.id == "delegate-team":
+            continue
+            
+        is_rec = False
+        if i.id in universal_ids:
+            is_rec = True
+        elif i.kind == "react" and needs["has_react"]:
+            is_rec = True
+        elif i.kind == "ui-taste" and needs["has_frontend"]:
+            is_rec = True
+        elif i.kind == "graph" and needs["has_large_codebase"]:
+            is_rec = True
+        elif i.id == "repowise" and needs["has_large_codebase"]:
+            is_rec = True
+        elif i.id == "mattpocock-skills" and needs["has_ts"]:
+            is_rec = True
+            
+        if is_rec:
+            recommended.append(i)
+            
+    return recommended
+
+
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
 def cli(argv: List[str]) -> int:
-    """The catalog CLI: list, info, install, kinds, selftest."""
+    """The catalog CLI: list, info, install, kinds, selftest, auto-install."""
     if len(argv) < 2 or argv[1] in ("-h", "--help"):
         print(__doc__)
         print()
         print("Usage:")
-        print("  catalog.py list                 # list all 31 + detected status")
+        print("  catalog.py list                 # list all integrations + detected status")
         print("  catalog.py list installed       # only installed")
         print("  catalog.py list available       # only not-installed")
         print("  catalog.py list --kind <kind>   # filter by kind")
         print("  catalog.py info <id>            # show details for an integration")
         print("  catalog.py install <id>         # show install hint (not auto-exec)")
+        print("  catalog.py auto-install [path]  # auto-discover & install useful integrations")
         print("  catalog.py kinds                # list all kinds")
         print("  catalog.py selftest             # check the catalog is well-formed")
         return 0
@@ -1288,6 +1560,50 @@ def cli(argv: List[str]) -> int:
             print("Usage: catalog.py install <id>")
             return 64
         print(install_hint(argv[2]))
+        return 0
+
+    if cmd == "auto-install":
+        project_dir = "."
+        dry_run = False
+        
+        # Parse arguments
+        for a in argv[2:]:
+            if a == "--dry-run":
+                dry_run = True
+            elif not a.startswith("-"):
+                project_dir = a
+                
+        recs = recommend_for_project(project_dir)
+        to_install = [r for r in recs if not r.installed]
+        
+        print(f"🔍 Scanning project needs at: {project_dir}")
+        needs = auto_discover_project_needs(project_dir)
+        print("   Detected traits:")
+        for k, v in needs.items():
+            print(f"     - {k:<20}: {'✅' if v else '❌'}")
+        print()
+        
+        if not to_install:
+            print("✨ All useful integrations for this project are already installed!")
+            return 0
+            
+        print(f"📦 Found {len(to_install)} useful integrations to install/update:")
+        for i in to_install:
+            print(f"   - [{i.id}] {i.name} (Repo: {i.repo})")
+            print(f"     Role: {i.role}")
+            if dry_run:
+                print(f"     [dry-run] Would run: {i.install_cmd}")
+            else:
+                print(f"     Installing...")
+                if i.install_cmd and i.install_cmd != "(reference only — no install)":
+                    ret = os.system(i.install_cmd)
+                    if ret == 0:
+                        print(f"     ✅ Successfully installed {i.id}!")
+                    else:
+                        print(f"     ❌ Failed to install {i.id} (exit code: {ret})")
+                else:
+                    print(f"     ℹ️  Manual install required.")
+            print()
         return 0
 
     if cmd == "kinds":

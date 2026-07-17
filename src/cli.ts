@@ -311,11 +311,17 @@ program
   });
 
 program
-  .command('integrations')
+  .command('integrations [path]')
   .alias('intg')
-  .description('Check, install, and update all companion integrations (Waza, unslop-preflight, superpowers, autoresearch)')
-  .action(() => {
-    runIntegrations();
+  .description('Check, install, and update companion integrations. Use --auto to auto-discover based on project needs.')
+  .option('--auto', 'Scan target path and automatically install recommended tools')
+  .option('--dry-run', 'Show recommendations and installation commands without executing them')
+  .action((path, options) => {
+    runIntegrations({
+      auto: options.auto === true,
+      dryRun: options.dryRun === true,
+      path: path,
+    });
   });
 
 // Check for unknown commands before parsing to prevent dangerous fallbacks

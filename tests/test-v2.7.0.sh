@@ -72,14 +72,14 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────────
-# Test 2: catalog.py list (43 entries — 38 base + 5 delegate skills)
+# Test 2: catalog.py list (56 entries — 51 base + 5 delegate skills)
 # ─────────────────────────────────────────────────────────────────────────
-log "Test 2: catalog.py list (43 entries expected)"
+log "Test 2: catalog.py list (56 entries expected)"
 result=$($PY "$ROOT/orchestrator/scripts/catalog.py" list 2>&1 | /usr/bin/grep "^Total:" | /usr/bin/awk '{print $2}')
-if [ "$result" = "43" ]; then
-    pass "catalog.py: 43 integrations listed"
+if [ "$result" = "56" ]; then
+    pass "catalog.py: 56 integrations listed"
 else
-    fail "catalog.py: got '$result' (expected '43')"
+    fail "catalog.py: got '$result' (expected '56')"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────
