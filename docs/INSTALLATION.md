@@ -18,12 +18,12 @@ doc is the technical reference.
 
 | Runtime | Required | Why |
 |---|---|---|
-| Node.js | `>=20` | `dt` CLI, tsup build, npm package scripts |
+| Node.js | `>=24` | `dt` CLI, tsup build, npm package scripts |
 | npm | modern npm, npm `>=11.5.1` recommended for Trusted Publishing | publish workflow and provenance |
 | Python | `>=3.10` | MMAS, backend agents, modern type syntax |
 | Bash | `>=4` | orchestrator, installer, watchdog |
 
-The CI matrix tests Node 20, 22, and 24. Python checks run on Python 3.11.
+CI tests Node 24. Python checks run on Python 3.11.
 
 ---
 
@@ -169,6 +169,7 @@ Before bumping or publishing a version, run:
 
 ```bash
 npm ci
+npm run node-support:check
 npm run version:check
 npm install --package-lock-only
 npm run typecheck
@@ -183,6 +184,9 @@ npm publish --dry-run --access public
 - `.claude-plugin/marketplace.json`
 - every marketplace plugin entry
 - `CHANGELOG.md`
+
+`npm run node-support:check` prevents drift between `package.json`,
+`package-lock.json`, CI matrices, and this document.
 
 It intentionally prints a warning, not a hard failure, when `package-lock.json`
 version metadata is stale. Regenerate it with:
@@ -266,6 +270,7 @@ without cloud mutations.
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | `dt: command not found` | npm bin dir not on PATH | `npm bin -g` and add to PATH |
+| npm prints `EBADENGINE` | Node.js is older than the supported floor | install Node.js 24 or newer, then reinstall `delegate-team` |
 | `/apeiron` not found in Claude Code | slash command symlink missing | re-run `./install.sh --orchestrator` and restart Claude Code |
 | `apeiron: command not found` | `~/.local/bin` not on PATH | `export PATH="$HOME/.local/bin:$PATH"` |
 | `agent-kernel: command not found` | kernel install skipped | `./install.sh --kernel` |
