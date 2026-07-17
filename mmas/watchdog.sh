@@ -148,7 +148,11 @@ update_agent_state() {
   # Check if process is alive
   if ! is_pid_alive "$pid"; then
     # Process died — mark done (or error if log indicates failure)
-    if [[ -f "${log_file%.log}.summary" ]]; then
+    local write_mode
+    write_mode=$(jq -r '.guardrails.writeMode // "workspace"' "$BOULDER")
+    if [[ "$write_mode" == "none" ]]; then
+      set_agent_status "$agent_name" "done"
+    elif [[ -f "${log_file%.log}.summary" ]]; then
       set_agent_status "$agent_name" "done"
     else
       set_agent_status "$agent_name" "error"

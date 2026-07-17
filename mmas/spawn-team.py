@@ -37,7 +37,7 @@ else:
 
 MINIMAX_CODER = DELEGATE_TEAM_ROOT / "minimax-coder"
 VERTEX_CODER = DELEGATE_TEAM_ROOT / "vertex-coder"
-MMAS_TASKS_ROOT = Path.home() / ".apeiron" / "multi-agent" / "tasks"
+MMAS_TASKS_ROOT = Path(os.environ.get("MMAS_TASKS_ROOT", str(Path.home() / ".apeiron" / "multi-agent" / "tasks")))
 
 MMAS_HARD_CAPS = {
     "maxAgents": 8,
@@ -60,8 +60,23 @@ def utc_now() -> str:
     return datetime.utcnow().isoformat() + "Z"
 
 
+BACKEND_COMPATIBILITY = {
+    "mock-backend": ["workspace", "logs-only", "none"],
+    "minimax-coder": ["workspace"],
+    "vertex-coder": ["workspace"],
+    "god-agent": ["workspace"],
+    "agy": ["workspace"],
+    "codex": ["workspace"],
+    "grok": ["workspace"],
+    "kimi": ["workspace"],
+    "opencode": ["workspace"],
+    "relay-fallback": ["workspace"],
+}
+
+
 def load_agent(agent_name: str) -> dict:
-    yaml_path = AGENTS_DIR / f"{agent_name}.yaml"
+    agents_dir = Path(os.environ.get("MMAS_AGENTS_DIR", str(AGENTS_DIR)))
+    yaml_path = agents_dir / f"{agent_name}.yaml"
     if not yaml_path.exists():
         raise FileNotFoundError(f"Agent '{agent_name}' not found at {yaml_path}")
     with open(yaml_path, "r", encoding="utf-8") as f:
@@ -69,13 +84,77 @@ def load_agent(agent_name: str) -> dict:
 
 
 def list_available_agents() -> list[str]:
-    return sorted([p.stem for p in AGENTS_DIR.glob("*.yaml")])
+    agents_dir = Path(os.environ.get("MMAS_AGENTS_DIR", str(AGENTS_DIR)))
+    return sorted([p.stem for p in agents_dir.glob("*.yaml")])
 
 
 def resolve_write_mode(args) -> str:
     if getattr(args, "no_write", False):
         return "none"
     return args.write_mode
+
+
+def check_write_policy_compatibility(agents: list[dict], write_mode: str) -> tuple[bool, str]:
+    for agent in agents:
+        name = agent.get("name", "unknown")
+        backend = agent.get("backend", "minimax-coder")
+        supported = BACKEND_COMPATIBILITY.get(backend, ["workspace"])
+        if write_mode not in supported:
+            return False, f"Backend '{backend}' for agent '{name}' does not support write mode '{write_mode}'."
+    return True, ""
+
+
+def verify_path_in_task_dir(path: Path, task_dir: Path) -> None:
+    try:
+        resolved_task_dir = task_dir.resolve()
+        resolved_path = path.resolve(strict=False)
+    except Exception as exc:
+        raise ValueError(f"Security Error resolving path: {exc}")
+        
+    try:
+        resolved_path.relative_to(resolved_task_dir)
+    except ValueError:
+        raise ValueError(f"Security Error: Path '{path}' escapes task directory '{task_dir}'")
+        
+    current = path
+    while True:
+        try:
+            if current.is_symlink():
+                target = Path(os.readlink(str(current)))
+                if not target.is_absolute():
+                    target = (current.parent / target).resolve()
+                else:
+                    target = target.resolve()
+                try:
+                    target.relative_to(resolved_task_dir)
+                except ValueError:
+                    raise ValueError(f"Security Error: Symlink '{current}' points outside task directory")
+        except FileNotFoundError:
+            pass
+            
+        if current == task_dir or current == current.parent:
+            break
+        current = current.parent
+
+
+def get_clean_env(write_mode: str, task_dir: Path) -> dict:
+    allowed_keys = {
+        "PATH", "HOME", "USER", "SHELL", "LOGNAME", "TMPDIR", "LANG", "LC_ALL", "TERM",
+        "DELEGATE_TEAM_ROOT", "APEIRON_SESSION_ID",
+        "MINIMAX_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
+        "PROXY_TOKEN", "DT_ALLOW_UNSAFE_COMMANDS", "DT_ALLOW_DEP_INSTALL"
+    }
+    clean_env = {}
+    for k, v in os.environ.items():
+        if k in allowed_keys or k.startswith("DT_") or k.startswith("MINIMAX_") or k.startswith("GOOGLE_") or k.startswith("GEMINI_"):
+            clean_env[k] = v
+            
+    if write_mode in ("logs-only", "none"):
+        clean_env["DT_WORKSPACE_ROOT"] = str(task_dir)
+        clean_env["DT_ALLOW_UNSAFE_COMMANDS"] = "false"
+        clean_env["DT_ALLOW_DEP_INSTALL"] = "false"
+        
+    return clean_env
 
 
 def enforce_guardrails(args, agents_count: int) -> tuple[bool, str]:
@@ -98,7 +177,7 @@ def enforce_guardrails(args, agents_count: int) -> tuple[bool, str]:
     return True, ""
 
 
-def build_agent_command(agent: dict, prompt: str, log_file: Path) -> list[str]:
+def build_agent_command(agent: dict, prompt: str, log_file: Path, write_mode: str = "workspace") -> list[str]:
     name = agent["name"]
     backend = agent.get("backend", "minimax-coder")
     model = agent.get("model", "MiniMax-M3")
@@ -106,18 +185,38 @@ def build_agent_command(agent: dict, prompt: str, log_file: Path) -> list[str]:
     thinking = agent.get("thinking", {})
     sys_addition = agent.get("system_prompt_addition", "")
 
+    policy_prompt = ""
+    if write_mode == "none":
+        policy_prompt = "\n\n[SECURITY POLICY] WRITE MODE: none. You must not write to any file or directory. You are running in read-only mode."
+    elif write_mode == "logs-only":
+        policy_prompt = "\n\n[SECURITY POLICY] WRITE MODE: logs-only. You may only write logs, summaries, or metadata inside your designated task directory. Do not write to the workspace or any other location."
+
     full_prompt = (
         f"You are **{name.upper()}** - {agent.get('description', '').strip()}\n\n"
         f"## YOUR ROLE\n{agent.get('power', 'specialist')}\n"
         f"## CATEGORY\n{agent.get('category', 'general')}\n"
         f"## MODEL\n{model}\n\n"
         f"## TASK FROM THE BOSS\n{prompt}\n\n"
-        f"{sys_addition}\n\n"
+        f"{sys_addition}\n"
+        f"{policy_prompt}\n\n"
         f"## IMPORTANT\n"
         f"Write your final output to: {log_file.with_suffix('.summary')}\n"
         f"Stream progress to: {log_file}\n"
         f"Report progress to: {MMAS_TASKS_ROOT}/<task_id>/progress.json"
     )
+
+    if backend == "mock-backend":
+        summary_code = ""
+        if write_mode != "none":
+            summary_code = f"with open('{log_file.with_suffix('.summary')}', 'w') as f: f.write('Mock execution summary for {name}')"
+        mock_script = (
+            f"import sys, os, time\n"
+            f"print('Mock backend started. Write mode: {write_mode}')\n"
+            f"sys.stdout.flush()\n"
+            f"{summary_code}\n"
+            f"sys.exit(0)\n"
+        )
+        return ["python3", "-c", mock_script]
 
     if backend == "minimax-coder":
         script = MINIMAX_CODER / ("minimax_interactive_agent.py" if mode == "interactive" else "minimax_direct_coder.py")
@@ -139,6 +238,8 @@ def build_agent_command(agent: dict, prompt: str, log_file: Path) -> list[str]:
 
     delegate_agents = ["agy", "codex", "grok", "kimi", "opencode"]
     brief_file = log_file.with_suffix(".brief")
+    if write_mode in ("logs-only", "none"):
+        verify_path_in_task_dir(brief_file, log_file.parent.parent)
     try:
         with open(brief_file, "w", encoding="utf-8") as f:
             f.write(full_prompt)
@@ -161,6 +262,8 @@ def build_agent_command(agent: dict, prompt: str, log_file: Path) -> list[str]:
     cmd = ["node", str(relay_script), "--backend", backend, "--brief", str(brief_file)]
     
     agent_dir = log_file.parent / name
+    if write_mode in ("logs-only", "none"):
+        verify_path_in_task_dir(agent_dir, log_file.parent.parent)
     agent_dir.mkdir(parents=True, exist_ok=True)
     cmd.extend(["--out-dir", str(agent_dir)])
     
@@ -305,22 +408,30 @@ def update_agent_entry(boulder_path: Path, agent_name: str, proc: subprocess.Pop
     write_boulder(boulder_path, boulder)
 
 
-def spawn_one_agent(agent: dict, prompt: str, task_dir: Path, log_dir: Path, boulder_path: Path) -> None:
+def spawn_one_agent(agent: dict, prompt: str, task_dir: Path, log_dir: Path, boulder_path: Path, write_mode: str = "workspace") -> None:
     agent_name = agent["name"]
     log_file = log_dir / f"{agent_name}.log"
     summary_file = log_dir / f"{agent_name}.summary"
-    cmd = build_agent_command(agent, prompt, log_file)
+    
+    # Path resolution and containment verification (enforce logs-only constraint)
+    if write_mode in ("logs-only", "none"):
+        verify_path_in_task_dir(log_file, task_dir)
+        verify_path_in_task_dir(summary_file, task_dir)
+
+    cmd = build_agent_command(agent, prompt, log_file, write_mode)
 
     print(f"Spawning {agent_name} ({agent.get('model')} via {agent.get('backend')})")
     print(f"   log: {log_file}")
 
     try:
+        clean_env = get_clean_env(write_mode, task_dir)
         with open(log_file, "w", encoding="utf-8") as f:
             proc = subprocess.Popen(
                 cmd,
                 stdout=f,
                 stderr=subprocess.STDOUT,
                 cwd=str(task_dir),
+                env=clean_env,
                 start_new_session=True,
             )
         update_agent_entry(boulder_path, agent_name, proc, log_file, summary_file, "running")
@@ -345,12 +456,15 @@ def start_watchdog(task_id: str, task_dir: Path, boulder_path: Path, args) -> No
     watchdog_pid = None
     watchdog_pgid = None
     try:
+        write_mode = resolve_write_mode(args)
+        clean_env = get_clean_env(write_mode, task_dir)
         with open(watchdog_log, "w", encoding="utf-8") as f:
             proc = subprocess.Popen(
                 watchdog_cmd,
                 stdout=f,
                 stderr=subprocess.STDOUT,
                 cwd=str(task_dir),
+                env=clean_env,
                 start_new_session=True,
             )
         watchdog_pid = proc.pid
@@ -399,27 +513,63 @@ def cmd_spawn(args):
         print(f"Guardrail violation: {err}", file=sys.stderr)
         return 2
 
+    # Resolve write mode
+    write_mode = resolve_write_mode(args)
+    
+    # Check write policy compatibility
+    compatible, compat_err = check_write_policy_compatibility(agents, write_mode)
+
     if getattr(args, "plan_only", False):
         print("plan-only mode - not spawning agents.")
         print(f"   Team (planned): {', '.join([a['name'] for a in agents])}")
         print(f"   Tasks: {len(agents)}")
         print(f"   Timeout per agent: {args.timeout}s")
-        print(f"   Write mode: {resolve_write_mode(args)}")
+        print(f"   Write mode: {write_mode}")
+        print(f"   Write policy compatibility: {'approved' if compatible else 'rejected'}")
+        if not compatible:
+            print(f"   Rejection reason: {compat_err}")
         print()
         print("Re-run without --plan-only to actually spawn.")
-        return 0
+        return 0 if compatible else 3
 
+    # Generate task paths
     task_id, task_dir, log_dir, boulder_path = new_task_paths()
-    boulder = make_boulder(task_id, args.task, agents, args.boss_session, guardrails_from_args(args))
-    write_boulder(boulder_path, boulder)
-
     print(f"Task ID: {task_id}")
     print(f"Boulder: {boulder_path}")
+    
+    # Setup write policy metadata
+    approved_writable_roots = []
+    if write_mode == "logs-only":
+        approved_writable_roots = [str(task_dir)]
+    elif write_mode == "workspace":
+        approved_writable_roots = [str(DELEGATE_TEAM_ROOT)]
+        
+    write_policy_meta = {
+        "requested_mode": getattr(args, "write_mode", "workspace") if not getattr(args, "no_write", False) else "none",
+        "resolved_mode": write_mode,
+        "enforcement_mechanism": "fail_closed_backend_check" if write_mode == "none" else ("isolated_task_directory_enforcement" if write_mode == "logs-only" else "none"),
+        "approved_writable_roots": approved_writable_roots,
+        "backend_compatibility_decision": "approved" if compatible else "rejected",
+        "policy_rejection_reason": compat_err if not compatible else ""
+    }
+
+    boulder = make_boulder(task_id, args.task, agents, args.boss_session, guardrails_from_args(args))
+    boulder["write_policy"] = write_policy_meta
+    
+    if not compatible:
+        boulder["status"] = "failed"
+        append_event(boulder, "policy_rejection", compat_err)
+        write_boulder(boulder_path, boulder)
+        print(f"Policy Rejection: {compat_err}", file=sys.stderr)
+        return 3
+
+    write_boulder(boulder_path, boulder)
+
     print(f"Team: {len(agents)} agents - {', '.join([a['name'] for a in agents])}")
     print()
 
     for agent in agents:
-        spawn_one_agent(agent, args.task, task_dir, log_dir, boulder_path)
+        spawn_one_agent(agent, args.task, task_dir, log_dir, boulder_path, write_mode)
         print()
 
     start_watchdog(task_id, task_dir, boulder_path, args)
@@ -433,6 +583,9 @@ def cmd_spawn(args):
 
 
 def cmd_spawn_atlas(args):
+    # Resolve write mode
+    write_mode = resolve_write_mode(args)
+
     try:
         atlas_agent = load_agent("atlas")
     except FileNotFoundError as exc:
@@ -444,13 +597,49 @@ def cmd_spawn_atlas(args):
         print(f"Guardrail violation: {err}", file=sys.stderr)
         return 2
 
+    # Check write policy compatibility for Atlas
+    compatible, compat_err = check_write_policy_compatibility([atlas_agent], write_mode)
+
     if getattr(args, "plan_only", False):
         print("plan-only mode - Atlas would pick the team, but no subprocess is spawned.")
+        print(f"   Write mode: {write_mode}")
+        print(f"   Atlas compatibility: {'approved' if compatible else 'rejected'}")
+        if not compatible:
+            print(f"   Rejection reason: {compat_err}")
         print("Re-run without --plan-only to actually spawn.")
-        return 0
+        return 0 if compatible else 3
 
+    # Generate task paths
     task_id, task_dir, log_dir, boulder_path = new_task_paths()
+    print(f"Task ID: {task_id}")
+    print(f"Boulder: {boulder_path}")
+    
+    # Setup write policy metadata
+    approved_writable_roots = []
+    if write_mode == "logs-only":
+        approved_writable_roots = [str(task_dir)]
+    elif write_mode == "workspace":
+        approved_writable_roots = [str(DELEGATE_TEAM_ROOT)]
+        
+    write_policy_meta = {
+        "requested_mode": getattr(args, "write_mode", "workspace") if not getattr(args, "no_write", False) else "none",
+        "resolved_mode": write_mode,
+        "enforcement_mechanism": "fail_closed_backend_check" if write_mode == "none" else ("isolated_task_directory_enforcement" if write_mode == "logs-only" else "none"),
+        "approved_writable_roots": approved_writable_roots,
+        "backend_compatibility_decision": "approved" if compatible else "rejected",
+        "policy_rejection_reason": compat_err if not compatible else ""
+    }
+
     boulder = make_boulder(task_id, args.task, [atlas_agent], args.boss_session, guardrails_from_args(args))
+    boulder["write_policy"] = write_policy_meta
+
+    if not compatible:
+        boulder["status"] = "failed"
+        append_event(boulder, "policy_rejection", compat_err)
+        write_boulder(boulder_path, boulder)
+        print(f"Policy Rejection: {compat_err}", file=sys.stderr)
+        return 3
+
     boulder["mode"] = "atlas-picker"
     boulder["status"] = "awaiting_team_plan"
     write_boulder(boulder_path, boulder)
@@ -462,7 +651,7 @@ def cmd_spawn_atlas(args):
         f"Available agents: {', '.join(list_available_agents())}"
     )
 
-    spawn_one_agent(atlas_agent, atlas_prompt, task_dir, log_dir, boulder_path)
+    spawn_one_agent(atlas_agent, atlas_prompt, task_dir, log_dir, boulder_path, write_mode)
     atlas_pid = read_boulder(boulder_path)["agents"][0].get("pid")
     atlas_log = log_dir / "atlas.log"
     team_plan_path = task_dir / "team_plan.json"
@@ -519,7 +708,20 @@ def cmd_spawn_atlas(args):
         print(f"Guardrail violation after Atlas plan: {err}", file=sys.stderr)
         return 2
 
+    # Check compatibility of selected agents
+    compatible, compat_err = check_write_policy_compatibility(selected_agents, write_mode)
     boulder = read_boulder(boulder_path)
+    
+    boulder["write_policy"]["backend_compatibility_decision"] = "approved" if compatible else "rejected"
+    boulder["write_policy"]["policy_rejection_reason"] = compat_err if not compatible else ""
+    
+    if not compatible:
+        boulder["status"] = "failed"
+        append_event(boulder, "policy_rejection", compat_err)
+        write_boulder(boulder_path, boulder)
+        print(f"Policy Rejection: {compat_err}", file=sys.stderr)
+        return 3
+
     for entry in boulder["agents"]:
         if entry["name"] == "atlas":
             entry["status"] = "done"
@@ -549,7 +751,7 @@ def cmd_spawn_atlas(args):
     print()
 
     for agent in selected_agents:
-        spawn_one_agent(agent, tasks.get(agent["name"], args.task), task_dir, log_dir, boulder_path)
+        spawn_one_agent(agent, tasks.get(agent["name"], args.task), task_dir, log_dir, boulder_path, write_mode)
         print()
 
     start_watchdog(task_id, task_dir, boulder_path, args)
@@ -569,6 +771,19 @@ def cmd_status(args):
     print(f"Task: {boulder['task'][:80]}")
     print(f"Status: {boulder.get('status')}")
     print(f"Created: {boulder.get('created_at')}")
+    
+    # Read write policy with fallback for backward compatibility
+    write_policy = boulder.get("write_policy", {})
+    req_mode = write_policy.get("requested_mode", boulder.get("guardrails", {}).get("writeMode", "workspace"))
+    res_mode = write_policy.get("resolved_mode", boulder.get("guardrails", {}).get("writeMode", "workspace"))
+    mechanism = write_policy.get("enforcement_mechanism", "none")
+    roots = write_policy.get("approved_writable_roots", [])
+    
+    print(f"Write Mode (requested/resolved): {req_mode} / {res_mode}")
+    print(f"Enforcement Mechanism: {mechanism}")
+    if roots:
+        print(f"Approved Writable Roots: {', '.join(roots)}")
+        
     print(f"Watchdog PID: {boulder.get('watchdog_pid')} PGID: {boulder.get('watchdog_pgid')}")
     print(f"\n{'NAME':<12} {'STATUS':<12} {'PID':<8} {'PGID':<8} {'MODEL':<28}")
     print(f"{'-'*12} {'-'*12} {'-'*8} {'-'*8} {'-'*28}")
@@ -643,6 +858,14 @@ def cmd_report(args):
         "status": boulder.get("status"),
         "stop_reason": boulder.get("stop_reason"),
         "guardrails": boulder.get("guardrails", {}),
+        "write_policy": boulder.get("write_policy", {
+            "requested_mode": boulder.get("guardrails", {}).get("writeMode", "workspace"),
+            "resolved_mode": boulder.get("guardrails", {}).get("writeMode", "workspace"),
+            "enforcement_mechanism": "none",
+            "approved_writable_roots": [],
+            "backend_compatibility_decision": "approved",
+            "policy_rejection_reason": ""
+        }),
         "agents": [
             {
                 "name": agent["name"],
@@ -667,6 +890,13 @@ def cmd_report(args):
     print(f"   Task: {boulder['task'][:80]}")
     print(f"   Status: {boulder.get('status', 'unknown')}")
     print(f"   Stop reason: {boulder.get('stop_reason', 'n/a')}")
+    
+    write_policy = report["write_policy"]
+    print(f"   Write Mode (requested/resolved): {write_policy['requested_mode']} / {write_policy['resolved_mode']}")
+    print(f"   Enforcement: {write_policy['enforcement_mechanism']}")
+    if write_policy["approved_writable_roots"]:
+        print(f"   Writable Roots: {', '.join(write_policy['approved_writable_roots'])}")
+        
     print()
     print(f"   {'AGENT':<14} {'STATUS':<12} {'PID':<8} {'PGID':<8}")
     print(f"   {'-'*14} {'-'*12} {'-'*8} {'-'*8}")
