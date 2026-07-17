@@ -51,7 +51,7 @@
     "mmas/hash-edit.py"
   ],
   "engines": {
-    "node": ">=20",
+    "node": ">=24",
     "python": ">=3.10"
   },
   "publishConfig": {
