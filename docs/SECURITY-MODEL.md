@@ -257,12 +257,12 @@ If any of those defaults changes, it will be a major version bump.
 ./install.sh --all --trust-mode dev --yes
 
 # Inspect what the orchestrator would do
-mavis-orchestrate "<task>"
+apeiron "<task>"
 dt route --explain "<task>"
 dt run "<task>" --dry-run
 
 # Kill a runaway MMAS run
-python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py stop <task_id>
+dt mmas stop <task_id>
 
 # Release guard
 npm run version:check

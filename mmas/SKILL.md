@@ -56,15 +56,19 @@ description: |
 ### List available agents
 
 ```bash
-python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py list
+dt mmas list
+# Or raw: python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py list
 ```
 
 ### Spawn a team for a task
 
 ```bash
-python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py \
+dt mmas spawn \
   "Build an OAuth2 PKCE flow with tests and security review" \
   --team atlas,forge,scout,oracle,reviewer,sentinel
+# Or raw: python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py \
+#   "Build an OAuth2 PKCE flow with tests and security review" \
+#   --team atlas,forge,scout,oracle,reviewer,sentinel
 ```
 
 Output:
@@ -87,7 +91,8 @@ Output:
 ### Monitor a task
 
 ```bash
-python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py status task-20260630-123456-abc123
+dt mmas status task-20260630-123456-abc123
+# Or raw: python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py status task-20260630-123456-abc123
 ```
 
 Output:
@@ -143,7 +148,8 @@ Verdict: ISSUES-FOUND. [Medium] Missing CSRF protection on /callback. PoC: curl 
 ### Stop a task
 
 ```bash
-python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py stop task-20260630-123456-abc123
+dt mmas stop task-20260630-123456-abc123
+# Or raw: python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py stop task-20260630-123456-abc123
 ```
 
 ---

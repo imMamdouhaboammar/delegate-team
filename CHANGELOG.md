@@ -3,6 +3,11 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.0.1] - 2026-07-17
+
+### Fixed
+- Fixed documentation path and command references in `docs/SECURITY-MODEL.md`, `docs/ROUTING.md`, `docs/MMAS.md`, `mmas/SKILL.md`, and `README.md` to match `/Apeiron` and `dt mmas`.
+
 ## [3.0.0] - 2026-07-17
 
 ### Added

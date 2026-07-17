@@ -35,7 +35,7 @@ See **[docs/INSTALLATION.md](./docs/INSTALLATION.md)** for the full reference.
 
 ```bash
 npm install -g delegate-team
-dt --version          # → 2.9.0
+dt --version          # → 3.0.0
 dt run "<task>"       # dispatch with auto backend selection
 dt run "<task>" --dry-run
 dt doctor             # human health check
@@ -122,8 +122,7 @@ dt route --explain "make API p95 < 200ms"
 # {"task":"...","detected_signals":{...},"selected_workflow":"PERFORMANCE/METRIC",...}
 
 # Lane 3: spawn a multi-agent team with guardrails
-python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py \
-    "Audit the auth layer" \
+dt mmas spawn "Audit the auth layer" \
     --team atlas,scout,reviewer,sentinel \
     --timeout 900 --max-agents 4
 ```
@@ -198,7 +197,7 @@ Full threat model + opt-in switches: **[docs/SECURITY-MODEL.md](./docs/SECURITY-
 | [docs/SECURITY-MODEL.md](./docs/SECURITY-MODEL.md) | Threat model + opt-in switches |
 | [INSTALL.md](./INSTALL.md) | Granular component-level install detail |
 | [DT.md](./DT.md) | Original `dt` CLI specifics |
-| [CHANGELOG.md](./CHANGELOG.md) | v1.0.0 → v2.9.0 release notes |
+| [CHANGELOG.md](./CHANGELOG.md) | v1.0.0 → v3.0.0 release notes |
 | [SECURITY.md](./SECURITY.md) | Short vulnerability-reporting policy |
 | [AGENTS.md](./AGENTS.md) | Repo conventions for contributors |
 | [docs/audits/REPO-AUDIT-vNEXT.md](./docs/audits/REPO-AUDIT-vNEXT.md) | Historical audit baseline |

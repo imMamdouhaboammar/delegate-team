@@ -9,7 +9,7 @@ priority, and how to inspect the decision.
 
 ## Overview
 
-`orchestrator/scripts/orchestrate.sh` is a pure bash scorer. For every
+`orchestrator/scripts/orchestrate.py` is a Python-based scorer (wrapped by `orchestrate.sh`). For every
 task string, it:
 
 1. Lowercases the task.
@@ -178,7 +178,7 @@ See [WORKFLOWS.md](./WORKFLOWS.md) for full examples per verdict.
 
 ## Tuning the router
 
-The scorer is in `orchestrator/scripts/orchestrate.sh`. To add a new signal:
+The scorer is in `orchestrator/scripts/orchestrate.py`. To add a new signal:
 
 1. Define a `score_<name>` variable.
 2. Add a keyword block that increments it.

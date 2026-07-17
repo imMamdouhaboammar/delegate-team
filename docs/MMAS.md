@@ -39,27 +39,27 @@ Do **not** use MMAS when:
 
 ```bash
 # Spawn Atlas alone, let it pick the team via team_plan.json
-python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py "<task>" --atlas
+dt mmas spawn "<task>" --atlas
+# Or raw: python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py "<task>" --atlas
 
 # Spawn a fixed team
-python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py "<task>" \
-    --team atlas,forge,scout,oracle
+dt mmas spawn "<task>" --team atlas,forge,scout,oracle
+# Or raw: python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py "<task>" --team atlas,forge,scout,oracle
 
 # Preview without spawning
-python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py "<task>" \
-    --team atlas,forge --plan-only
+dt mmas spawn "<task>" --team atlas,forge --plan-only
 
 # Check status of a running task
-python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py status <task_id>
+dt mmas status <task_id>
 
 # List available agents
-python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py list
+dt mmas list
 
 # Kill a running task with process-group cleanup
-python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py stop <task_id>
+dt mmas stop <task_id>
 
 # Generate a report from boulder.json
-python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py report <task_id>
+dt mmas report <task_id>
 ```
 
 ---
