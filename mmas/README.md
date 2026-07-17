@@ -41,12 +41,15 @@ The installer copies the framework to `~/.apeiron/agents/apeiron/multi-agent/`.
 
 ```bash
 # Auto-pick (Atlas autonomous mode)
-python3 ~/.apeiron/agents/apeiron/multi-agent/spawn-team.py --atlas
+python3 ~/.apeiron/agents/apeiron/multi-agent/spawn-team.py spawn "<task>" --atlas
 
 # Explicit team
-python3 ~/.apeiron/agents/apeiron/multi-agent/spawn-team.py \
-    --agents atlas,forge,scout,reviewer \
-    --task "Refactor the database layer for multi-tenancy"
+python3 ~/.apeiron/agents/apeiron/multi-agent/spawn-team.py spawn \
+    "Refactor the database layer for multi-tenancy" \
+    --team atlas,forge,scout,reviewer
+
+# Via dt CLI
+dt mmas spawn "<task>" --team atlas,forge,scout
 
 # In Claude Code: /apeiron-team <task>
 ```
@@ -57,9 +60,9 @@ python3 ~/.apeiron/agents/apeiron/multi-agent/spawn-team.py \
    to spawn.
 2. **spawn-team.py** reads `team_plan.json`, spawns each agent as a detached subprocess
    via `subprocess.Popen`, and writes its PID + logs under `logs/<agent>.log`.
-3. **watchdog.sh** polls each PID every 30s. Determines state from:
+3. **watchdog.sh** polls each PID every `$INTERVAL` seconds (default 30). Determines state from:
    - PID alive (`kill -0`)
-   - Last log line (`DONE` / `FAILED` / `WAITING`)
+   - Log file modification time (mtime, not log content)
    Reports to the boss via `apeiron communication send`.
 4. **hash-edit.py** is the agents' only edit primitive. It accepts `LINE#HASH` anchored
    edits that fail safely if the file changed since the anchor was computed (borrowed
@@ -69,7 +72,7 @@ python3 ~/.apeiron/agents/apeiron/multi-agent/spawn-team.py \
 
 - `SKILL.md` — Skill manifest for the framework
 - `README.md` — This file
-- `spawn-team.py` — Orchestrator (~28.9 KB)
+- `spawn-team.py` — Orchestrator (~36.5 KB)
 - `watchdog.sh` — Boss-state polling loop
 - `hash-edit.py` — LINE#HASH edit validator (~10.8 KB)
 - `agents/*.yaml` — Eight agent definitions
@@ -87,12 +90,12 @@ MMAS supports strict enforcement of safe write modes using the `--write-mode` op
 
 ### Supported Write Modes:
 1. **`workspace`** (Default): Agents can read and write within the approved repository/workspace according to standard behavior.
-2. **`logs-only`**: Spawns agents in an isolated task directory (under `~/.apeiron/multi-agent/tasks/<task_id>`). All logs, summaries, brief files, and temporary outputs are restricted to this directory. Path traversal and symlink escapes pointing outside this directory are strictly verified and rejected.
-3. **`none`**: Fully read-only execution. Subprocesses for write-capable backends are rejected before spawning (fail closed).
+2. **`logs-only`**: Spawns agents in an isolated task directory (under `~/.apeiron/multi-agent/tasks/<task_id>`, overridable via `MMAS_TASKS_ROOT` env var). All logs, summaries, brief files, and temporary outputs are restricted to this directory. Path traversal and symlink escapes pointing outside this directory are strictly verified and rejected.
+3. **`none`**: Fully read-only execution. Subprocesses for write-capable backends are rejected before spawning (fail closed). In `none` mode, `watchdog.sh` transitions agent status to `done` on clean exit without requiring a summary file.
 
 ### Backend Compatibility Matrix:
 - **`mock-backend`**: Fully compatible with `workspace`, `logs-only`, and `none`.
-- All other backends (e.g. `minimax-coder`, `vertex-coder`, `god-agent`, dynamic delegate backends): Compatible **only** with `workspace`.
+- All other backends (`minimax-coder`, `vertex-coder`, `aonios-agent`, `agy`, `codex`, `grok`, `kimi`, `opencode`, `relay-fallback`): Compatible **only** with `workspace`.
 
 ### Enforcement & Fail-Closed Behavior:
 - **Backend Compatibility Check**: Spawning a team containing an incompatible backend for the requested write mode fails closed immediately (non-zero exit code 3). No subprocesses are spawned, and the rejection event is recorded in the task metadata.

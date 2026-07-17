@@ -3,6 +3,25 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.0.11] - 2026-07-17
+
+### Fixed
+- **Security (P1-19)**: Enforced `--write-mode` and `--no-write` policies in MMAS `spawn-team.py`. Previously, write mode was recorded in `boulder.json` but not enforced when spawning agent subprocesses; agents with write-capable backends were started regardless of policy.
+- Added `check_write_policy_compatibility` — fails closed (exit code 3) before any subprocess is spawned when a backend is incompatible with the requested write mode.
+- Added `verify_path_in_task_dir` — rejects any generated path (logs, briefs, summaries, output dirs) that escapes the isolated task directory via path traversal (`..`) or symlink.
+- Subprocess environment is now sanitized via `get_clean_env`; `DT_WORKSPACE_ROOT` is locked to the task directory in `logs-only` and `none` modes; `DT_ALLOW_UNSAFE_COMMANDS` and `DT_ALLOW_DEP_INSTALL` are disabled.
+- `watchdog.sh`: in `none` mode, the watchdog no longer requires a `.summary` file to mark an agent as `done` — a clean process exit (code 0) is sufficient.
+
+### Added
+- `MMAS_TASKS_ROOT` environment variable override for `spawn-team.py` task directory root (enables isolated test execution).
+- `mock-backend` supported in `spawn-team.py` as a verified, sandboxed execution path for unit and integration testing.
+- Task ID and Boulder path are now printed immediately after task path creation, making them available even when a run fails at the compatibility-check stage.
+- `tests/mmas-write-modes.test.ts` — 10 Vitest regression tests covering write mode resolution, compatibility rejection, path containment, symlink escape detection, boulder metadata, and Atlas parameter inheritance.
+
+### Changed
+- `mmas/README.md`: corrected CLI usage examples (`--agents` → `--team`, added positional `spawn` subcommand, fixed watchdog polling description, corrected file size, completed backend compatibility list).
+- `mmas/SKILL.md`: same corrections; added `MMAS_TASKS_ROOT` override note; `none` mode description now documents watchdog behavior.
+
 ## [3.0.10] - 2026-07-17
 
 ### Changed
