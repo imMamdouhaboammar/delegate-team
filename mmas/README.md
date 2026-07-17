@@ -81,6 +81,24 @@ python3 ~/.apeiron/agents/apeiron/multi-agent/spawn-team.py \
 - Requires `apeiron` daemon running for watchdog reporting
 - Does NOT depend on the orchestrator; can run standalone
 
+## Write Modes Enforcement
+
+MMAS supports strict enforcement of safe write modes using the `--write-mode` option (or `--no-write` as an alias for `--write-mode none`).
+
+### Supported Write Modes:
+1. **`workspace`** (Default): Agents can read and write within the approved repository/workspace according to standard behavior.
+2. **`logs-only`**: Spawns agents in an isolated task directory (under `~/.apeiron/multi-agent/tasks/<task_id>`). All logs, summaries, brief files, and temporary outputs are restricted to this directory. Path traversal and symlink escapes pointing outside this directory are strictly verified and rejected.
+3. **`none`**: Fully read-only execution. Subprocesses for write-capable backends are rejected before spawning (fail closed).
+
+### Backend Compatibility Matrix:
+- **`mock-backend`**: Fully compatible with `workspace`, `logs-only`, and `none`.
+- All other backends (e.g. `minimax-coder`, `vertex-coder`, `god-agent`, dynamic delegate backends): Compatible **only** with `workspace`.
+
+### Enforcement & Fail-Closed Behavior:
+- **Backend Compatibility Check**: Spawning a team containing an incompatible backend for the requested write mode fails closed immediately (non-zero exit code 3). No subprocesses are spawned, and the rejection event is recorded in the task metadata.
+- **Path Containment Check**: Every generated path (e.g., brief files, logs, summary files, output directories) is checked dynamically to ensure it does not escape the task directory (detecting path traversal `..` or symlink escapes). Any violation triggers an immediate fail-closed termination.
+- **Environment & Prompt Defense**: Subprocesses are spawned with a minimized environment (essential keys only), overriding `DT_WORKSPACE_ROOT` to the task directory in `logs-only` and `none` modes, and disabling unsafe commands or package installations. Write policy instructions are added to agent system prompts as defense-in-depth.
+
 ## See also
 
 - `integrations/README.md` — companion frameworks
