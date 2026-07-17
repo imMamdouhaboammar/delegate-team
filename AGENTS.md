@@ -42,7 +42,7 @@ delegate-team/
 │   ├── agents/             # 8 YAML agent defs
 │   └── README.md
 │
-├── god-agent/              # Backend #1 (Codex + opencode)
+├── aonios-agent/              # Backend #1 (Codex + opencode)
 ├── minimax-coder/          # Backend #2 (MiniMax via mmx)
 ├── vertex-coder/           # Backend #3 (Gemini)
 ├── delegate-skills/         # Delegate skills: grok/codex/opencode/kimi/agy (dt delegate)
@@ -80,7 +80,7 @@ delegate-team/
 | `skill-scaffold` | `./scaffolder/SKILL.md` | "create a new skill", "scaffold apeiron skill" |
 | `mmas` | `./mmas/SKILL.md` | "spawn team", "multi-agent", "boss mode" |
 | `dt` | covered by main `delegate-team` | "delegate task", "use Codex", "use MiniMax" |
-| `god-agent` | `./god-agent/SKILL.md` | "run with god agent", "codex" |
+| `aonios-agent` | `./aonios-agent/SKILL.md` | "run with aonios agent", "codex" |
 | `minimax-coder` | `./minimax-coder/SKILL.md` | "run with MiniMax", "MiniMax M3" |
 | `vertex-coder` | `./vertex-coder/SKILL.md` | "run with Gemini" |
 | `delegate-skills` | `./delegate-skills/SKILL.md` | "delegate to grok", "delegate this to codex", "run it through opencode", "use kimi delegate", `dt delegate` |
@@ -89,7 +89,7 @@ delegate-team/
 
 1. **Decide which top-level dir it belongs in.** If it's a new role type (UI
    designer, code reviewer, security auditor), extend `mmas/agents/`. If it's a
-   new backend, add a sibling to `god-agent/` / `minimax-coder/`. If it's a new
+   new backend, add a sibling to `aonios-agent/` / `minimax-coder/`. If it's a new
    cross-cutting tool (scaffold, format, lint), make a new top-level dir.
 2. **Add `SKILL.md`** at the new component's root with proper frontmatter
    (`name` + `description` required; `allowed-tools` recommended).
@@ -101,7 +101,7 @@ delegate-team/
 
 ## Naming conventions
 
-- **Top-level components**: lowercase, kebab-case (`mmas/`, `god-agent/`)
+- **Top-level components**: lowercase, kebab-case (`mmas/`, `aonios-agent/`)
 - **Skill directories**: kebab-case, identical to the `name` field in `SKILL.md`
 - **`SKILL.md` filenames**: always uppercase, always this exact filename
 - **Scripts**: `kebab-case.sh` or `kebab-case.py` for top-level helpers

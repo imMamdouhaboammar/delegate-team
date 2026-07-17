@@ -19,6 +19,7 @@
     "test": "vitest run && bash tests/test-v2.7.0.sh",
     "selftest": "python3 orchestrator/scripts/orchestrate.py --selftest",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
     "version:check": "node scripts/check-version-sync.mjs",
     "size": "npm pack --dry-run",
     "publish:dry": "npm publish --dry-run --access public",
@@ -111,9 +112,12 @@
     "url": "git+https://github.com/imMamdouhaboammar/delegate-team.git"
   },
   "devDependencies": {
+    "@eslint/js": "^9.21.0",
     "@types/node": "^20.0.0",
+    "eslint": "^9.21.0",
     "tsup": "^8.5.1",
     "typescript": "^5.3.0",
+    "typescript-eslint": "^8.24.1",
     "vitest": "^3.2.7"
   },
   "dependencies": {

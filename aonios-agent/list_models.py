@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-list_models.py — Show God Agent models with availability status.
+list_models.py — Show Aonios Agent models with availability status.
 
 Usage:
     python3 list_models.py                # all models
@@ -32,7 +32,7 @@ def render_table(rows, headers):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="List God Agent models")
+    parser = argparse.ArgumentParser(description="List Aonios Agent models")
     parser.add_argument("--mode", choices=["direct", "interactive", "all"], default="all")
     parser.add_argument("--json", action="store_true", help="Machine-readable JSON output")
     args = parser.parse_args()
@@ -50,7 +50,7 @@ def main():
         print(json.dumps(out, indent=2))
         return 0
 
-    print("\n🤖  God Agent Model Registry\n")
+    print("\n🤖  Aonios Agent Model Registry\n")
 
     if args.mode == "all":
         rows = []
@@ -77,8 +77,8 @@ def main():
             print(f"  ✗ {cli:10}  NOT INSTALLED")
 
     print("\n💡 Usage:")
-    print("  Direct mode:    python3 god_agent_direct.py <file> <prompt> <model-key>")
-    print("  Interactive:    python3 god_agent_interactive.py <prompt> <model-key>")
+    print("  Direct mode:    python3 aonios_agent_direct.py <file> <prompt> <model-key>")
+    print("  Interactive:    python3 aonios_agent_interactive.py <prompt> <model-key>")
     print("  Health check:   python3 inspect_settings.py\n")
 
     return 0

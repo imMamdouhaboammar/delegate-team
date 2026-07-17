@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
-god_agent_direct.py — Single-file God Agent coder.
+aonios_agent_direct.py — Single-file Aonios Agent coder.
 
 Analog of vertex-coder/vertex_direct_coder.py. Reads a single file, sends it
 to a premium model (via `codex exec` or `opencode run`), extracts the resulting
 code from a markdown code block, and writes it back.
 
 Usage:
-    python3 god_agent_direct.py <target_file_path> <prompt> [model_key]
-    python3 god_agent_direct.py <target_file_path> -                # read prompt from stdin
-    cat brief.md | python3 god_agent_direct.py <target_file_path> -
+    python3 aonios_agent_direct.py <target_file_path> <prompt> [model_key]
+    python3 aonios_agent_direct.py <target_file_path> -                # read prompt from stdin
+    cat brief.md | python3 aonios_agent_direct.py <target_file_path> -
 
 Example:
-    python3 god_agent_direct.py src/api/auth.ts "Add JWT validation middleware" minimax-m3-high-thinking
+    python3 aonios_agent_direct.py src/api/auth.ts "Add JWT validation middleware" minimax-m3-high-thinking
 """
 
 import os
@@ -36,7 +36,7 @@ except ImportError:
     )
 
 
-SYSTEM_INSTRUCTION = """You are God Agent, an elite software engineer. \
+SYSTEM_INSTRUCTION = """You are Aonios Agent, an elite software engineer. \
 Your task is to write or modify a single code file based on the user's instructions.
 
 CRITICAL OUTPUT RULES:
@@ -72,9 +72,9 @@ def extract_code_block(text: str) -> str:
     return None
 
 
-def run_god_agent_direct(target_file_path: str, prompt: str, model_key: str = "minimax-m3-high-thinking",
+def run_aonios_agent_direct(target_file_path: str, prompt: str, model_key: str = "minimax-m3-high-thinking",
                          timeout: int = 180, dry_run: bool = False) -> dict:
-    """Run the God Agent direct coder. Returns a result dict."""
+    """Run the Aonios Agent direct coder. Returns a result dict."""
 
     # 1. Resolve model → CLI invocation
     try:
@@ -139,7 +139,7 @@ def run_god_agent_direct(target_file_path: str, prompt: str, model_key: str = "m
         fallback_key = spec["fallback_key"]
         if fallback_key:
             print(f"⚠️  Primary failed (exit={result.returncode}). Trying fallback: {fallback_key}")
-            return run_god_agent_direct(target_file_path, prompt, fallback_key, timeout, dry_run)
+            return run_aonios_agent_direct(target_file_path, prompt, fallback_key, timeout, dry_run)
 
         return {
             "ok": False,
@@ -180,7 +180,7 @@ def run_god_agent_direct(target_file_path: str, prompt: str, model_key: str = "m
 
 def main():
     parser = argparse.ArgumentParser(
-        description="God Agent Direct Coder — single-file premium-model code generation",
+        description="Aonios Agent Direct Coder — single-file premium-model code generation",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""Available models (run 'python3 model_router.py list' for full list):
   codex-gpt-5.5-high            OpenAI GPT-5.5 high reasoning
@@ -207,7 +207,7 @@ def main():
             print("❌ Empty prompt from stdin", file=sys.stderr)
             sys.exit(1)
 
-    result = run_god_agent_direct(
+    result = run_aonios_agent_direct(
         target_file_path=args.target_file,
         prompt=args.prompt,
         model_key=args.model,

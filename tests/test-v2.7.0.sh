@@ -128,7 +128,7 @@ bundled_count=$(find "$ROOT" \
 bundled_py=$(find "$ROOT" \
     -maxdepth 4 \
     \( -name "orchestrate.py" -o -name "catalog.py" -o -name "spawn-team.py" \
-       -o -name "vertex_direct_coder.py" -o -name "god_agent_*.py" \
+       -o -name "vertex_direct_coder.py" -o -name "aonios_agent_*.py" \
        -o -name "minimax_*.py" -o -name "*.py" -path "*/scripts/*" \) \
     -not -path "*/node_modules/*" \
     -not -path "*/.venv/*" \

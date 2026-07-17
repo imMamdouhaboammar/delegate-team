@@ -62,7 +62,7 @@ it automatically.
 | `scaffolder/` | `./scaffolder/` | `apeiron-skill-scaffold` generator CLI | ✅ |
 | `mmas/` | `./mmas/` | Multi-agent team framework (8 agents + watchdog) | ✅ |
 | `agent-kernel/` | `./agent-kernel/` | Local-first memory + governance layer (vendored v0.0.7) | ✅ |
-| `god-agent/` | `./god-agent/` | Codex + opencode delegation backend | ✅ |
+| `aonios-agent/` | `./aonios-agent/` | Codex + opencode delegation backend | ✅ |
 | `minimax-coder/` | `./minimax-coder/` | MiniMax-M3 via `mmx` CLI backend | ✅ |
 | `vertex-coder/` | `./vertex-coder/` | Gemini backend | ✅ |
 | `delegate-skills/` | `./delegate-skills/` | Delegate skills: hand a task to Grok/Codex/OpenCode/Kimi/AGY (`dt delegate`) | ✅ NEW v2.8.0 |
@@ -153,7 +153,7 @@ npx skills list               # Should show: delegate-team
 - `scaffolder/SKILL.md` — apeiron-skill-scaffold specific skill
 - `mmas/SKILL.md` — multi-agent team specific skill
 - `agent-kernel/SKILL.md` — agent-kernel (memory + governance) specific skill
-- `god-agent/SKILL.md` — Codex + opencode backend
+- `aonios-agent/SKILL.md` — Codex + opencode backend
 - `minimax-coder/SKILL.md` — MiniMax backend
 - `vertex-coder/SKILL.md` — Gemini backend
 

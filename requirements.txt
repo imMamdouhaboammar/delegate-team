@@ -1,10 +1,8 @@
-pydantic==2.6.4
-uvicorn==0.28.0
-loguru==0.7.2
-sqlalchemy==2.0.28
-pydantic-settings==2.2.1
-safety==3.1.0
-fastapi==0.110.0
-psycopg2-binary==2.9.9
-bandit==1.7.8
-alembic==1.13.1
+# Python dependencies for delegate-team
+PyYAML>=6.0.1
+google-genai>=0.1.1
+google-cloud-dialogflow-cx>=1.27.0
+google-auth>=2.29.0
+protobuf>=4.25.3
+Flask>=3.0.2
+pytest>=8.1.1

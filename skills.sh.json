@@ -15,7 +15,7 @@
       "description": "Pluggable backend agents that do the actual work — Codex, MiniMax, Gemini, MetaGPT.",
       "skills": [
         "dt",
-        "god-agent",
+        "aonios-agent",
         "minimax-coder",
         "vertex-coder",
         "metagpt-runner"

@@ -6,7 +6,7 @@ description: |
   by actual exploitability. Doesn't just flag lint warnings — proves exploit paths.
 
 model: glm-5.2-max
-backend: god-agent
+backend: aonios-agent
 mode: interactive
 
 thinking:

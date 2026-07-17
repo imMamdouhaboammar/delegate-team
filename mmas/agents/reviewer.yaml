@@ -6,7 +6,7 @@ description: |
   Adversarial: finds holes, edge cases, missing requirements.
 
 model: gpt-5.5-xhigh
-backend: god-agent
+backend: aonios-agent
 mode: direct
 
 thinking:

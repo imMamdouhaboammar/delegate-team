@@ -1,4 +1,4 @@
-# God Agent — Premium Multi-Model Coding Dispatcher
+# Aonios Agent — Premium Multi-Model Coding Dispatcher
 
 A sibling backend to [vertex-coder](../vertex-coder/) inside the `delegate-team` (`dt`)
 orchestration project. Routes heavy coding tasks to whichever premium model is best for
@@ -10,7 +10,7 @@ the job, by shelling out to local CLI binaries (`codex exec`, `opencode run`).
 the strongest model from a *different* family — OpenAI's GPT-5.x high, Zhipu's GLM-5.2
 max, Alibaba's Qwen 3.7 max, Moonshot's Kimi K2.7 code-max, or MiniMax's M3 high-thinking.
 
-God Agent is the unified shell for those.
+Aonios Agent is the unified shell for those.
 
 ## Install
 
@@ -19,7 +19,7 @@ No install step — `codex` and `opencode` CLIs are already on PATH (see
 executable:
 
 ```bash
-chmod +x god_agent_direct.py god_agent_interactive.py list_models.py inspect_settings.py
+chmod +x aonios_agent_direct.py aonios_agent_interactive.py list_models.py inspect_settings.py
 ```
 
 ## Health check
@@ -35,7 +35,7 @@ Verifies: CLIs installed, codex logged in, opencode models reachable, memory wri
 ### Direct mode (single file)
 
 ```bash
-python3 god_agent_direct.py src/api/auth.ts \
+python3 aonios_agent_direct.py src/api/auth.ts \
   "Add JWT validation middleware with proper error handling" \
   minimax-m3-high-thinking
 ```
@@ -43,7 +43,7 @@ python3 god_agent_direct.py src/api/auth.ts \
 ### Interactive mode (multi-file autonomous)
 
 ```bash
-python3 god_agent_interactive.py \
+python3 aonios_agent_interactive.py \
   "Implement OAuth2 PKCE flow across src/auth/ with full test coverage" \
   opencode-glm-5.2-max \
   --skills test-driven-development security-and-hardening
@@ -52,7 +52,7 @@ python3 god_agent_interactive.py \
 ### From a brief file (stdin)
 
 ```bash
-cat brief.md | python3 god_agent_interactive.py - minimax-m3-high-thinking
+cat brief.md | python3 aonios_agent_interactive.py - minimax-m3-high-thinking
 ```
 
 ## Available models
@@ -68,7 +68,7 @@ cat brief.md | python3 god_agent_interactive.py - minimax-m3-high-thinking
 
 ## Configuration override
 
-`~/.config/god-agent/models.json` lets you override model flags without editing code:
+`~/.config/aonios-agent/models.json` lets you override model flags without editing code:
 
 ```json
 {
@@ -79,7 +79,7 @@ cat brief.md | python3 god_agent_interactive.py - minimax-m3-high-thinking
 
 ## Security
 
-- God Agent output is **untrusted until reviewed** by Claude Code or the human.
+- Aonios Agent output is **untrusted until reviewed** by Claude Code or the human.
 - It does NOT commit, push, or modify any auth/state.
 - Workspace boundaries are enforced by the underlying `codex` / `opencode` CLIs.
 - All credential handling stays in the host CLIs (`codex login`, `opencode providers login`).
@@ -89,15 +89,15 @@ For the controlling agent's safety contract, see
 
 ## Integration with `dt`
 
-Currently God Agent is standalone. To register it as a `dt run --backend god-agent`
+Currently Aonios Agent is standalone. To register it as a `dt run --backend aonios-agent`
 backend, edit `src/commands/run.ts` in the parent `delegate-team` project and add a
-new backend dispatch entry pointing to `god-agent/god_agent_direct.py`.
+new backend dispatch entry pointing to `aonios-agent/aonios_agent_direct.py`.
 
 ## Files
 
 - `model_router.py` — Model registry + CLI resolution
-- `god_agent_direct.py` — Single-file coder
-- `god_agent_interactive.py` — Multi-file autonomous agent
+- `aonios_agent_direct.py` — Single-file coder
+- `aonios_agent_interactive.py` — Multi-file autonomous agent
 - `tools_registry.py` — Local tools + persistent memory + skill loader
 - `list_models.py` — Model listing with availability
 - `inspect_settings.py` — Health check
