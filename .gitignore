@@ -47,6 +47,9 @@ result.json
 .dt_traces/
 .dt_team/
 
+# Local model / runtime cache (downloaded ML artifacts, not source)
+local_cache/
+
 # Python
 __pycache__/
 *.pyc
