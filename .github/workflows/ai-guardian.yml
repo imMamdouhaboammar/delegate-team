@@ -465,31 +465,266 @@ jobs:
           retention-days: 30
 
   # ────────────────────────────────────────────────────────────────
-  # 4. DISPATCH — Trigger downstream workflows if issues found
+  # 4. TEST GUARD — AI review of changed test files (12 rules)
+  # ────────────────────────────────────────────────────────────────
+  test-guard-review:
+    name: 🧪 Test Guard (AI Review)
+    runs-on: ubuntu-latest
+    needs: health-scan
+    outputs:
+      has_violations:     ${{ steps.review.outputs.has_violations }}
+      must_fix_count:     ${{ steps.review.outputs.must_fix_count }}
+      test_guard_report:  ${{ steps.review.outputs.test_guard_report }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # need full history for git diff
+
+      - name: Collect changed test files (git diff)
+        id: diff
+        run: |
+          # Compare against origin/master so we catch everything in this push
+          BASE=$(git merge-base origin/master HEAD 2>/dev/null || git rev-parse HEAD~1 2>/dev/null || echo "")
+
+          if [ -z "$BASE" ]; then
+            echo "No base commit found — scanning all test files"
+            TEST_DIFF=$(find tests/ -name '*.test.ts' -o -name '*.spec.ts' 2>/dev/null | head -5 | xargs cat 2>/dev/null | head -c 6000 || echo "")
+            SRC_DIFF=""
+          else
+            # Get diff of tests/ directory only (not full codebase)
+            TEST_DIFF=$(git diff "$BASE"..HEAD -- 'tests/**' '*.test.ts' '*.spec.ts' 2>/dev/null | head -c 6000 || echo "")
+            # Get diff of src/ for context (what code changed)
+            SRC_DIFF=$(git diff "$BASE"..HEAD -- 'src/**' 2>/dev/null | head -c 2000 || echo "")
+          fi
+
+          # If no test diff (no tests changed), still audit key test files
+          if [ -z "$TEST_DIFF" ]; then
+            echo "No test changes detected — sampling key test files for quality audit"
+            TEST_DIFF=$(cat tests/router.test.ts tests/request-timeout.test.ts 2>/dev/null | head -c 5000 || echo "No test files found")
+          fi
+
+          # Write to temp files for the next step
+          printf '%s' "$TEST_DIFF" > /tmp/test_diff.txt
+          printf '%s' "$SRC_DIFF"  > /tmp/src_diff.txt
+
+          DIFF_LINES=$(wc -l < /tmp/test_diff.txt | tr -d ' ')
+          echo "Test diff: $DIFF_LINES lines"
+          echo "diff_lines=$DIFF_LINES" >> "$GITHUB_OUTPUT"
+
+      - name: Run AI test-guard review
+        id: review
+        env:
+          AI_GATEWAY_KEY: ${{ secrets.AI_GATEWAY_KEY }}
+        run: |
+          TEST_DIFF=$(cat /tmp/test_diff.txt)
+          SRC_DIFF=$(cat /tmp/src_diff.txt)
+
+          node --input-type=module <<'JSEOF'
+          import { readFileSync, appendFileSync } from 'fs';
+          import { env } from 'process';
+
+          const GATEWAY_KEY = env.AI_GATEWAY_KEY;
+          const GATEWAY_URL = 'https://ai-gateway-1044452917221.us-central1.run.app/v1/chat/completions';
+          const MODEL       = 'gemini-3.5-flash';
+
+          const TEST_DIFF = readFileSync('/tmp/test_diff.txt', 'utf8');
+          const SRC_DIFF  = readFileSync('/tmp/src_diff.txt',  'utf8');
+
+          // ── test-guard system prompt (all 12 rules) ─────────────
+          const SYSTEM = `You are test-guard — an expert test code reviewer.
+          Review the provided test diff against these 12 rules and return structured JSON.
+
+          THE 9 CORE RULES:
+          Rule 1 (Must Fix): Test behavior, not implementation. Never assert internal mock call args — assert return values and observable side effects.
+          Rule 2 (Must Fix): Mock only at system boundaries: network, LLM APIs, DB, filesystem, clock, third-party SDKs. Never mock internal helpers/utils to isolate a "unit".
+          Rule 3 (Should Fix): One scenario per test, data-driven for variants. If N tests share identical setup and differ only in input/output values, merge into test.each / parametrize.
+          Rule 4 (Should Fix): Every test must justify its existence. Delete tests that only verify trivial pass-through, default constructor values, or type-system guarantees.
+          Rule 5 (Should Fix): Name tests for the scenario: test_<scenario>_<expected_outcome>. Names must read like requirements, not echo function signatures.
+          Rule 6 (Sacred): Production regression tests referencing a real incident are always justified and exempt from Rule 4. Never flag them.
+          Rule 7 (Should Fix): No tests for framework guarantees. Don't test that the ORM commits, the router returns 404, or the test framework fixtures work.
+          Rule 8 (Must Fix): State and value objects must be constructed real, never mocked. Mocking a data model hides field-name typos.
+          Rule 9 (Worth Noting): Infrastructure under test (DB queries, schema) must run against real infrastructure, not mocked sessions.
+
+          3 EXTRA RULES FOR LLM APPS (this is an agentic project):
+          Rule 10 (Should Fix): Prompt tests — test the contract, not the wording. Don't assert specific prompt strings; do assert template variable substitution and required structural markers.
+          Rule 11 (Worth Noting): Observability is infrastructure. Don't assert on mock tracer/telemetry call args. Mocking to prevent side effects is fine.
+          Rule 12 (Must Fix): Agent/flow tests must test state transitions (state in → state out), not exact prompt strings or LLM call counts.
+
+          SEVERITY GUIDE:
+          - must_fix: Rules 1, 2, 8, 12
+          - should_fix: Rules 3, 4, 5, 7, 10
+          - worth_noting: Rules 9, 11
+          - sacred: Rule 6 — never flag
+
+          IMPORTANT: Only flag violations in the CHANGED/NEW test code shown in the diff.
+          Do NOT flag pre-existing code in unchanged files.
+
+          Return ONLY valid JSON (no markdown fences):
+          {
+            "summary": "one sentence overall assessment",
+            "has_violations": true/false,
+            "must_fix_count": 0,
+            "should_fix_count": 0,
+            "violations": [
+              {
+                "rule": 1,
+                "severity": "must_fix|should_fix|worth_noting",
+                "location": "tests/filename.test.ts::test_name",
+                "what": "one sentence describing the violation",
+                "fix": "one sentence describing what to do instead"
+              }
+            ],
+            "good_practices": ["what the tests do well"],
+            "recommended_new_tests": ["what scenarios are missing coverage"]
+          }`;
+
+          const userContent = `## Test Changes (git diff — tests only):
+          \`\`\`diff
+          ${TEST_DIFF.slice(0, 5500)}
+          \`\`\`
+
+          ## Source Changes (for context — what code changed):
+          \`\`\`diff
+          ${SRC_DIFF.slice(0, 1500)}
+          \`\`\`
+
+          Review the test changes against the 12 rules. Only flag violations in the diff above.`;
+
+          let report;
+          try {
+            const res = await fetch(GATEWAY_URL, {
+              method: 'POST',
+              headers: {
+                'Content-Type':  'application/json',
+                'X-API-Key':     GATEWAY_KEY,
+                'Authorization': `Bearer ${GATEWAY_KEY}`,
+              },
+              body: JSON.stringify({
+                model:       MODEL,
+                max_tokens:  3000,
+                temperature: 0.1,
+                messages: [
+                  { role: 'system', content: SYSTEM      },
+                  { role: 'user',   content: userContent },
+                ],
+              }),
+            });
+
+            if (!res.ok) throw new Error(`Gateway ${res.status}: ${await res.text()}`);
+            const json    = await res.json();
+            const rawText = json.choices?.[0]?.message?.content ?? '{}';
+            const cleaned = rawText.replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
+            report = JSON.parse(cleaned);
+          } catch (e) {
+            console.error(`test-guard AI call failed: ${e.message}`);
+            report = { summary: 'AI review unavailable', has_violations: false, must_fix_count: 0, should_fix_count: 0, violations: [], good_practices: [], recommended_new_tests: [] };
+          }
+
+          const gh = env.GITHUB_OUTPUT;
+          const delim = 'TG_REPORT_EOF';
+          const reportStr = JSON.stringify(report);
+
+          appendFileSync(gh, `has_violations=${report.has_violations ? 'true' : 'false'}\n`);
+          appendFileSync(gh, `must_fix_count=${report.must_fix_count ?? 0}\n`);
+          appendFileSync(gh, `test_guard_report<<${delim}\n${reportStr}\n${delim}\n`);
+
+          // Print human-readable summary to log
+          console.log('\n📋 TEST GUARD REVIEW');
+          console.log('─'.repeat(50));
+          console.log(`Summary: ${report.summary}`);
+          console.log(`Violations: ${(report.violations||[]).length} total | Must Fix: ${report.must_fix_count} | Should Fix: ${report.should_fix_count ?? 0}`);
+          for (const v of (report.violations || [])) {
+            const icon = v.severity === 'must_fix' ? '🔴' : v.severity === 'should_fix' ? '🟡' : '🔵';
+            console.log(`\n${icon} Rule ${v.rule} [${v.severity.toUpperCase()}] — ${v.location}`);
+            console.log(`   What: ${v.what}`);
+            console.log(`   Fix : ${v.fix}`);
+          }
+          if ((report.good_practices||[]).length) {
+            console.log('\n✅ Good practices:');
+            report.good_practices.forEach(g => console.log(`   • ${g}`));
+          }
+          if ((report.recommended_new_tests||[]).length) {
+            console.log('\n💡 Missing coverage:');
+            report.recommended_new_tests.forEach(t => console.log(`   • ${t}`));
+          }
+          JSEOF
+
+      - name: Write test-guard Job Summary
+        run: |
+          REPORT='${{ steps.review.outputs.test_guard_report }}'
+          HAS_V='${{ steps.review.outputs.has_violations }}'
+          MUST='${{ steps.review.outputs.must_fix_count }}'
+
+          BADGE_COLOUR=$([ "$HAS_V" = "true" ] && echo "red" || echo "brightgreen")
+          BADGE_TEXT=$([ "$HAS_V" = "true" ] && echo "violations+found" || echo "all+clear")
+
+          cat >> "$GITHUB_STEP_SUMMARY" <<SUMMARY
+          ## 🧪 Test Guard Report
+
+          ![Test Guard](https://img.shields.io/badge/Test%20Guard-${BADGE_TEXT}-${BADGE_COLOUR})
+          ![Must Fix](https://img.shields.io/badge/Must%20Fix-${MUST}-$([ "$MUST" = "0" ] && echo brightgreen || echo red))
+
+          \`\`\`json
+          ${REPORT}
+          \`\`\`
+
+          ---
+          *Reviewed against test-guard 12 rules · powered by gemini-3.5-flash*
+          SUMMARY
+
+  # ────────────────────────────────────────────────────────────────
+  # 5. DISPATCH — Trigger downstream workflows if issues found
   # ────────────────────────────────────────────────────────────────
   dispatch-workflows:
     name: 🚀 Dispatch Downstream
     runs-on: ubuntu-latest
-    needs: [health-scan, ai-analysis]
-    if: needs.health-scan.outputs.has_failures == 'true'
+    needs: [health-scan, ai-analysis, test-guard-review]
+    if: |
+      needs.health-scan.outputs.has_failures == 'true' ||
+      needs.test-guard-review.outputs.has_violations == 'true'
     steps:
       - name: Trigger AI Issue Reporter
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            // Merge both reports into one payload
+            let ciReport = {};
+            let tgReport = {};
+            try { ciReport = JSON.parse(`${{ needs.ai-analysis.outputs.ai_report }}` || '{}'); } catch(_) {}
+            try { tgReport = JSON.parse(`${{ needs.test-guard-review.outputs.test_guard_report }}` || '{}'); } catch(_) {}
+
+            // Merge test-guard violations as issues into the CI report
+            const tgIssues = (tgReport.violations || []).map(v => ({
+              id:           `test-guard-rule-${v.rule}`,
+              title:        `[Test Guard Rule ${v.rule}] ${v.location}`,
+              severity:     v.severity === 'must_fix' ? 'high' : 'medium',
+              file:         v.location?.split('::')[0] || null,
+              description:  v.what,
+              suggestion:   v.fix,
+              auto_fixable: false,
+              source:       'test-guard',
+            }));
+
+            const mergedReport = {
+              ...ciReport,
+              issues: [...(ciReport.issues || []), ...tgIssues],
+              test_guard_summary: tgReport.summary,
+              recommended_new_tests: tgReport.recommended_new_tests || [],
+            };
+
             await github.rest.actions.createWorkflowDispatch({
               owner:   context.repo.owner,
               repo:    context.repo.repo,
               workflow_id: 'ai-issue-reporter.yml',
               ref:     context.ref,
               inputs: {
-                ai_report:     `${{ needs.ai-analysis.outputs.ai_report }}`.slice(0, 5000),
-                severity:      '${{ needs.ai-analysis.outputs.severity }}',
-                trigger_run:   String(context.runId),
+                ai_report:   JSON.stringify(mergedReport).slice(0, 5000),
+                severity:    '${{ needs.ai-analysis.outputs.severity }}',
+                trigger_run: String(context.runId),
               }
             });
-            console.log('✓ Dispatched ai-issue-reporter');
+            console.log('✓ Dispatched ai-issue-reporter (with test-guard violations merged)');
 
       - name: Trigger AI Auto-Fix (critical/high only)
         if: needs.ai-analysis.outputs.severity == 'critical'
