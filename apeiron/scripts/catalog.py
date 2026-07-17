@@ -264,7 +264,7 @@ INTEGRATIONS: List[Integration] = [
                 "subset is a curated baseline for any UI skill to load alongside.",
         install_cmd=(
             "git clone --depth 1 https://github.com/pbakaus/impeccable "
-            "/tmp/impeccable && cp -r /tmp/impeccable/skills/* ~/.claude/skills/"
+            "/tmp/impeccable && cp -r /tmp/impeccable/plugin/skills/* ~/.claude/skills/"
         ),
         detect_skill_names=["impeccable", "responsive-craft", "teach-impeccable"],
     ),
@@ -771,7 +771,7 @@ INTEGRATIONS: List[Integration] = [
                 "dark-mode contrast, and visual layouts to prevent standard AI slop.",
         install_cmd=(
             "git clone --depth 1 https://github.com/plugin87/ux-ui-agent-skills /tmp/ux-ui-skills && "
-            "cp -r /tmp/ux-ui-skills/skills/* ~/.claude/skills/"
+            "cp -r /tmp/ux-ui-skills/.claude/skills/* ~/.claude/skills/"
         ),
         detect_skill_names=["ux-ui-agent-skills", "responsive-ui-audit"],
     ),
@@ -1573,6 +1573,18 @@ def cli(argv: List[str]) -> int:
             elif not a.startswith("-"):
                 project_dir = a
                 
+        def cleanup_broken_skills_symlinks():
+            skills_dir = Path(os.path.expanduser("~/.claude/skills"))
+            if not skills_dir.is_dir():
+                return
+            for item in skills_dir.iterdir():
+                if item.is_symlink() and not item.exists():
+                    print(f"🧹 Removing broken symlink: {item}")
+                    item.unlink()
+
+        if not dry_run:
+            cleanup_broken_skills_symlinks()
+
         recs = recommend_for_project(project_dir)
         to_install = [r for r in recs if not r.installed]
         
@@ -1596,7 +1608,28 @@ def cli(argv: List[str]) -> int:
             else:
                 print(f"     Installing...")
                 if i.install_cmd and i.install_cmd != "(reference only — no install)":
-                    ret = os.system(i.install_cmd)
+                    import shutil
+                    import re
+                    cmd_to_run = i.install_cmd
+                    
+                    # Clean up conflicting /tmp directories
+                    matches_tmp = re.findall(r"/tmp/[a-zA-Z0-9_\-]+", cmd_to_run)
+                    for m in matches_tmp:
+                        p_tmp = Path(m)
+                        if p_tmp.exists():
+                            try:
+                                if p_tmp.is_dir() and not p_tmp.is_symlink():
+                                    shutil.rmtree(p_tmp)
+                                else:
+                                    p_tmp.unlink()
+                            except:
+                                pass
+                                
+                    # If pip is not found but pip3 is, replace it
+                    if "pip " in cmd_to_run and os.system("which pip >/dev/null 2>&1") != 0 and os.system("which pip3 >/dev/null 2>&1") == 0:
+                        cmd_to_run = cmd_to_run.replace("pip ", "pip3 ")
+                        
+                    ret = os.system(cmd_to_run)
                     if ret == 0:
                         print(f"     ✅ Successfully installed {i.id}!")
                     else:

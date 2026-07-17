@@ -3,6 +3,14 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.0.10] - 2026-07-17
+
+### Changed
+- Improved the `auto-install` execution robustness by automatically cleaning up target directories in `/tmp` before cloning.
+- Fixed relative copying destination paths for `impeccable` (`plugin/skills/*`) and `ux-ui-agent-skills` (`.claude/skills/*`).
+- Added automatic detection and cleanup of broken or conflicting symlinks in `~/.claude/skills` before executing installations.
+- Configured dynamic fallback from `pip` to `pip3` for Python integrations.
+
 ## [3.0.9] - 2026-07-17
 
 ### Added
