@@ -650,11 +650,11 @@ jobs:
           JSEOF
 
       - name: Write test-guard Job Summary
+        env:
+          REPORT: ${{ steps.review.outputs.test_guard_report }}
+          HAS_V: ${{ steps.review.outputs.has_violations }}
+          MUST: ${{ steps.review.outputs.must_fix_count }}
         run: |
-          REPORT='${{ steps.review.outputs.test_guard_report }}'
-          HAS_V='${{ steps.review.outputs.has_violations }}'
-          MUST='${{ steps.review.outputs.must_fix_count }}'
-
           BADGE_COLOUR=$([ "$HAS_V" = "true" ] && echo "red" || echo "brightgreen")
           BADGE_TEXT=$([ "$HAS_V" = "true" ] && echo "violations+found" || echo "all+clear")
 
@@ -665,12 +665,13 @@ jobs:
           ![Must Fix](https://img.shields.io/badge/Must%20Fix-${MUST}-$([ "$MUST" = "0" ] && echo brightgreen || echo red))
 
           \`\`\`json
-          ${REPORT}
+          $REPORT
           \`\`\`
 
           ---
           *Reviewed against test-guard 12 rules · powered by gemini-3.5-flash*
           SUMMARY
+
 
   # ────────────────────────────────────────────────────────────────
   # 5. DISPATCH — Trigger downstream workflows if issues found
