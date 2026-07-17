@@ -6,7 +6,7 @@ description: |
   multi-file autonomous work with full tool use. Sibling backend to vertex-coder inside
   delegate-team; mirrors its structure (direct + interactive + tools registry) but routes
   through mmx instead of an SDK. The Python scripts in this directory are local-agent helpers —
-  Mavis (M3) can also invoke `mmx text chat` directly via bash for fast ad-hoc calls. Three
+  Apeiron (M3) can also invoke `mmx text chat` directly via bash for fast ad-hoc calls. Three
   MiniMax models supported. Use when delegating coding work to MiniMax models. Triggers on:
   "use minimax coder", "MiniMax M3", "MiniMax M2.7", "minimax direct", "minimax interactive",
   "mmx text chat". Do NOT use for trivial edits (do them locally).
@@ -20,10 +20,10 @@ description: |
 >
 > - **No Python SDK dependencies** — just `mmx` on PATH (one `npm install` away)
 > - **Auth handled by `mmx`** — no key management in our Python code
-> - **You (Mavis, M3) are the orchestrator** — this skill provides the scripts, but you can
+> - **You (Apeiron, M3) are the orchestrator** — this skill provides the scripts, but you can
 >   also call `mmx text chat` directly via bash for fast ad-hoc sub-agent work
 >
-> **The "boss and director" pattern**: Mavis on M3 calls MiniMax models as sub-agents —
+> **The "boss and director" pattern**: Apeiron on M3 calls MiniMax models as sub-agents —
 > M2.7-highspeed for fast isolated work, M3 itself for hard problems with fresh context.
 
 ## What this skill IS
@@ -32,7 +32,7 @@ description: |
    via `mmx text chat`, extracts the markdown code block, writes it back.
 2. **An interactive agent** — `minimax_interactive_agent.py` runs a multi-turn tool-use loop
    with mmx, where the model can read files, grep, run commands, install deps, persist memory.
-3. **A local-agent surface** — the `mmx` CLI itself is available to Mavis via bash for ad-hoc
+3. **A local-agent surface** — the `mmx` CLI itself is available to Apeiron via bash for ad-hoc
    calls. The Python scripts here wrap common patterns but aren't required.
 4. **A multi-model dispatcher** — three models supported: M3 (flagship), M2.7 (previous gen),
    M2.7-highspeed (speed-optimized). All routed through the same `mmx text chat` call.
@@ -40,7 +40,7 @@ description: |
 ## What this skill is NOT
 
 - Not a replacement for `vertex-coder` (different model family — Gemini vs MiniMax).
-- Not a memory tool (lives outside the Mavis memory layer).
+- Not a memory tool (lives outside the Apeiron memory layer).
 - Not a router (use the parent `delegate-team` `dt` CLI for cross-backend dispatch).
 - Not a replacement for `mmx text chat` directly — when you need a one-off query, just run
   `mmx text chat --model MiniMax-M3 --message "..."` without involving this skill's scripts.
@@ -52,7 +52,7 @@ description: |
 ```text
 User task
    ↓
-Mavis (MiniMax-M3) — orchestrator + boss
+Apeiron (MiniMax-M3) — orchestrator + boss
    ↓
    ├─ Direct call:    mmx text chat --model M3 --message "..."   (fast, ad-hoc)
    ├─ Direct coder:   minimax_direct_coder.py <file> <prompt>    (file → code → file)
@@ -71,7 +71,7 @@ Mavis (MiniMax-M3) — orchestrator + boss
 
 | Model | Description | Best for |
 |---|---|---|
-| `MiniMax-M3` | **Flagship** (Mavis's own runtime), 450K context, multimodal, switchable thinking | Default heavy reasoning, complex tasks |
+| `MiniMax-M3` | **Flagship** (Apeiron's own runtime), 450K context, multimodal, switchable thinking | Default heavy reasoning, complex tasks |
 | `MiniMax-M2.7` | Previous generation, 200K context, forced thinking | Mature reasoning, good quality/cost balance |
 | `MiniMax-M2.7-highspeed` | M2.7 optimized for speed, 200K context | Fast isolated sub-tasks, batch processing |
 
@@ -103,7 +103,7 @@ python3 minimax_direct_coder.py src/api/auth.ts "Add JWT validation middleware" 
 # Interactive mode (multi-file autonomous with tool use)
 python3 minimax_interactive_agent.py "Implement OAuth2 PKCE flow" MiniMax-M3 --skills test-driven-development
 
-# Direct mmx call (fast, ad-hoc — Mavis can use this without the Python wrapper)
+# Direct mmx call (fast, ad-hoc — Apeiron can use this without the Python wrapper)
 mmx text chat --model MiniMax-M2.7-highspeed --message "Explain async/await in 3 sentences"
 mmx text chat --model MiniMax-M3 --system "You are a code reviewer" --message "Review this diff: ..."
 
@@ -117,7 +117,7 @@ echo "Refactor for clarity" | python3 minimax_direct_coder.py src/utils.ts - Min
 
 ### Pattern A: Boss-and-director (M3 → M2.7)
 
-Mavis on M3 keeps the high-level conversation. For a fast isolated subtask, spawn M2.7-highspeed.
+Apeiron on M3 keeps the high-level conversation. For a fast isolated subtask, spawn M2.7-highspeed.
 
 ```bash
 # M3 delegates a quick refactor to M2.7-highspeed while M3 keeps thinking
@@ -126,7 +126,7 @@ python3 minimax_direct_coder.py src/refactor-target.ts "Apply this exact change.
 
 ### Pattern B: Self-orchestration (M3 → M3, fresh context)
 
-Use when you want a hard problem tackled without cluttering the main Mavis session.
+Use when you want a hard problem tackled without cluttering the main Apeiron session.
 
 ```bash
 python3 minimax_interactive_agent.py "Solve this hard concurrency bug" MiniMax-M3 --max-turns 20
@@ -198,7 +198,7 @@ Memory file: `.agent_memory.json` (same name as vertex-coder for parity).
 
 ---
 
-## Integration with Mavis / expert-engineer
+## Integration with Apeiron / expert-engineer
 
 When the `expert-engineer` skill is active, MiniMax Coder is invoked when:
 
@@ -211,7 +211,7 @@ When the `expert-engineer` skill is active, MiniMax Coder is invoked when:
 The expert-engineer SKILL.md has a "Delegate heavy coding → /delegate-team" routing section
 that documents when to invoke minimax-coder vs god-agent vs vertex-coder.
 
-**Mavis can also use `mmx text chat` directly** — no need to invoke the Python scripts for one-off queries.
+**Apeiron can also use `mmx text chat` directly** — no need to invoke the Python scripts for one-off queries.
 
 ---
 
@@ -221,7 +221,7 @@ that documents when to invoke minimax-coder vs god-agent vs vertex-coder.
   - `${DELEGATE_TEAM_ROOT}/vertex-coder/` — Gemini-based (same structure)
   - `${DELEGATE_TEAM_ROOT}/god-agent/` — Multi-CLI (codex + opencode)
 - **Orchestration gateway**: `dt` CLI at `/opt/homebrew/bin/dt`
-- **Mavis expert-engineer**: `~/.mavis/agents/mavis/skills/expert-engineer/SKILL.md`
+- **Apeiron expert-engineer**: `~/.apeiron/agents/apeiron/skills/expert-engineer/SKILL.md`
 - **Config source of truth**: `~/.minimax/config.yaml`
 - **Auth**: `mmx auth login --api-key sk-xxxxx` (no env var or .env needed)
 - **Official CLI**: https://github.com/MiniMax-AI/cli
@@ -230,4 +230,4 @@ that documents when to invoke minimax-coder vs god-agent vs vertex-coder.
 ---
 
 **Last updated**: 2026-06-30 — switched to `mmx` CLI transport (official, proven). Removed anthropic SDK dependency.
-**Maintained by**: Mamdouh + Mavis (collaboratively).
+**Maintained by**: Mamdouh + Apeiron (collaboratively).

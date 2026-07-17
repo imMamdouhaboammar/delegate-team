@@ -29,9 +29,9 @@ AGENT_MEMORY_PATH = os.environ.get(
 SKILL_SEARCH_PATHS = [
     os.environ.get("DT_SKILLS_PATH_1", os.path.expanduser("~/.agents/skills")),
     os.environ.get("DT_SKILLS_PATH_2", os.path.expanduser("~/.gemini/config/skills")),
-    os.path.expanduser("~/.mavis/skills"),
+    os.path.expanduser("~/.apeiron/skills"),
     os.path.expanduser("~/.minimax/skills"),
-    os.path.expanduser("~/.mavis/agents/mavis/skills"),
+    os.path.expanduser("~/.apeiron/agents/apeiron/skills"),
 ]
 
 

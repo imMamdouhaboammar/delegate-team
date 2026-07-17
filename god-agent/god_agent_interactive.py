@@ -175,7 +175,7 @@ def main():
         description="God Agent Interactive — multi-file autonomous premium-model agent",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""Interactive-mode models (must support multi-turn + tools):
-  minimax-m3-high-thinking      MiniMax M3 high thinking (default, Mavis flagship)
+  minimax-m3-high-thinking      MiniMax M3 high thinking (default, Apeiron flagship)
   opencode-glm-5.2-max          Zhipu GLM-5.2 max
   opencode-qwen-max             Alibaba Qwen 3.7 max
   opencode-kimi-k2.7-code-max   Moonshot Kimi K2.7 code-max

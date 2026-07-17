@@ -19,7 +19,7 @@ This installs:
 - **`autopilot.sh`** — 7-stage GOD command (NEW v2.7.0)
 - **`apeiron-uni`** — smart universal wrapper (NEW v2.7.0)
 - **`agents-health.sh`** — health check for 10 coding agents
-- **`mavis-skill-scaffold`** CLI
+- **`apeiron-skill-scaffold`** CLI
 - **MMAS** multi-agent framework
 - **agent-kernel** memory + governance layer
 - **Waza** (auto via `npx`)
@@ -50,10 +50,10 @@ orchestrate.py --selftest    # 47/47 routing cases
 
 | Component | Path after install | What it does |
 |---|---|---|
-| `orchestrate.py` | `~/.mavis/skills/apeiron/scripts/orchestrate.py` | 47-case router, classifies task signature → picks the right chain |
-| `catalog.py` | `~/.mavis/skills/apeiron/scripts/catalog.py` | 38 curated integrations + 1890 auto-discovered skills indexer |
+| `orchestrate.py` | `~/.apeiron/skills/apeiron/scripts/orchestrate.py` | 47-case router, classifies task signature → picks the right chain |
+| `catalog.py` | `~/.apeiron/skills/apeiron/scripts/catalog.py` | 38 curated integrations + 1890 auto-discovered skills indexer |
 | `autopilot.sh` | `~/delegate-team/bin/autopilot.sh` | The GOD command — runs the full 7-stage chain in fg or `--background` |
-| `apeiron-uni` | `~/delegate-team/bin/apeiron-uni` | Smart universal wrapper — detects Mavis / codex / claude / gemini / opencode / mmx / shell, dispatches the right flow |
+| `apeiron-uni` | `~/delegate-team/bin/apeiron-uni` | Smart universal wrapper — detects Apeiron / codex / claude / gemini / opencode / mmx / shell, dispatches the right flow |
 | `agents-health.sh` | `~/delegate-team/bin/agents-health.sh` | Health check for the 10 symlinks in `~/delegate-team/bin/` |
 
 ## Manual install for parts `install.sh` can't automate
@@ -81,17 +81,17 @@ uninstalled separately using their respective `uninstall` commands.
 | Check | Path / Command |
 |---|---|
 | dt CLI gateway | `which dt` |
-| Orchestrator skill (root) | `~/.mavis/skills/delegate-team/SKILL.md` exists |
-| Orchestrator skill (apeiron) | `~/.mavis/skills/apeiron/SKILL.md` exists |
+| Orchestrator skill (root) | `~/.apeiron/skills/delegate-team/SKILL.md` exists |
+| Orchestrator skill (apeiron) | `~/.apeiron/skills/apeiron/SKILL.md` exists |
 | Orchestrator scripts | `orchestrate.py --selftest` returns 47/47 |
 | Catalog | `catalog.py` lists 38 integrations + 1890 skills |
 | autopilot.sh | `autopilot.sh --help` works |
 | apeiron-uni | `apeiron-uni --list-runtimes` works |
 | agents-health.sh | `agents-health.sh` returns 10/10 ready |
 | Slash command | `~/.claude/commands/apeiron.md` exists (symlink) |
-| Skill scaffolder | `which mavis-skill-scaffold` |
-| MMAS framework | `~/.mavis/agents/mavis/multi-agent/spawn-team.py` exists |
-| agent-kernel | `~/.mavis/agents/mavis/kernel/` exists |
+| Skill scaffolder | `which apeiron-skill-scaffold` |
+| MMAS framework | `~/.apeiron/agents/apeiron/multi-agent/spawn-team.py` exists |
+| agent-kernel | `~/.apeiron/agents/apeiron/kernel/` exists |
 | Waza skills | `~/.claude/skills/{think,check,hunt,...}/SKILL.md` |
 | unslop CLI | `which unslop` |
 | superpowers hook | `~/.claude/hooks/superpowers/run-hook.cmd` exists |
@@ -101,7 +101,7 @@ Run `./install.sh --verify` to check all at once.
 
 ## Quick start after install (v2.7.0)
 
-In a Mavis session (canonical):
+In a Apeiron session (canonical):
 
 ```bash
 apeiron "Make API p95 < 200ms"
@@ -138,7 +138,7 @@ autopilot.sh --dry-run "<task>"
 For the multi-agent team (Atlas autonomous mode):
 
 ```bash
-python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py --atlas
+python3 ~/.apeiron/agents/apeiron/multi-agent/spawn-team.py --atlas
 ```
 
 Or just use `dt`:

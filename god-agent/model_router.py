@@ -96,7 +96,7 @@ MODEL_REGISTRY = {
         "fallback": None,
         "family": "minimax",
         "tier": "high-thinking",
-        "description": "MiniMax M3 high thinking (Mavis / MiniMax flagship)",
+        "description": "MiniMax M3 high thinking (Apeiron / MiniMax flagship)",
         "supports_interactive": True,
         "supports_direct": True,
     },

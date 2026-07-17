@@ -5,7 +5,7 @@
 #   ./install.sh                    # Detect what's installed, install missing
 #   ./install.sh --all              # Install everything
 #   ./install.sh --orchestrator     # /Apeiron skill
-#   ./install.sh --scaffolder       # mavis-skill-scaffold CLI
+#   ./install.sh --scaffolder       # apeiron-skill-scaffold CLI
 #   ./install.sh --mmas             # Multi-agent team framework
 #   ./install.sh --kernel           # agent-kernel (memory + governance layer)
 #   ./install.sh --integrations     # superpowers + Waza + unslop + autoresearch
@@ -171,18 +171,18 @@ install_dt() {
 }
 
 install_orchestrator() {
-    log "Installing orchestrator/ → ~/.mavis/skills/apeiron + symlinks..."
-    ensure_dir "$HOME/.mavis/skills/apeiron/scripts"
-    copy_if_changed "$ROOT/orchestrator/SKILL.md" "$HOME/.mavis/skills/apeiron/SKILL.md"
-    copy_if_changed "$ROOT/orchestrator/scripts/orchestrate.sh" "$HOME/.mavis/skills/apeiron/scripts/orchestrate.sh"
-    run_cmd "chmod +x orchestrate.sh" chmod +x "$HOME/.mavis/skills/apeiron/scripts/orchestrate.sh"
+    log "Installing orchestrator/ → ~/.apeiron/skills/apeiron + symlinks..."
+    ensure_dir "$HOME/.apeiron/skills/apeiron/scripts"
+    copy_if_changed "$ROOT/orchestrator/SKILL.md" "$HOME/.apeiron/skills/apeiron/SKILL.md"
+    copy_if_changed "$ROOT/orchestrator/scripts/orchestrate.sh" "$HOME/.apeiron/skills/apeiron/scripts/orchestrate.sh"
+    run_cmd "chmod +x orchestrate.sh" chmod +x "$HOME/.apeiron/skills/apeiron/scripts/orchestrate.sh"
 
     # Symlink for global discovery
-    link_if_missing "$HOME/.mavis/skills/apeiron" "$HOME/.claude/skills/apeiron"
+    link_if_missing "$HOME/.apeiron/skills/apeiron" "$HOME/.claude/skills/apeiron"
 
     # Slash command (Claude Code-native entry point)
     ensure_dir "$HOME/.claude/commands"
-    link_if_missing "$HOME/.mavis/skills/apeiron/SKILL.md" "$HOME/.claude/commands/Apeiron.md"
+    link_if_missing "$HOME/.apeiron/skills/apeiron/SKILL.md" "$HOME/.claude/commands/Apeiron.md"
 
     # CLI on PATH
     for bindir in "$HOME/.local/bin" "$HOME/bin"; do
@@ -192,7 +192,7 @@ install_orchestrator() {
             continue
         fi
         if [ -d "$bindir" ] || mkdir -p "$bindir" 2>/dev/null; then
-            link_if_missing "$HOME/.mavis/skills/apeiron/scripts/orchestrate.sh" "$bindir/apeiron"
+            link_if_missing "$HOME/.apeiron/skills/apeiron/scripts/orchestrate.sh" "$bindir/apeiron"
             chmod +x "$bindir/apeiron" 2>/dev/null || true
         fi
     done
@@ -201,20 +201,20 @@ install_orchestrator() {
 }
 
 install_scaffolder() {
-    log "Installing scaffolder/ → ~/.mavis/skills/skill-scaffold + bin..."
-    ensure_dir "$HOME/.mavis/skills/skill-scaffold"
-    copy_if_changed "$ROOT/scaffolder/SKILL.md" "$HOME/.mavis/skills/skill-scaffold/SKILL.md"
+    log "Installing scaffolder/ → ~/.apeiron/skills/skill-scaffold + bin..."
+    ensure_dir "$HOME/.apeiron/skills/skill-scaffold"
+    copy_if_changed "$ROOT/scaffolder/SKILL.md" "$HOME/.apeiron/skills/skill-scaffold/SKILL.md"
 
-    ensure_dir "$HOME/.mavis/bin"
-    copy_if_changed "$ROOT/scaffolder/bin/mavis-skill-scaffold" "$HOME/.mavis/bin/mavis-skill-scaffold"
-    run_cmd "chmod +x mavis-skill-scaffold" chmod +x "$HOME/.mavis/bin/mavis-skill-scaffold"
+    ensure_dir "$HOME/.apeiron/bin"
+    copy_if_changed "$ROOT/scaffolder/bin/apeiron-skill-scaffold" "$HOME/.apeiron/bin/apeiron-skill-scaffold"
+    run_cmd "chmod +x apeiron-skill-scaffold" chmod +x "$HOME/.apeiron/bin/apeiron-skill-scaffold"
 
-    [ "$DRY_RUN" = 1 ] || ok "scaffolder installed. Run: mavis-skill-scaffold --name <name>"
+    [ "$DRY_RUN" = 1 ] || ok "scaffolder installed. Run: apeiron-skill-scaffold --name <name>"
 }
 
 install_mmas() {
-    log "Installing mmas/ → ~/.mavis/agents/mavis/multi-agent/..."
-    local dst="$HOME/.mavis/agents/mavis/multi-agent"
+    log "Installing mmas/ → ~/.apeiron/agents/apeiron/multi-agent/..."
+    local dst="$HOME/.apeiron/agents/apeiron/multi-agent"
     ensure_dir "$dst/agents" "$dst/examples"
 
     copy_if_changed "$ROOT/mmas/SKILL.md" "$dst/SKILL.md"
@@ -233,7 +233,7 @@ install_mmas() {
 
     run_cmd "chmod +x mmas scripts" chmod +x "$dst/spawn-team.py" "$dst/watchdog.sh" "$dst/hash-edit.py"
 
-    [ "$DRY_RUN" = 1 ] || ok "MMAS installed. Run: python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py --atlas"
+    [ "$DRY_RUN" = 1 ] || ok "MMAS installed. Run: python3 ~/.apeiron/agents/apeiron/multi-agent/spawn-team.py --atlas"
 }
 
 install_kernel() {
@@ -259,13 +259,13 @@ install_kernel() {
 }
 
 install_delegate_skills() {
-    log "Installing delegate-skills/ → ~/.mavis/skills/<agent>-delegate + symlinks..."
+    log "Installing delegate-skills/ → ~/.apeiron/skills/<agent>-delegate + symlinks..."
     local src="$ROOT/delegate-skills"
     if [ ! -d "$src" ]; then
         warn "delegate-skills/ missing — skipping"
         return 1
     fi
-    local dst_base="$HOME/.mavis/skills"
+    local dst_base="$HOME/.apeiron/skills"
     for skill_dir in "$src"/*-delegate; do
         [ -d "$skill_dir" ] || continue
         local name
@@ -333,17 +333,17 @@ verify() {
     printf '%-40s ' "dt CLI on PATH:"
     command -v dt >/dev/null && echo "yes" || echo "no (run: ./install.sh --dt)"
     printf '%-40s ' "/Apeiron skill:"
-    [ -e "$HOME/.mavis/skills/apeiron/SKILL.md" ] && echo "installed" || echo "missing"
+    [ -e "$HOME/.apeiron/skills/apeiron/SKILL.md" ] && echo "installed" || echo "missing"
     printf '%-40s ' "/Apeiron slash command:"
     [ -L "$HOME/.claude/commands/Apeiron.md" ] && echo "installed" || echo "missing"
     printf '%-40s ' "apeiron CLI:"
     command -v apeiron >/dev/null && echo "yes" || echo "no"
-    printf '%-40s ' "mavis-skill-scaffold CLI:"
-    command -v mavis-skill-scaffold >/dev/null && echo "yes" || echo "no"
+    printf '%-40s ' "apeiron-skill-scaffold CLI:"
+    command -v apeiron-skill-scaffold >/dev/null && echo "yes" || echo "no"
     printf '%-40s ' "MMAS framework:"
-    [ -e "$HOME/.mavis/agents/mavis/multi-agent/spawn-team.py" ] && echo "installed" || echo "missing"
+    [ -e "$HOME/.apeiron/agents/apeiron/multi-agent/spawn-team.py" ] && echo "installed" || echo "missing"
     printf '%-40s ' "delegate-skills (grok):"
-    [ -e "$HOME/.mavis/skills/grok-delegate/SKILL.md" ] && echo "installed" || echo "missing (run: ./install.sh --delegate-skills)"
+    [ -e "$HOME/.apeiron/skills/grok-delegate/SKILL.md" ] && echo "installed" || echo "missing (run: ./install.sh --delegate-skills)"
     printf '%-40s ' "agent-kernel CLI:"
     command -v agent-kernel >/dev/null && echo "yes ($(command -v agent-kernel))" || echo "no (run: ./install.sh --kernel)"
     printf '%-40s ' "agent-kernel memory home:"
@@ -361,16 +361,16 @@ verify() {
 
 uninstall() {
     log "Uninstalling (idempotent — only removes what we added)..."
-    mavis-trash "$HOME/.mavis/skills/apeiron" 2>/dev/null || true
-    mavis-trash "$HOME/.claude/skills/apeiron" 2>/dev/null || true
-    mavis-trash "$HOME/.claude/commands/Apeiron.md" 2>/dev/null || true
-    mavis-trash "$HOME/.claude/commands/mavis-team.md" 2>/dev/null || true
-    mavis-trash "$HOME/.mavis/skills/skill-scaffold" 2>/dev/null || true
-    mavis-trash "$HOME/.mavis/bin/mavis-skill-scaffold" 2>/dev/null || true
-    mavis-trash "$HOME/.mavis/agents/mavis/multi-agent" 2>/dev/null || true
+    apeiron-trash "$HOME/.apeiron/skills/apeiron" 2>/dev/null || true
+    apeiron-trash "$HOME/.claude/skills/apeiron" 2>/dev/null || true
+    apeiron-trash "$HOME/.claude/commands/Apeiron.md" 2>/dev/null || true
+    apeiron-trash "$HOME/.claude/commands/apeiron-team.md" 2>/dev/null || true
+    apeiron-trash "$HOME/.apeiron/skills/skill-scaffold" 2>/dev/null || true
+    apeiron-trash "$HOME/.apeiron/bin/apeiron-skill-scaffold" 2>/dev/null || true
+    apeiron-trash "$HOME/.apeiron/agents/apeiron/multi-agent" 2>/dev/null || true
     # delegate-skills: remove each installed skill dir + discovery symlinks
     for name in agy-delegate codex-delegate grok-delegate kimi-delegate opencode-delegate; do
-        mavis-trash "$HOME/.mavis/skills/$name" 2>/dev/null || true
+        apeiron-trash "$HOME/.apeiron/skills/$name" 2>/dev/null || true
         rm -f "$HOME/.claude/skills/$name" "$HOME/.codex/skills/$name" 2>/dev/null || true
     done
     # agent-kernel: only remove the symlinks we created in ~/.local/bin / ~/bin

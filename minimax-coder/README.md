@@ -6,7 +6,7 @@ tools registry) but uses the official **`mmx` CLI** for all API transport.
 
 ## The "boss and director" pattern
 
-You (Mavis) run on **MiniMax-M3**. This skill lets you call MiniMax models as sub-agents:
+You (Apeiron) run on **MiniMax-M3**. This skill lets you call MiniMax models as sub-agents:
 - Delegate a quick refactor to **M2.7-highspeed** while you keep thinking
 - Spawn a fresh **M3** context window for a hard isolated problem
 - Get an adversarial **M3** review while **gemini-3.1-pro** reviews the same code
@@ -82,7 +82,7 @@ mmx text chat --message "What is 2+2?" --message "assistant:4" --message "And 3+
 
 | Model | Description |
 |---|---|
-| `MiniMax-M3` | Flagship (Mavis's own runtime), 450K context, multimodal, switchable thinking |
+| `MiniMax-M3` | Flagship (Apeiron's own runtime), 450K context, multimodal, switchable thinking |
 | `MiniMax-M2.7` | Previous gen, 200K context, forced thinking |
 | `MiniMax-M2.7-highspeed` | M2.7 optimized for speed |
 
@@ -121,7 +121,7 @@ For the controlling agent's safety contract, see
 - `list_models.py` — Model listing
 - `inspect_settings.py` — Health check
 - `requirements.txt` — No runtime deps (Python stdlib + `mmx` CLI only)
-- `SKILL.md` — Skill manifest (for Mavis / Claude Code discovery)
+- `SKILL.md` — Skill manifest (for Apeiron / Claude Code discovery)
 
 ## License
 

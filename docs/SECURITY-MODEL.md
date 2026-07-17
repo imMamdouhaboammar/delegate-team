@@ -133,7 +133,7 @@ See [INSTALLATION.md](./INSTALLATION.md#lane-3--full-local-agent-os) for usage.
 
 On a Lane 3 install (`./install.sh --all`), the installer may:
 
-- Write to `~/.mavis/skills/`, `~/.mavis/agents/`, `~/.mavis/bin/`
+- Write to `~/.apeiron/skills/`, `~/.apeiron/agents/`, `~/.apeiron/bin/`
 - Symlink to `~/.claude/commands/`, `~/.claude/skills/`, `~/.claude/hooks/`
 - Symlink to `~/.local/bin/` and `~/bin/`
 - Create `~/.agent-kernel/` (kernel-managed)

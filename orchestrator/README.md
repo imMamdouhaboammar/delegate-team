@@ -18,7 +18,7 @@ It's the **front door** of the supersystem. Users type `/Apeiron "<task>"` (or c
     ▼ 4. routed by signature:
        ├─ metric-driven  → autoresearch loop
        ├─ heavy multi    → /delegate-team
-       ├─ parallel       → /mavis-team (MMAS)
+       ├─ parallel       → /apeiron-team (MMAS)
        └─ trivial         → execute locally
     ▼ 5. WAZA /check         ← review with evidence
     ▼ 6. quality-guard       ← 5-layer pre-delivery
@@ -37,7 +37,7 @@ Handled by parent `./install.sh`:
 ```
 
 The installer:
-- copies `SKILL.md` + `scripts/orchestrate.sh` to `~/.mavis/skills/apeiron/`
+- copies `SKILL.md` + `scripts/orchestrate.sh` to `~/.apeiron/skills/apeiron/`
 - creates symlinks in `~/.claude/skills/` (skill loader) + `~/.claude/commands/`
   (slash command) + `~/.local/bin/apeiron` (CLI on PATH)
 
@@ -63,7 +63,7 @@ apeiron "Build a landing page with shadcn"
 | `systematic-debugging` | fix, bug, broken, regression, failing, crash, error, leak |
 | `autoresearch` | \d+%, p\d+, <\s*\d, reduce.*by, increase.*by, coverage, latency |
 | `/delegate-team` | refactor, migrate, overhaul, rewrite, across, architecture |
-| `/mavis-team` MMAS | team, squad, parallel, specialize, swarm |
+| `/apeiron-team` MMAS | team, squad, parallel, specialize, swarm |
 | `/read + /learn` | research, learn, understand, investigate, study, explore |
 | TRIVIAL skip | rename, comment, remove, bump, update the version |
 
@@ -75,4 +75,4 @@ See `SKILL.md` for the full composition table and decision logic.
 - `scripts/orchestrate.sh` — Regex-based task-signature router (4.5 KB)
 
 Both are also symlinked from `~/.claude/skills/apeiron/` and
-`~/.mavis/skills/apeiron/` after install.
+`~/.apeiron/skills/apeiron/` after install.

@@ -8,8 +8,8 @@ description: |
   integrations (superpowers, Waza, unslop, autoresearch, agent-kernel, ...) and routes
   tasks through 7-stage autopilot chain (PREWARM → BRAINSTORM → PLAN → EXECUTE →
   REVIEW → QUALITY-GUARD → REPORT). Auto-discovers 1890+ skills across 3 sources
-  (mavis, agents, claude) with intelligent dedupe. Includes apeiron-uni — the
-  smart universal wrapper that detects the calling runtime (Mavis / codex / claude /
+  (apeiron, agents, claude) with intelligent dedupe. Includes apeiron-uni — the
+  smart universal wrapper that detects the calling runtime (Apeiron / codex / claude /
   gemini / opencode / mmx / shell) and dispatches the right flow. Skip this skill
   only when the user wants a SPECIFIC tool (e.g. "run /autoresearch with metric X"
   or "delegate to god-agent").
@@ -23,18 +23,18 @@ allowed-tools: [Bash, Read, Write, Edit, Grep, Glob, TodoWrite, Task, Skill, Web
 
 ## What this skill IS
 
-A **bundle** that exposes the full Mavis arsenal under one natural-language command.
+A **bundle** that exposes the full Apeiron arsenal under one natural-language command.
 Bundles:
 
 1. **`orchestrate.py`** — 47-case routing selftest; routes by task signature to the
    right chain (FEATURE / BUG / UI / PERFORMANCE / RESEARCH / TRIVIAL / MULTI-AGENT).
 2. **`catalog.py`** — 38 curated integrations + 1890 unique skills auto-discovered
-   from `~/.mavis/skills/`, `~/.agents/skills/`, `~/.claude/skills/` (with dedupe).
+   from `~/.apeiron/skills/`, `~/.agents/skills/`, `~/.claude/skills/` (with dedupe).
 3. **`autopilot.sh`** — the GOD command: 7-stage chain (PREWARM → BRAINSTORM with
    superpowers + codex gpt-5.5-high → PLAN → EXECUTE → REVIEW → QUALITY-GUARD →
    REPORT). Runs in foreground or `--background`.
 4. **`apeiron-uni`** — smart universal wrapper: detects calling runtime and
-   dispatches the right flow (Mavis → prewarm; agents → autopilot --background;
+   dispatches the right flow (Apeiron → prewarm; agents → autopilot --background;
    shell → autopilot foreground).
 
 ## Outcome contract
@@ -62,17 +62,17 @@ Bundles:
 |---|---|
 | "run /autoresearch with metric X" | `/autoresearch` directly |
 | "delegate to god-agent" | `/delegate-team god-agent` directly |
-| "spawn atlas + forge" | `/mavis-team atlas forge` directly |
+| "spawn atlas + forge" | `/apeiron-team atlas forge` directly |
 | "explain X to me" | direct answer, no orchestration |
 | "research X" | `/read` + `/learn` only |
 
 ## Usage
 
-### From any Mavis session (canonical):
+### From any Apeiron session (canonical):
 
 ```bash
 Apeiron "<task>"
-# → orchestrate emits JSON manifest → Mavis loads skills → executes
+# → orchestrate emits JSON manifest → Apeiron loads skills → executes
 ```
 
 ### From any agent (codex, claude, gemini, opencode, mmx):
@@ -215,7 +215,7 @@ skill by `install.sh` (the delegate-team installer).
 
 | Agent | Install | Status |
 |---|---|---|
-| Mavis session | `install.sh --all` | ✅ canonical |
+| Apeiron session | `install.sh --all` | ✅ canonical |
 | Claude Code | `npx skills add imMamdouhaboammar/delegate-team` | ✅ via `~/.claude/skills/apeiron/` |
 | Codex | `npx skills add ...` | ✅ via `~/.codex/skills/` |
 | Cursor | `npx skills add ...` | ✅ via `~/.agents/skills/` |

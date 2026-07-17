@@ -35,7 +35,7 @@ Stages:
 2. `systematic-debugging (superpowers)` — reproduce, isolate, fix
 3. `writing-plans (superpowers)` — write a regression test
 4. `/delegate-team (multi-model)` — execute the patch
-5. `/check (Waza)` + `quality-guard (Mavis)` — verify
+5. `/check (Waza)` + `quality-guard (Apeiron)` — verify
 6. `agent-kernel episode add` — capture for next session
 
 Trace: `.logs/routing/<timestamp>.json`.
@@ -56,7 +56,7 @@ Stages:
 2. `unslop audit (UI gate)` — **BLOCKING**, must score ≥ 70
 3. `writing-plans (superpowers)`
 4. `/delegate-team (multi-model)`
-5. `/check (Waza)` + `quality-guard (Mavis)`
+5. `/check (Waza)` + `quality-guard (Apeiron)`
 6. `agent-kernel episode add`
 
 If the unslop audit returns < 70, the chain stops and the user gets a report
@@ -77,7 +77,7 @@ Stages:
 1. `/think (Waza)` — instrument first
 2. `writing-plans (superpowers)` — metric-driven plan
 3. `autoresearch: plan + loop` — iterate on the metric
-4. `/check (Waza)` + `quality-guard (Mavis)`
+4. `/check (Waza)` + `quality-guard (Apeiron)`
 5. `agent-kernel episode add`
 
 The autoresearch loop runs until the metric target is hit or the user aborts.
@@ -90,7 +90,7 @@ The autoresearch loop runs until the metric target is hit or the user aborts.
 /apeiron "spawn a squad of specialists to audit the migration"
 ```
 
-Verdict: `MULTI-AGENT TEAM path — /mavis-team MMAS Atlas+ agents.`
+Verdict: `MULTI-AGENT TEAM path — /apeiron-team MMAS Atlas+ agents.`
 
 Stages:
 
@@ -98,8 +98,8 @@ Stages:
 2. MMAS Atlas mode — Atlas picks the team, writes `team_plan.json`, then the
    chosen specialists spawn
 3. Watchdog monitors each agent's `boulder.json`
-4. Per-agent summaries collected at `~/.mavis/multi-agent/tasks/<task_id>/`
-5. `/check (Waza)` + `quality-guard (Mavis)`
+4. Per-agent summaries collected at `~/.apeiron/multi-agent/tasks/<task_id>/`
+5. `/check (Waza)` + `quality-guard (Apeiron)`
 6. `agent-kernel episode add`
 
 See [MMAS.md](./MMAS.md) for the runtime details and guardrails.
@@ -119,7 +119,7 @@ Stages:
 1. `/think (Waza)` — bump version, run CI, write release notes
 2. `writing-plans (superpowers)` — release checklist
 3. `/delegate-team (multi-model)` — execute the release
-4. `/check (Waza)` + `quality-guard (Mavis)`
+4. `/check (Waza)` + `quality-guard (Apeiron)`
 5. `agent-kernel episode add`
 
 Note: the BUILD/PUBLISH path overrides the UI gate, so the orchestrator will

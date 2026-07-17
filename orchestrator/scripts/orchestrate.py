@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""orchestrate.py — auto-route a task description through /mavis-ship's stages.
+"""orchestrate.py — auto-route a task description through /apeiron-ship's stages.
 
 v4.3.0 — pre-warm contract:
   * Word boundaries via regex \\b — kills the v2.1.1 `p ` / ` ship ` false positives.
@@ -11,14 +11,14 @@ v4.3.0 — pre-warm contract:
   * --direct escape hatch, --team MMAS override.
   * Dynamic integration resolution (superpowers / waza / unslop / autoresearch).
   * **NEW: --prewarm** — emit a JSON manifest of skills to load, paths to
-    SKILL.md files, the verdict, and the dispatch command. The Mavis
+    SKILL.md files, the verdict, and the dispatch command. The Apeiron
     session reads this and calls `skill` tool on each path before
     proceeding — so the chain's guidance is already in context.
   * **NEW: brief generation** — `--dispatch` writes a markdown brief
-    to /tmp/mavis-brief-*.md containing the task, the chain plan, and
+    to /tmp/apeiron-brief-*.md containing the task, the chain plan, and
     the prewarm manifest, then passes it to `dt run --brief <path>`. The
     backend agent (codex / claude / etc.) sees the same context the
-    Mavis session has.
+    Apeiron session has.
 """
 
 import os
@@ -436,7 +436,7 @@ def pick_verdict(n: str, scores: Dict[str, int]) -> str:
     if scores.get("unslop", 0) >= 3:
         return "UI DELIVERY path — unslop audit (score≥70) is BLOCKING before delegate-team."
     if scores.get("mmas", 0) >= 3:
-        return "MULTI-AGENT TEAM path — mavis-team (MMAS) with Atlas+ agents."
+        return "MULTI-AGENT TEAM path — apeiron-team (MMAS) with Atlas+ agents."
     # Explicit delegate-to-<agent> (delegate-skills component): name the skill
     # and remind the orchestrator it stays the reviewer (the relay never commits).
     if getattr(score_task, "delegate_to", None):
@@ -462,7 +462,7 @@ STAGE_LABELS: List[Tuple[str, str]] = [
     ("writing",      "brainstorming"),
     ("autoresearch", "autoresearch loop"),
     ("delegate",     "delegate-team (→ mini-coder-max)"),
-    ("mmas",         "mavis-team (MMAS)"),
+    ("mmas",         "apeiron-team (MMAS)"),
     ("check",        "review-delta"),
     ("qguard",       "quality-guard"),
 ]
@@ -485,7 +485,7 @@ def _resolved_stage_labels() -> List[Tuple[str, str]]:
 
 def format_output(task: str, scores: Dict[str, int], team: bool = False) -> str:
     n = normalize(task)
-    out: List[str] = [f'# /mavis-ship route for: "{task}"', ""]
+    out: List[str] = [f'# /apeiron-ship route for: "{task}"', ""]
     if not scores:
         out.append("TRIVIAL — handle locally, skip the chain.")
         out.append("")
@@ -533,7 +533,7 @@ PATH_BACKEND = {
     "BUILD":        "minimax",
     "PERFORMANCE":  "codex",     # Codex strong for metric/measurement work
     "UI":           "claude",    # Claude Code is the UI/frontend specialist
-    "MULTI-AGENT":  None,        # mavis-team handles internally
+    "MULTI-AGENT":  None,        # apeiron-team handles internally
     "FEATURE":      "minimax",
 }
 
@@ -590,7 +590,7 @@ STAGE_TO_FRAMEWORK = {
     "autoresearch": "autoresearch",
     "check":        "waza",            # /check (review-delta)
     "delegate":     None,              # dt, no framework
-    "mmas":         None,              # mavis-team, no framework
+    "mmas":         None,              # apeiron-team, no framework
     "qguard":       None,              # quality-guard, built-in
 }
 
@@ -606,11 +606,11 @@ STAGE_TO_SKILL = {
 }
 
 # Where each skill lives on disk. Used to (a) emit prewarm hints for the
-# Mavis session, and (b) embed the path list in the brief for backend agents.
+# Apeiron session, and (b) embed the path list in the brief for backend agents.
 CLAUDE_SKILLS_DIR = os.path.expanduser("~/.claude/skills")
 CLAUDE_COMMANDS_DIR = os.path.expanduser("~/.claude/commands")
 AGENTS_SKILLS_DIR = os.path.expanduser("~/.agents/skills")
-MAVIS_SKILLS_DIR = os.path.expanduser("~/.mavis/skills")
+APEIRON_SKILLS_DIR = os.path.expanduser("~/.apeiron/skills")
 
 
 def skill_path_for_stage(stage_key: str) -> Optional[str]:
@@ -746,13 +746,13 @@ def build_json_trace(task: str, scores: Dict[str, int], check_kernel: bool = Fal
 
 
 def build_prewarm_manifest(task: str, scores: Dict[str, int]) -> dict:
-    """Build a structured manifest of what the Mavis session (or the backend
+    """Build a structured manifest of what the Apeiron session (or the backend
     brief) should pre-warm before tackling the task.
 
     MANDATORY: this manifest is built on every --prewarm / dispatch, and
-    the Mavis session reads it before starting the chain. The auto-discovery
+    the Apeiron session reads it before starting the chain. The auto-discovery
     of global skills (catalog.discover_global_skills + match_skills_to_task)
-    runs here so the Mavis always sees relevant skills from
+    runs here so the Apeiron always sees relevant skills from
     ~/.claude/skills/ — not just the chain-specific ones.
 
     Returned dict shape:
@@ -806,20 +806,20 @@ def build_prewarm_manifest(task: str, scores: Dict[str, int]) -> dict:
                 "why": "UI generation complement to unslop audit",
             })
 
-    # The Big Boss persona — load for any non-trivial coding path. The Mavis
+    # The Big Boss persona — load for any non-trivial coding path. The Apeiron
     # session is the staff engineer; this skill encodes the 6 laws and the
     # full tool/sub-agent matrix.
     if scores.get("delegate", 0) >= 2 or scores.get("systematic", 0) >= 3 or scores.get("unslop", 0) >= 3:
-        bigboss = os.path.join(MAVIS_SKILLS_DIR, "big-boss", "SKILL.md")
+        bigboss = os.path.join(APEIRON_SKILLS_DIR, "big-boss", "SKILL.md")
         if os.path.isfile(bigboss):
             extras.append({
                 "skill": "big-boss",
                 "path": bigboss,
-                "why": "Mavis staff-engineer persona — full agency, terminal mastery, sub-agent delegation, rigor",
+                "why": "Apeiron staff-engineer persona — full agency, terminal mastery, sub-agent delegation, rigor",
             })
 
     # Mandatory pre-search: find global skills that match the task.
-    # The Mavis (and the brief passed to backend agents) sees this and
+    # The Apeiron (and the brief passed to backend agents) sees this and
     # decides what to actually load.
     auto_discovered: list = []
     similar_clusters: list = []
@@ -858,7 +858,7 @@ def build_prewarm_manifest(task: str, scores: Dict[str, int]) -> dict:
         auto_discovered = [{"error": f"auto-discovery failed: {e}"}]
 
     # Dedupe: drop auto-discovered entries that are already in stages or
-    # companions (the Mavis doesn't need to see the same skill twice).
+    # companions (the Apeiron doesn't need to see the same skill twice).
     chain_paths = {s.get("path") for s in stages if s.get("path")}
     companion_paths = {c.get("path") for c in extras if c.get("path")}
     auto_discovered = [
@@ -957,7 +957,7 @@ _FALLBACK_LABELS = {
     "writing":      "brainstorming",
     "autoresearch": "autoresearch loop",
     "delegate":     "delegate-team (→ mini-coder-max)",
-    "mmas":         "mavis-team (MMAS)",
+    "mmas":         "apeiron-team (MMAS)",
     "check":        "review-delta",
     "qguard":       "quality-guard",
 }
@@ -1062,7 +1062,7 @@ def _delegate_dispatch(task: str, agent: str) -> str:
     return (
         f"# DELEGATE path — the orchestrator stays the reviewer; the relay\n"
         f"# writes the brief, the CLI agent implements, you land the diff.\n"
-        f"# Dispatch:  dt delegate {agent} --brief /tmp/mavis-brief.txt\n"
+        f"# Dispatch:  dt delegate {agent} --brief /tmp/apeiron-brief.txt\n"
         f"# Task:      {quoted}\n"
         f"# Inspect:   dt mesh --trace   (see the ROUTES_TO synapse fire)"
     )
@@ -1215,7 +1215,7 @@ SELFTEST_CASES: List[Tuple[str, str, str]] = [
 
 def run_selftest(verbose: bool = False) -> int:
     total = len(SELFTEST_CASES)
-    print(f"# /mavis-ship self-test — {total} cases (orchestrate.py v{VERSION})\n")
+    print(f"# /apeiron-ship self-test — {total} cases (orchestrate.py v{VERSION})\n")
     passed = 0
     failed: List[Tuple[str, str, str, str]] = []
     for task, expected, comment in SELFTEST_CASES:
@@ -1314,8 +1314,8 @@ def main(argv: List[str]) -> int:
         sys.stdout.flush()
         return 0
 
-    # --prewarm: emit the JSON manifest for the Mavis session to consume.
-    # The Mavis session reads this, calls the `skill` tool for each path,
+    # --prewarm: emit the JSON manifest for the Apeiron session to consume.
+    # The Apeiron session reads this, calls the `skill` tool for each path,
     # and then proceeds with the chain (or invokes --dispatch).
     if prewarm:
         manifest = build_prewarm_manifest(task, scores)
@@ -1357,11 +1357,11 @@ def main(argv: List[str]) -> int:
 
         # Generate a brief file with the task + the prewarm manifest so the
         # backend agent (codex / claude / etc.) sees the same context the
-        # Mavis session has.
+        # Apeiron session has.
         written_brief: Optional[str] = None
         if brief_path is None:
             import tempfile
-            fd, written_brief = tempfile.mkstemp(prefix="mavis-brief-", suffix=".md")
+            fd, written_brief = tempfile.mkstemp(prefix="apeiron-brief-", suffix=".md")
             os.close(fd)
         else:
             written_brief = brief_path
@@ -1391,7 +1391,7 @@ def write_brief(path: str, task: str, scores: Dict[str, int], team: bool = False
     verdict = pick_verdict(n, scores) if scores else "TRIVIAL"
 
     lines: List[str] = []
-    lines.append("# mavis-ship brief")
+    lines.append("# apeiron-ship brief")
     lines.append("")
     lines.append(f"**Task:** {task}")
     lines.append("")
@@ -1442,11 +1442,11 @@ def write_brief(path: str, task: str, scores: Dict[str, int], team: bool = False
                     d = d[:157] + "..."
                 lines.append(f"  - {d}")
 
-    # Similar clusters — same role, different names. Mavis picks one.
+    # Similar clusters — same role, different names. Apeiron picks one.
     clusters = manifest.get("similar_clusters", [])
     if clusters:
         lines.append("")
-        lines.append("## Similar clusters (Mavis: pick one, don't load all)")
+        lines.append("## Similar clusters (Apeiron: pick one, don't load all)")
         lines.append("")
         lines.append("These are groups of skills that look alike (high token overlap "
                     "on name + description). They likely serve the same role. "
@@ -1465,7 +1465,7 @@ def write_brief(path: str, task: str, scores: Dict[str, int], team: bool = False
         lines.append("")
         lines.append("These skills have IDENTICAL SKILL.md bodies in different folders. "
                     "No need to load more than one — pick the highest-priority source "
-                    "(mavis > agents > claude).")
+                    "(apeiron > agents > claude).")
         lines.append("")
         for d in dups:
             lines.append(f"- **{', '.join(d['names'])}** (hash {d['hash'][:8]})")
@@ -1480,9 +1480,9 @@ def write_brief(path: str, task: str, scores: Dict[str, int], team: bool = False
     lines.append("")
     lines.append("## Notes")
     lines.append("")
-    lines.append("- This brief was generated by `/mavis-ship --dispatch`.")
+    lines.append("- This brief was generated by `/apeiron-ship --dispatch`.")
     lines.append("- Treat each pre-warmed skill as authoritative guidance for that stage.")
-    lines.append("- The Mavis session that spawned this dispatch has the same skills loaded — the chain's evidence is consistent on both sides.")
+    lines.append("- The Apeiron session that spawned this dispatch has the same skills loaded — the chain's evidence is consistent on both sides.")
     lines.append("")
 
     with open(path, "w", encoding="utf-8") as f:

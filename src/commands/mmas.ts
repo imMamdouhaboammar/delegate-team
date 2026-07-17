@@ -9,7 +9,7 @@ export function resolveMMASScript(): string {
   if (existsSync(localPath)) {
     return localPath;
   }
-  return join(homedir(), '.mavis', 'agents', 'mavis', 'multi-agent', 'spawn-team.py');
+  return join(homedir(), '.apeiron', 'agents', 'apeiron', 'multi-agent', 'spawn-team.py');
 }
 
 export function runMMAS(prompt: string, options: any = {}): Promise<number> {

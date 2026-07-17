@@ -15,8 +15,8 @@
       "completed_at": "2026-06-30T12:38:12Z",
       "last_activity": "2026-06-30T12:38:12Z",
       "exit_code": 0,
-      "summary_file": "${HOME}/.mavis/multi-agent/tasks/task-20260630-123456-abc123/logs/atlas.summary",
-      "log_file": "${HOME}/.mavis/multi-agent/tasks/task-20260630-123456-abc123/logs/atlas.log"
+      "summary_file": "${HOME}/.apeiron/multi-agent/tasks/task-20260630-123456-abc123/logs/atlas.summary",
+      "log_file": "${HOME}/.apeiron/multi-agent/tasks/task-20260630-123456-abc123/logs/atlas.log"
     },
     {
       "name": "forge",
@@ -27,8 +27,8 @@
       "started_at": "2026-06-30T12:34:57Z",
       "last_activity": "2026-06-30T12:39:01Z",
       "exit_code": null,
-      "summary_file": "${HOME}/.mavis/multi-agent/tasks/task-20260630-123456-abc123/logs/forge.summary",
-      "log_file": "${HOME}/.mavis/multi-agent/tasks/task-20260630-123456-abc123/logs/forge.log"
+      "summary_file": "${HOME}/.apeiron/multi-agent/tasks/task-20260630-123456-abc123/logs/forge.summary",
+      "log_file": "${HOME}/.apeiron/multi-agent/tasks/task-20260630-123456-abc123/logs/forge.log"
     },
     {
       "name": "scout",
@@ -40,8 +40,8 @@
       "completed_at": "2026-06-30T12:36:45Z",
       "last_activity": "2026-06-30T12:36:45Z",
       "exit_code": 0,
-      "summary_file": "${HOME}/.mavis/multi-agent/tasks/task-20260630-123456-abc123/logs/scout.summary",
-      "log_file": "${HOME}/.mavis/multi-agent/tasks/task-20260630-123456-abc123/logs/scout.log"
+      "summary_file": "${HOME}/.apeiron/multi-agent/tasks/task-20260630-123456-abc123/logs/scout.summary",
+      "log_file": "${HOME}/.apeiron/multi-agent/tasks/task-20260630-123456-abc123/logs/scout.log"
     }
   ],
   "watchdog_pid": 12350,

@@ -34,7 +34,7 @@ description: |
 - Not a replacement for vertex-coder (different model family).
 - Not a general-purpose LLM gateway (use `dt serve` for that).
 - Not a code reviewer (use the `review-changes` skill).
-- Not a memory tool (lives outside the Mavis memory layer).
+- Not a memory tool (lives outside the Apeiron memory layer).
 
 ---
 
@@ -159,7 +159,7 @@ Default model flags can be overridden via `~/.config/god-agent/models.json`:
 
 ---
 
-## Integration with Mavis / expert-engineer
+## Integration with Apeiron / expert-engineer
 
 When the `expert-engineer` skill is active, God Agent is invoked when:
 
@@ -192,10 +192,10 @@ that documents when to invoke this skill vs handle locally.
 
 - **Sibling backend**: `${DELEGATE_TEAM_ROOT}/vertex-coder/` (Gemini-based)
 - **Orchestration gateway**: `dt` CLI at `/opt/homebrew/bin/dt`
-- **Mavis expert-engineer**: `~/.mavis/agents/mavis/skills/expert-engineer/SKILL.md`
+- **Apeiron expert-engineer**: `~/.apeiron/agents/apeiron/skills/expert-engineer/SKILL.md`
 - **Global skills**: `~/.agents/skills/` (1808 skills available for `--skills` preload)
 
 ---
 
 **Last updated**: 2026-06-30 — first version, mirrors vertex-coder structure.
-**Maintained by**: Mamdouh + Mavis (collaboratively).
+**Maintained by**: Mamdouh + Apeiron (collaboratively).

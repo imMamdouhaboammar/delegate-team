@@ -139,8 +139,8 @@ def load_skill_instructions(skill_names: List[str]) -> str:
     Searches:
       1. ~/.agents/skills/<name>/SKILL.md
       2. ~/.gemini/config/skills/<name>/SKILL.md
-      3. ~/.mavis/skills/<name>/SKILL.md
-      4. ~/.mavis/agents/mavis/skills/<name>/SKILL.md
+      3. ~/.apeiron/skills/<name>/SKILL.md
+      4. ~/.apeiron/agents/apeiron/skills/<name>/SKILL.md
     """
     if not skill_names:
         return ""
@@ -148,8 +148,8 @@ def load_skill_instructions(skill_names: List[str]) -> str:
     search_paths = [
         os.environ.get("DT_SKILLS_PATH_1", os.path.expanduser("~/.agents/skills")),
         os.environ.get("DT_SKILLS_PATH_2", os.path.expanduser("~/.gemini/config/skills")),
-        os.path.expanduser("~/.mavis/skills"),
-        os.path.expanduser("~/.mavis/agents/mavis/skills"),
+        os.path.expanduser("~/.apeiron/skills"),
+        os.path.expanduser("~/.apeiron/agents/apeiron/skills"),
     ]
 
     loaded = []

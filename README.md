@@ -35,7 +35,7 @@ See **[docs/INSTALLATION.md](./docs/INSTALLATION.md)** for the full reference.
 
 ```bash
 npm install -g delegate-team
-dt --version          # → 3.0.6
+dt --version          # → 3.0.7
 dt run "<task>"       # dispatch with auto backend selection
 dt run "<task>" --dry-run
 dt doctor             # human health check
@@ -137,7 +137,7 @@ dt mmas spawn "Audit the auth layer" \
 | **`/apeiron` orchestrator** | Natural-language task routing with structured traces | 2+ | [`docs/ROUTING.md`](./docs/ROUTING.md) |
 | **agent-kernel** | Local memory + governance (companion) | 3 | [`docs/AGENT-KERNEL-INTEGRATION.md`](./docs/AGENT-KERNEL-INTEGRATION.md) |
 | **MMAS** | Multi-agent team runtime with guardrails | 3 | [`docs/MMAS.md`](./docs/MMAS.md) |
-| **Skill scaffolder** | `mavis-skill-scaffold` CLI for new skills | 3 | [`scaffolder/`](./scaffolder/) |
+| **Skill scaffolder** | `apeiron-skill-scaffold` CLI for new skills | 3 | [`scaffolder/`](./scaffolder/) |
 | **Backend agents** | Codex, MiniMax, Gemini, MetaGPT | 3 | [`integrations/`](./integrations/) |
 | **delegate-skills** | `dt delegate <agent>` — hand a task to Grok/Codex/OpenCode/Kimi/AGY, review the diff yourself | 3 | [`delegate-skills/SKILL.md`](./delegate-skills/SKILL.md) |
 
@@ -197,7 +197,7 @@ Full threat model + opt-in switches: **[docs/SECURITY-MODEL.md](./docs/SECURITY-
 | [docs/SECURITY-MODEL.md](./docs/SECURITY-MODEL.md) | Threat model + opt-in switches |
 | [INSTALL.md](./INSTALL.md) | Granular component-level install detail |
 | [DT.md](./DT.md) | Original `dt` CLI specifics |
-| [CHANGELOG.md](./CHANGELOG.md) | v1.0.0 → v3.0.6 release notes |
+| [CHANGELOG.md](./CHANGELOG.md) | v1.0.0 → v3.0.7 release notes |
 | [SECURITY.md](./SECURITY.md) | Short vulnerability-reporting policy |
 | [AGENTS.md](./AGENTS.md) | Repo conventions for contributors |
 | [docs/audits/REPO-AUDIT-vNEXT.md](./docs/audits/REPO-AUDIT-vNEXT.md) | Historical audit baseline |

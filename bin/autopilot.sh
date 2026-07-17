@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # autopilot.sh — the GOD command. Drives the full Apeiron chain end-to-end
-# without Mavis supervision. The user invokes it, walks away, and comes back
+# without Apeiron supervision. The user invokes it, walks away, and comes back
 # to a finished module + final report.
 #
 # Flow:
@@ -20,9 +20,9 @@
 #   autopilot.sh --follow <log-path>            # tail -f the log
 #
 # What the user sees when they come back:
-#   - /tmp/mavis-autopilot-<id>/report.md        # the final report
-#   - /tmp/mavis-autopilot-<id>/chain.log        # full chain log
-#   - /tmp/mavis-autopilot-<id>/brief.md         # what was sent to the backend
+#   - /tmp/apeiron-autopilot-<id>/report.md        # the final report
+#   - /tmp/apeiron-autopilot-<id>/chain.log        # full chain log
+#   - /tmp/apeiron-autopilot-<id>/brief.md         # what was sent to the backend
 #   - The commit hash(es) in the working repo
 #
 set -euo pipefail
@@ -51,8 +51,8 @@ EOF
     esac
 done
 
-# The orchestrator script lives at ~/.mavis/skills/apeiron/scripts/orchestrate.sh
-ORCHESTRATE="${ORCHESTRATE_OVERRIDE:-$HOME/.mavis/skills/apeiron/scripts/orchestrate.sh}"
+# The orchestrator script lives at ~/.apeiron/skills/apeiron/scripts/orchestrate.sh
+ORCHESTRATE="${ORCHESTRATE_OVERRIDE:-$HOME/.apeiron/skills/apeiron/scripts/orchestrate.sh}"
 if [ ! -f "$ORCHESTRATE" ]; then
     /bin/echo "ERROR: orchestrator not found at $ORCHESTRATE" >&2
     /bin/echo "  Set ORCHESTRATE_OVERRIDE env var to its full path." >&2
@@ -100,7 +100,7 @@ done
 # ---------- action dispatch ----------
 case "$ACTION" in
     status)
-        LATEST=$(/bin/ls -td /tmp/mavis-autopilot-* 2>/dev/null | /usr/bin/head -1)
+        LATEST=$(/bin/ls -td /tmp/apeiron-autopilot-* 2>/dev/null | /usr/bin/head -1)
         if [ -z "$LATEST" ]; then
             echo "No autopilot runs found in /tmp/."
             exit 1
@@ -116,7 +116,7 @@ case "$ACTION" in
         ;;
     follow)
         if [ -z "${FOLLOW_LOG:-}" ]; then
-            LATEST=$(/bin/ls -td /tmp/mavis-autopilot-* 2>/dev/null | /usr/bin/head -1)
+            LATEST=$(/bin/ls -td /tmp/apeiron-autopilot-* 2>/dev/null | /usr/bin/head -1)
             FOLLOW_LOG="$LATEST/chain.log"
         fi
         if [ ! -f "$FOLLOW_LOG" ]; then
@@ -126,7 +126,7 @@ case "$ACTION" in
         exec tail -f "$FOLLOW_LOG"
         ;;
     list)
-        /bin/ls -dt /tmp/mavis-autopilot-*/ 2>/dev/null | /usr/bin/head -10
+        /bin/ls -dt /tmp/apeiron-autopilot-*/ 2>/dev/null | /usr/bin/head -10
         exit 0
         ;;
 esac
@@ -138,7 +138,7 @@ if [ -z "$TASK" ]; then
 fi
 
 # ---------- workspace setup ----------
-RUN_ID="mavis-autopilot-$(/bin/date +%Y%m%d-%H%M%S)-$$"
+RUN_ID="apeiron-autopilot-$(/bin/date +%Y%m%d-%H%M%S)-$$"
 WORK="/tmp/$RUN_ID"
 /bin/mkdir -p "$WORK"
 LOG="$WORK/chain.log"
@@ -250,7 +250,7 @@ each with 2-5 sub-tasks, each sub-task with explicit verification criteria."
     # === STAGE 5: REVIEW (waza:check) ===
     hr
     log "STAGE 5/7: REVIEW (waza:check)"
-    log "  The Mavis (or the user, when they wake up) will run waza:check on the diff."
+    log "  The Apeiron (or the user, when they wake up) will run waza:check on the diff."
     log "  Output written by the review stage → $WORK/review.md"
 
     # === STAGE 6: QUALITY-GUARD (5-layer check) ===

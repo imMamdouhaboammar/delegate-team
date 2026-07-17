@@ -37,9 +37,9 @@ which tools to call in which order.
 | `score_unslop` | UI-only: `ui`, `frontend`, `front-end`, `landing page`, `pricing page`, `dashboard page`, `component`, `layout`, `css`, `tailwind`, `shadcn`, `modal`, `form`, `design system`, `color palette`, `typography` — **but only if no `api`, `backend`, `server`, `cli`, `terminal`, `agentic`** | `unslop audit (UI gate)` |
 | `score_autoresearch` | Has measurable metric: `%`, `< N`, `> N`, `p95`, `p99`, `coverage`, `latency`, `bundle size`, `throughput`, `memory`, `rps`, `qps`, `perf`, `performance`, `slow`, `faster`, `optimize`, `reduce`, `minimize` | `autoresearch: plan + loop` |
 | `score_delegate` | Heavy multi-file work: `refactor`, `migrat`, `overhaul`, `rewrite`, `across`, `multi-file`, `architecture`, `integrate`, `service`, `module`; also derived default if `score_think >= 2` | `/delegate-team (multi-model)` |
-| `score_mmas` | Strong multi-agent signals: `squad`, `swarm`, `crew`, `multi-agent`, `parallel agents`, `concurrent agents`, `spawn a team`, `team of agents`, `agent crew`, `division of labor`, `specialize`, `parallel + agents/specialists/roles` | `/mavis-team (MMAS)` |
+| `score_mmas` | Strong multi-agent signals: `squad`, `swarm`, `crew`, `multi-agent`, `parallel agents`, `concurrent agents`, `spawn a team`, `team of agents`, `agent crew`, `division of labor`, `specialize`, `parallel + agents/specialists/roles` | `/apeiron-team (MMAS)` |
 | `score_check` | derived from `score_think >= 2` or `score_systematic >= 2` or `score_delegate >= 2` | `/check (Waza)` |
-| `score_qguard` | derived from `score_unslop >= 3` or `score_delegate >= 2` | `quality-guard (Mavis)` |
+| `score_qguard` | derived from `score_unslop >= 3` or `score_delegate >= 2` | `quality-guard (Apeiron)` |
 
 ### BUILD/PUBLISH override
 
@@ -64,7 +64,7 @@ When multiple signals fire, the orchestrator picks a single verdict string:
 3. **BUILD/PUBLISH** — matched BUILD keywords AND `score_unslop == 0`.
 4. **PERFORMANCE/METRIC** — `score_autoresearch >= 3`. autoresearch loop.
 5. **UI DELIVERY** — `score_unslop >= 3`. unslop audit is BLOCKING.
-6. **MULTI-AGENT TEAM** — `score_mmas >= 3`. /mavis-team MMAS Atlas+.
+6. **MULTI-AGENT TEAM** — `score_mmas >= 3`. /apeiron-team MMAS Atlas+.
 7. **BUG** — `score_systematic >= 3`. systematic-debugging before patch.
 8. **FEATURE** — `score_delegate >= 2`. /delegate-team with default backend.
 9. **Default full chain** — none of the above. Run all stages.
@@ -93,7 +93,7 @@ Stages (descending score):
   • writing-plans (superpowers)   (score=2)
   • /delegate-team (multi-model)  (score=2)
   • /check (Waza)                 (score=2)
-  • quality-guard (Mavis)         (score=2)
+  • quality-guard (Apeiron)         (score=2)
 
 # Verdict:
 UI DELIVERY path — unslop audit is BLOCKING before /delegate-team.
@@ -125,7 +125,7 @@ Output (pretty-printed):
     "writing-plans (superpowers)",
     "/delegate-team (multi-model)",
     "/check (Waza)",
-    "quality-guard (Mavis)"
+    "quality-guard (Apeiron)"
   ],
   "reasons": [
     "ui_frontend=4 (matched: pricing page, shadcn)",
@@ -136,7 +136,7 @@ Output (pretty-printed):
     "systematic-debugging (not a bug)",
     "autoresearch: plan + loop (no metric)",
     "agent-kernel memory + episode (no memory keywords)",
-    "/mavis-team MMAS (no multi-agent signals)"
+    "/apeiron-team MMAS (no multi-agent signals)"
   ],
   "timestamp": "2026-06-30T12:34:56Z"
 }

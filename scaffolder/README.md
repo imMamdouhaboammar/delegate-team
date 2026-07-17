@@ -1,10 +1,10 @@
-# scaffolder/ — `mavis-skill-scaffold`
+# scaffolder/ — `apeiron-skill-scaffold`
 
-> One-shot generator for properly-structured Mavis skill directories.
+> One-shot generator for properly-structured Apeiron skill directories.
 
 ## What this is
 
-A CLI that creates Mavis-format skill folders with the right frontmatter, allowed-tools,
+A CLI that creates Apeiron-format skill folders with the right frontmatter, allowed-tools,
 references, scripts, hooks, and tests. Saves you 30-60 minutes per skill.
 
 ## Install
@@ -17,12 +17,12 @@ Handled by parent `./install.sh`:
 ./install.sh --all
 ```
 
-The installer copies `bin/mavis-skill-scaffold` to `~/.mavis/bin/` (already on PATH).
+The installer copies `bin/apeiron-skill-scaffold` to `~/.apeiron/bin/` (already on PATH).
 
 ## Usage
 
 ```bash
-mavis-skill-scaffold --name my-skill \
+apeiron-skill-scaffold --name my-skill \
                      --description "Trigger the skill when..." \
                      --type workflow \
                      --with-hooks \
@@ -60,6 +60,6 @@ my-skill/
 ## Files
 
 - `SKILL.md` — Skill manifest for the scaffolder itself
-- `bin/mavis-skill-scaffold` — Bash CLI (538 lines, zero dependencies beyond bash 4+)
+- `bin/apeiron-skill-scaffold` — Bash CLI (538 lines, zero dependencies beyond bash 4+)
 
-After install, also reachable as `~/.mavis/bin/mavis-skill-scaffold`.
+After install, also reachable as `~/.apeiron/bin/apeiron-skill-scaffold`.

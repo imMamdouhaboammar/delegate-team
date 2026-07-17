@@ -5,7 +5,7 @@ description: |
   project. Use when the user says "use everything you got", "use full engineering
   arsenal", "go all-in", "/Apeiron <task>", "/ship <task>", "use all capabilities",
   "full stack", "end to end", "everything intelligently". Composes: Waza /think →
-  unslop audit → superpowers writing-plans → autoresearch | /delegate-team | /mavis-team
+  unslop audit → superpowers writing-plans → autoresearch | /delegate-team | /apeiron-team
   (routed by task signature) → Waza /check → quality-guard. Skip this skill only when
   the user wants a SPECIFIC tool (e.g. "run /autoresearch with metric X" or "delegate
   to god-agent").
@@ -42,7 +42,7 @@ allowed-tools: [Bash, Read, Write, Edit, Grep, Glob, TodoWrite]
 |---|---|
 | "run /autoresearch with metric X" | `/autoresearch` directly |
 | "delegate to god-agent" | `/delegate-team god-agent` directly |
-| "spawn atlas + forge" | `/mavis-team atlas forge` directly |
+| "spawn atlas + forge" | `/apeiron-team atlas forge` directly |
 | "explain X to me" | direct answer, no orchestration |
 | "research X" | `/read` + `/learn` only |
 
@@ -63,16 +63,16 @@ allowed-tools: [Bash, Read, Write, Edit, Grep, Glob, TodoWrite]
     ▼ 4. ROUTE (auto-decided by signature)
    ┌─ metric-driven      → autoresearch:plan + loop
    ├─ heavy multi-file  → /delegate-team (minimax-coder | god-agent | vertex-coder)
-   ├─ parallel special  → /mavis-team (MMAS)
+   ├─ parallel special  → /apeiron-team (MMAS)
    └─ trivial            → execute locally, skip the rest
     │
     ▼ 5. EXECUTE (routed tool runs)
-   Mavis supervises. Failures route to /hunt.
+   Apeiron supervises. Failures route to /hunt.
     │
     ▼ 6. WAZA /check
    Review the diff with evidence. Project-aware constraints surfaced.
     │
-    ▼ 7. quality-guard (Mavis)
+    ▼ 7. quality-guard (Apeiron)
    5-layer pre-delivery check: mechanical / definition-of-done / security
    / AI-smells / project-specific.
     │
@@ -110,7 +110,7 @@ For automated routing decisions (skip the prompt-asking step), use the bundled
 `scripts/orchestrate.sh` which detects the task signature and prints the route:
 
 ```bash
-~/.mavis/skills/apeiron/scripts/orchestrate.sh "<task>"
+~/.apeiron/skills/apeiron/scripts/orchestrate.sh "<task>"
 # → think → unslop → writing-plans → delegate-team → check → quality-guard
 ```
 
@@ -141,7 +141,7 @@ For automated routing decisions (skip the prompt-asking step), use the bundled
 ## Composition table
 
 ```
-            Waza     Superpowers  Unslop   autoresearch   /delegate-team  /mavis-team   Waza    Mavis
+            Waza     Superpowers  Unslop   autoresearch   /delegate-team  /apeiron-team   Waza    Apeiron
             /think   brainstorming audit    loop           multi-model      MMAS         /check  quality-guard
            ────────────────────────────────────────────────────────────────────────────────────────────────
 research     ✓                                  ✓ (read/learn)

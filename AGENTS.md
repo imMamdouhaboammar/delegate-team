@@ -29,9 +29,9 @@ delegate-team/
 │   ├── scripts/orchestrate.sh
 │   └── README.md
 │
-├── scaffolder/             # mavis-skill-scaffold CLI
+├── scaffolder/             # apeiron-skill-scaffold CLI
 │   ├── SKILL.md
-│   ├── bin/mavis-skill-scaffold
+│   ├── bin/apeiron-skill-scaffold
 │   └── README.md
 │
 ├── mmas/                   # Multi-agent team framework
@@ -77,7 +77,7 @@ delegate-team/
 |---|---|---|
 | `delegate-team` | `./SKILL.md` | "full arsenal", "use everything", "everything intelligently" |
 | `apeiron` | `./orchestrator/SKILL.md` | "/Apeiron", orchestrator-related routing queries |
-| `skill-scaffold` | `./scaffolder/SKILL.md` | "create a new skill", "scaffold mavis skill" |
+| `skill-scaffold` | `./scaffolder/SKILL.md` | "create a new skill", "scaffold apeiron skill" |
 | `mmas` | `./mmas/SKILL.md` | "spawn team", "multi-agent", "boss mode" |
 | `dt` | covered by main `delegate-team` | "delegate task", "use Codex", "use MiniMax" |
 | `god-agent` | `./god-agent/SKILL.md` | "run with god agent", "codex" |

@@ -112,7 +112,7 @@ cd delegate-team
 
 - `dt` CLI (Lane 1)
 - `/apeiron` orchestrator (Lane 2)
-- MMAS multi-agent framework → `~/.mavis/agents/mavis/multi-agent/`
+- MMAS multi-agent framework → `~/.apeiron/agents/apeiron/multi-agent/`
 - agent-kernel memory + governance → `~/.agent-kernel/`
 - Companion frameworks (superpowers, Waza, unslop-preflight, autoresearch)
   installed where their own installers put them
@@ -239,7 +239,7 @@ status for each component.
 
 The installer touches these locations on a normal Lane 3 install:
 
-- `~/.mavis/` — skills, agents, MMAS task state
+- `~/.apeiron/` — skills, agents, MMAS task state
 - `~/.claude/` — slash command symlink, skill symlinks
 - `~/.agent-kernel/` — memory home (kernel-managed)
 - `~/.local/bin/` and `~/bin/` — CLI symlinks

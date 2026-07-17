@@ -47,7 +47,7 @@ jobs:
         run: |
           set -e
           for f in install.sh orchestrator/scripts/orchestrate.sh \
-                   mmas/watchdog.sh scaffolder/bin/mavis-skill-scaffold \
+                   mmas/watchdog.sh scaffolder/bin/apeiron-skill-scaffold \
                    agent-kernel/install.sh agent-kernel/wrapper.sh; do
             echo "checking $f"
             bash -n "$f"
@@ -56,7 +56,7 @@ jobs:
         uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # 2.0.0
         with:
           scandir: './'
-          additional_files: 'install.sh orchestrator/scripts/orchestrate.sh mmas/watchdog.sh scaffolder/bin/mavis-skill-scaffold agent-kernel/install.sh agent-kernel/wrapper.sh'
+          additional_files: 'install.sh orchestrator/scripts/orchestrate.sh mmas/watchdog.sh scaffolder/bin/apeiron-skill-scaffold agent-kernel/install.sh agent-kernel/wrapper.sh'
           # Only fail on errors, not warnings/info (these are stylistic)
           severity: 'error'
 

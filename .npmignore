@@ -63,9 +63,9 @@ agent-kernel/develpment/
 .turbo/
 .parcel-cache/
 
-# Mavis-specific (not for npm)
-.mavis/
-.mavis-*
+# Apeiron-specific (not for npm)
+.apeiron/
+.apeiron-*
 /tmp/
 
 # Local install configs

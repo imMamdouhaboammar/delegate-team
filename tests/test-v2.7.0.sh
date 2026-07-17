@@ -107,7 +107,7 @@ fi
 #   1. Bundled in the repo (always present):
 #      - apeiron/scripts/, orchestrator/scripts/, scaffolder/, mmas/, etc.
 #      - All SKILL.md files anywhere in the repo
-#   2. Optional environment skills (if ~/.mavis/skills, ~/.agents/skills,
+#   2. Optional environment skills (if ~/.apeiron/skills, ~/.agents/skills,
 #      ~/.claude/skills are present in the runner environment).
 #
 # The test PASSES if at least 10 skills are bundled in the repo. The
@@ -138,10 +138,10 @@ bundled_py=$(find "$ROOT" \
 
 # 3. Optional environment skills (only counted if present)
 env_count=0
-mavis_env=$(ls ~/.mavis/skills/ 2>/dev/null | /usr/bin/wc -l | /usr/bin/tr -d ' ')
+apeiron_env=$(ls ~/.apeiron/skills/ 2>/dev/null | /usr/bin/wc -l | /usr/bin/tr -d ' ')
 agents_env=$(ls ~/.agents/skills/ 2>/dev/null | /usr/bin/wc -l | /usr/bin/tr -d ' ')
 claude_env=$(ls ~/.claude/skills/ 2>/dev/null | /usr/bin/wc -l | /usr/bin/tr -d ' ')
-env_count=$((mavis_env + agents_env + claude_env))
+env_count=$((apeiron_env + agents_env + claude_env))
 
 total=$((bundled_count + bundled_py + env_count))
 

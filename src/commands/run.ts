@@ -116,7 +116,7 @@ ${rawPrompt}
         if (routeData.score >= 8) {
           backend = "mmas";
           autoRouted = true;
-          console.log(`  🎯 Routing to: ${C.bold}${C.magenta}mmas${C.reset} (Mavis Multi-Agent System for complex tasks)`);
+          console.log(`  🎯 Routing to: ${C.bold}${C.magenta}mmas${C.reset} (Apeiron Multi-Agent System for complex tasks)`);
         } else if (routeData.score > 5) {
           backend = "vertexcoder";
           console.log(`  🎯 Routing to: ${C.bold}${C.green}vertexcoder${C.reset} (Premium Gemini AI via GCP SDK)`);

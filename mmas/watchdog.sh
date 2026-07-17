@@ -6,7 +6,7 @@
 #   2. Log file activity (mtime vs now)
 #   3. Process exit code (if PID is dead)
 #
-# Sends aggregated status report to the boss (Mavis) via mavis communication send.
+# Sends aggregated status report to the boss (Apeiron) via apeiron communication send.
 # Detects idle agents (>5 min no log activity) and injects "continue" prompt.
 # When all agents complete, sends final report and exits.
 #
@@ -39,7 +39,7 @@ if [[ -z "$TASK_ID" || -z "$BOSS_SESSION" ]]; then
   exit 1
 fi
 
-TASK_DIR="$HOME/.mavis/multi-agent/tasks/$TASK_ID"
+TASK_DIR="$HOME/.apeiron/multi-agent/tasks/$TASK_ID"
 BOULDER="$TASK_DIR/boulder.json"
 WATCHDOG_LOG="$TASK_DIR/watchdog.log"
 IDLE_THRESHOLD_SEC=300   # 5 min idle = stuck
@@ -83,7 +83,7 @@ send_to_boss() {
   local content="$1"
   # Note: --from arg requires valid session format (ses_* or mvs_*).
   # Watchdog runs detached so we use boss_session as both from/to (acting on behalf of boss).
-  mavis communication send \
+  apeiron communication send \
     --from "$BOSS_SESSION" \
     --to "$BOSS_SESSION" \
     --command prompt \

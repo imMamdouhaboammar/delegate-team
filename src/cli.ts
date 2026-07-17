@@ -151,7 +151,7 @@ program
 
 program
   .command('mmas [task...]')
-  .description('Interface with Mavis Multi-Agent System (MMAS)')
+  .description('Interface with Apeiron Multi-Agent System (MMAS)')
   .option('--team <agents>', 'Comma-separated agent names')
   .option('--atlas', 'Spawn Atlas alone to pick the team')
   .option('--status <task_id>', 'Show status of a running task')

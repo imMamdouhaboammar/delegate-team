@@ -64,7 +64,7 @@ cat brief.md | python3 god_agent_interactive.py - minimax-m3-high-thinking
 | `opencode-glm-5.2-max` | opencode run | Interactive, fast Zhipu reasoning |
 | `opencode-qwen-max` | opencode run | Interactive, Alibaba max |
 | `opencode-kimi-k2.7-code-max` | opencode run | Interactive, Moonshot code-specialized |
-| `minimax-m3-high-thinking` | opencode run | Interactive, **Mavis flagship** — default |
+| `minimax-m3-high-thinking` | opencode run | Interactive, **Apeiron flagship** — default |
 
 ## Configuration override
 
@@ -101,7 +101,7 @@ new backend dispatch entry pointing to `god-agent/god_agent_direct.py`.
 - `tools_registry.py` — Local tools + persistent memory + skill loader
 - `list_models.py` — Model listing with availability
 - `inspect_settings.py` — Health check
-- `SKILL.md` — Skill manifest (for Mavis / Claude Code discovery)
+- `SKILL.md` — Skill manifest (for Apeiron / Claude Code discovery)
 
 ## License
 

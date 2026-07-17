@@ -53,7 +53,7 @@ the per-component docs linked below.
 ### Layer 2 — /apeiron orchestrator
 
 - Bash + Skills.sh skill at `orchestrator/`.
-- Symlinks installed to `~/.mavis/skills/apeiron/` and `~/.claude/commands/apeiron.md`.
+- Symlinks installed to `~/.apeiron/skills/apeiron/` and `~/.claude/commands/apeiron.md`.
 - Inspects the natural-language task, scores stage signals, picks a verdict,
   and writes a structured route trace.
 - `dt route --last` selects the newest trace by file modification time.
@@ -106,8 +106,8 @@ the per-component docs linked below.
      - agent-kernel memory search (if MEMORY path)
      - unslop audit (if UI path)
      - writing-plans (superpowers)
-     - autoresearch | /delegate-team | /mavis-team (chosen execution path)
-     - /check (Waza) + quality-guard (Mavis)
+     - autoresearch | /delegate-team | /apeiron-team (chosen execution path)
+     - /check (Waza) + quality-guard (Apeiron)
      - agent-kernel episode add (always, on success)
 6. Final result is captured as an episode in ~/.agent-kernel/episodes/
 ```
@@ -143,8 +143,8 @@ is already present.
 | Lives in repo | Lives on user machine after install |
 |---|---|
 | `src/cli.ts` (TypeScript source) | `dist/cli.js` (compiled) |
-| `orchestrator/SKILL.md`, `orchestrate.sh` | `~/.mavis/skills/apeiron/`, `~/.claude/commands/apeiron.md` |
-| `mmas/spawn-team.py`, `watchdog.sh`, `agents/*.yaml` | `~/.mavis/agents/mavis/multi-agent/` |
+| `orchestrator/SKILL.md`, `orchestrate.sh` | `~/.apeiron/skills/apeiron/`, `~/.claude/commands/apeiron.md` |
+| `mmas/spawn-team.py`, `watchdog.sh`, `agents/*.yaml` | `~/.apeiron/agents/apeiron/multi-agent/` |
 | `agent-kernel/dist/cli.mjs` | `~/.agent-kernel/` (memory home), `~/.local/bin/agent-kernel` |
 | `install.sh` | run from clone |
 | `integrations/*.md` (docs) | `~/.claude/skills/`, `~/.claude/commands/` for companion frameworks |

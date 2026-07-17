@@ -76,13 +76,13 @@ captures the outcome as an episode.
 
 ---
 
-## 4. mavis-skill-scaffold proposes new-skill memories
+## 4. apeiron-skill-scaffold proposes new-skill memories
 
 When you scaffold a new skill, the scaffolder proposes a memory so the next agent
 knows the skill exists:
 
 ```bash
-mavis-skill-scaffold --name my-new-skill --propose
+apeiron-skill-scaffold --name my-new-skill --propose
 # → scaffolds the SKILL.md + then runs:
 #   agent-kernel propose --from scaffolder --type skill --text "my-new-skill does X"
 ```

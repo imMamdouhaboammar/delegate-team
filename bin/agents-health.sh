@@ -41,8 +41,8 @@ if [ ! -d "$BIN_DIR" ]; then
 fi
 
 # Known agent definitions (label + symlink + version-flag)
-# NOTE: 'mavis' was renamed to 'mavis-original' because the npm package
-# @minimax/mavis (installed by the MiniMax Code desktop app) creates a
+# NOTE: 'apeiron' was renamed to 'apeiron-original' because the npm package
+# @minimax/apeiron (installed by the MiniMax Code desktop app) creates a
 # conflict when there's a symlink with the same name. See:
 # https://github.com/imMamdouhaboammar/delegate-team/blob/main/agents-health.sh
 AGENTS=(
@@ -50,12 +50,12 @@ AGENTS=(
     "OpenAI Codex|codex|--version"
     "Google Gemini|gemini|--version"
     "opencode CLI|opencode|--version"
-    "Mavis mmx|mmx|--version"
-    "Mavis minimax|minimax|--version"
-    "Mavis CLI|mavis-original|--version"
+    "Apeiron mmx|mmx|--version"
+    "Apeiron minimax|minimax|--version"
+    "Apeiron CLI|apeiron-original|--version"
     "delegate-team|dt|--version"
     "agent-kernel|ak|--version"
-    "skill scaffolder|mavis-skill-scaffold|--version"
+    "skill scaffolder|apeiron-skill-scaffold|--version"
 )
 
 results=()

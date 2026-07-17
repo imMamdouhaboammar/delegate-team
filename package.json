@@ -1,7 +1,7 @@
 {
   "name": "delegate-team",
-  "version": "3.0.6",
-  "description": "Agentic engineering supersystem v2.8.0 - bundles the full Mavis arsenal: /mavis-ship orchestrator (53-case selftest: TRIVIAL, FEATURE, BUILD/PUBLISH, UI DELIVERY, BUG, PERFORMANCE/METRIC, RESEARCH, MEMORY, MULTI-AGENT, DELEGATE), 43 curated integrations + 1890 auto-discovered skills, autopilot.sh (7-stage GOD command), mavis-ship-uni smart universal wrapper (detects Mavis / codex / claude / gemini / opencode / mmx / shell), `dt` CLI gateway routing to Codex, MiniMax, Gemini, MetaGPT backends, and `dt delegate` for handing tasks to Grok/Codex/OpenCode/Kimi/AGY via the delegate-skills component. Companion frameworks: agent-kernel, superpowers, Waza, unslop-preflight, autoresearch.",
+  "version": "3.0.7",
+  "description": "Agentic engineering supersystem v2.8.0 - bundles the full Apeiron arsenal: /apeiron-ship orchestrator (53-case selftest: TRIVIAL, FEATURE, BUILD/PUBLISH, UI DELIVERY, BUG, PERFORMANCE/METRIC, RESEARCH, MEMORY, MULTI-AGENT, DELEGATE), 43 curated integrations + 1890 auto-discovered skills, autopilot.sh (7-stage GOD command), apeiron-ship-uni smart universal wrapper (detects Apeiron / codex / claude / gemini / opencode / mmx / shell), `dt` CLI gateway routing to Codex, MiniMax, Gemini, MetaGPT backends, and `dt delegate` for handing tasks to Grok/Codex/OpenCode/Kimi/AGY via the delegate-skills component. Companion frameworks: agent-kernel, superpowers, Waza, unslop-preflight, autoresearch.",
   "type": "module",
   "main": "dist/cli.js",
   "bin": {
@@ -59,8 +59,8 @@
   },
   "keywords": [
     "delegate-team",
-    "mavis-ship",
-    "mavis-ship-uni",
+    "apeiron-ship",
+    "apeiron-ship-uni",
     "autopilot",
     "ai",
     "agent",

@@ -64,7 +64,7 @@ need to second-guess it. Just follow the chain it prescribes:
 ## Testing
 
 - Existing TypeScript tests: `npm test` (vitest)
-- Skill structure validation: `mavis-skill-scaffold --validate <name>`
+- Skill structure validation: `apeiron-skill-scaffold --validate <name>`
 - Installer verification: `./install.sh --verify`
 - All-must-pass before commit.
 

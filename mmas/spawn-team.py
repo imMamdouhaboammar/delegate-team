@@ -37,7 +37,7 @@ else:
 
 MINIMAX_CODER = DELEGATE_TEAM_ROOT / "minimax-coder"
 VERTEX_CODER = DELEGATE_TEAM_ROOT / "vertex-coder"
-MMAS_TASKS_ROOT = Path.home() / ".mavis" / "multi-agent" / "tasks"
+MMAS_TASKS_ROOT = Path.home() / ".apeiron" / "multi-agent" / "tasks"
 
 MMAS_HARD_CAPS = {
     "maxAgents": 8,
@@ -174,7 +174,7 @@ def make_boulder(task_id: str, task: str, agents: list[dict], boss_session: str 
         "task_id": task_id,
         "task": task,
         "created_at": utc_now(),
-        "boss_session": boss_session or os.environ.get("MAVIS_SESSION_ID", "unknown"),
+        "boss_session": boss_session or os.environ.get("APEIRON_SESSION_ID", "unknown"),
         "status": "running",
         "guardrails": guardrails or {},
         "agents": [
@@ -336,7 +336,7 @@ def start_watchdog(task_id: str, task_dir: Path, boulder_path: Path, args) -> No
         "bash",
         str(MMAS_ROOT / "watchdog.sh"),
         task_id,
-        str(args.boss_session or os.environ.get("MAVIS_SESSION_ID", "unknown")),
+        str(args.boss_session or os.environ.get("APEIRON_SESSION_ID", "unknown")),
         "--interval",
         str(args.interval),
     ]
@@ -697,7 +697,7 @@ def main():
     p_spawn.add_argument("--team", help="Comma-separated agent names. Mutually exclusive with --atlas.")
     p_spawn.add_argument("--atlas", action="store_true", help="Spawn Atlas alone; Atlas picks the team via team_plan.json.")
     p_spawn.add_argument("--atlas-timeout", type=int, default=MMAS_DEFAULTS["atlasTimeout"], help="Max seconds to wait for Atlas to write team_plan.json")
-    p_spawn.add_argument("--boss-session", help="Boss session ID, defaults to MAVIS_SESSION_ID")
+    p_spawn.add_argument("--boss-session", help="Boss session ID, defaults to APEIRON_SESSION_ID")
     p_spawn.add_argument("--interval", type=int, default=MMAS_DEFAULTS["watchdogInterval"], help="Watchdog polling interval in seconds")
     p_spawn.add_argument("--max-agents", type=int, default=MMAS_DEFAULTS["maxAgents"], help=f"Maximum agents to spawn, hard cap {MMAS_HARD_CAPS['maxAgents']}")
     p_spawn.add_argument("--timeout", type=int, default=MMAS_DEFAULTS["timeoutSeconds"], help="Per-agent timeout in seconds")

@@ -29,12 +29,12 @@ Each framework below has a one-page guide: what it does, why we use it, install 
     │
     ▼  delegates to:                        ← execution engine
        /delegate-team  (single model)  OR
-       /mavis-team      (MMAS parallel)
+       /apeiron-team      (MMAS parallel)
        /autoresearch    (metric loop)
     │
     ▼  Waza /check                          ← review with evidence
     │
-    ▼  quality-guard                        ← Mavis 5-layer pre-delivery
+    ▼  quality-guard                        ← Apeiron 5-layer pre-delivery
     │
     ▼
    SHIP

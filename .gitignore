@@ -82,15 +82,15 @@ bin/claude
 bin/codex
 bin/dt
 bin/gemini
-bin/mavis-original
-bin/mavis-skill-scaffold
+bin/apeiron-original
+bin/apeiron-skill-scaffold
 bin/minimax
 bin/mmx
 bin/opencode
 
-# Mavis-specific runtime (not for npm)
-.mavis/
-.mavis-*
+# Apeiron-specific runtime (not for npm)
+.apeiron/
+.apeiron-*
 /tmp/
 workspace/
 /workspace/

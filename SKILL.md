@@ -57,9 +57,9 @@ it automatically.
 | `orchestrator/scripts/catalog.py` | `./orchestrator/scripts/` | 43 integrations + 1890 skills indexer | ✅ |
 | `apeiron/` | `./apeiron/` | Standalone /Apeiron skill bundle (SKILL.md + scripts) | ✅ NEW v2.7.0 |
 | `bin/autopilot.sh` | `./bin/` | GOD command: 7-stage chain (PREWARM → BRAINSTORM → PLAN → EXECUTE → REVIEW → QUALITY-GUARD → REPORT) | ✅ NEW v2.7.0 |
-| `bin/apeiron-uni` | `./bin/` | Smart universal wrapper: detects Mavis / codex / claude / gemini / opencode / mmx / shell | ✅ NEW v2.7.0 |
+| `bin/apeiron-uni` | `./bin/` | Smart universal wrapper: detects Apeiron / codex / claude / gemini / opencode / mmx / shell | ✅ NEW v2.7.0 |
 | `bin/agents-health.sh` | `./bin/` | Health check for the 10 coding agents in ~/delegate-team/bin/ | ✅ |
-| `scaffolder/` | `./scaffolder/` | `mavis-skill-scaffold` generator CLI | ✅ |
+| `scaffolder/` | `./scaffolder/` | `apeiron-skill-scaffold` generator CLI | ✅ |
 | `mmas/` | `./mmas/` | Multi-agent team framework (8 agents + watchdog) | ✅ |
 | `agent-kernel/` | `./agent-kernel/` | Local-first memory + governance layer (vendored v0.0.7) | ✅ |
 | `god-agent/` | `./god-agent/` | Codex + opencode delegation backend | ✅ |
@@ -111,7 +111,7 @@ Detection signals (regex scoring 0-3):
 | `systematic-debugging` (superpowers) | fix, bug, broken, regression, failing, crash, error, leak |
 | `autoresearch loop` | \d+%, p\d+, <\s*\d, reduce.*by, increase.*by, coverage, latency, bundle |
 | `/delegate-team` | refactor, migrate, overhaul, rewrite, across, architecture, service |
-| `/mavis-team` MMAS | team, squad, parallel, specialize, swarm |
+| `/apeiron-team` MMAS | team, squad, parallel, specialize, swarm |
 | `/read + /learn` | research, learn, understand, investigate, study, explore |
 | TRIVIAL skip | rename, comment, remove, bump |
 
@@ -150,7 +150,7 @@ npx skills list               # Should show: delegate-team
 - `bin/autopilot.sh` — 7-stage GOD command (NEW v2.7.0)
 - `bin/apeiron-uni` — smart universal wrapper (NEW v2.7.0)
 - `bin/agents-health.sh` — health check for 10 coding agents
-- `scaffolder/SKILL.md` — mavis-skill-scaffold specific skill
+- `scaffolder/SKILL.md` — apeiron-skill-scaffold specific skill
 - `mmas/SKILL.md` — multi-agent team specific skill
 - `agent-kernel/SKILL.md` — agent-kernel (memory + governance) specific skill
 - `god-agent/SKILL.md` — Codex + opencode backend

@@ -1,6 +1,6 @@
 # Repository Audit — delegate-team vNEXT
 
-> **Auditor**: Mavis (delegated by user)
+> **Auditor**: Apeiron (delegated by user)
 > **Date**: 2026-06-30
 > **Scope**: Pre-refactor baseline for the vNEXT series.
 > **Working assumption**: the published release is **2.5.1** (CHANGELOG + package.json + manifests agree).
@@ -126,7 +126,7 @@ dynamic gcloud auth).
 
 **Gaps**:
 
-- `SECURITY.md` does not mention `install.sh` risk surface (writes to `~/.mavis/`,
+- `SECURITY.md` does not mention `install.sh` risk surface (writes to `~/.apeiron/`,
   `~/.claude/`, `~/.local/bin/`, downloads companion frameworks via `npx` + `git clone`).
 - `SECURITY.md` does not mention the orchestrator (`/apeiron`) routing risk.
 - `SECURITY.md` does not mention agent-kernel policy guard or the proposal inbox.

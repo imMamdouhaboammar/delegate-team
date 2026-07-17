@@ -7,7 +7,7 @@ to re-implement the MiniMax Messages API protocol.
 
 This script mirrors vertex-coder's structure (direct mode + interactive mode + tools
 registry) but routes everything through `mmx text chat`. It works as a local agent
-helper — Mavis can invoke it directly via bash, or use `mmx text chat` inline.
+helper — Apeiron can invoke it directly via bash, or use `mmx text chat` inline.
 
 Three MiniMax models supported (per `~/.minimax/config.yaml`):
   - MiniMax-M3                flagship, 450K context, switchable thinking (default)

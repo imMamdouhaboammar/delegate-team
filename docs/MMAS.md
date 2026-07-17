@@ -40,11 +40,11 @@ Do **not** use MMAS when:
 ```bash
 # Spawn Atlas alone, let it pick the team via team_plan.json
 dt mmas spawn "<task>" --atlas
-# Or raw: python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py "<task>" --atlas
+# Or raw: python3 ~/.apeiron/agents/apeiron/multi-agent/spawn-team.py "<task>" --atlas
 
 # Spawn a fixed team
 dt mmas spawn "<task>" --team atlas,forge,scout,oracle
-# Or raw: python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py "<task>" --team atlas,forge,scout,oracle
+# Or raw: python3 ~/.apeiron/agents/apeiron/multi-agent/spawn-team.py "<task>" --team atlas,forge,scout,oracle
 
 # Preview without spawning
 dt mmas spawn "<task>" --team atlas,forge --plan-only
@@ -139,7 +139,7 @@ and marks the task as `timeout` with `stop_reason=atlas_timeout`.
 Every task gets a workspace:
 
 ```
-~/.mavis/multi-agent/tasks/<task_id>/
+~/.apeiron/multi-agent/tasks/<task_id>/
 ├── boulder.json       # task + agent state
 ├── team_plan.json     # Atlas's plan, only in --atlas mode
 ├── logs/
@@ -228,9 +228,9 @@ terminal summary with agent status, PID, and PGID.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `Task not found: <task_id>` | typo or cleaned up task | `ls ~/.mavis/multi-agent/tasks/` |
+| `Task not found: <task_id>` | typo or cleaned up task | `ls ~/.apeiron/multi-agent/tasks/` |
 | Agent stuck in `running` for hours | timeout too long or backend stuck | `spawn-team.py stop <task_id>` |
-| `spawn-team.py: permission denied` | not executable | `chmod +x ~/.mavis/agents/mavis/multi-agent/spawn-team.py` |
+| `spawn-team.py: permission denied` | not executable | `chmod +x ~/.apeiron/agents/apeiron/multi-agent/spawn-team.py` |
 | `agent-kernel` not found in MMAS | optional dep missing | run `agent-kernel doctor` |
 | Watchdog never finishes | backend subprocess still alive | stop the task, then inspect PGIDs in `boulder.json` |
 | Hardcoded `${DELEGATE_TEAM_ROOT}` error | stale install | reinstall Lane 3 |

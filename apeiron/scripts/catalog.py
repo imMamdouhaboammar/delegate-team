@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """catalog.py — the dynamic integrations arsenal.
 
-The 31-repo registry the Mavis (main agent / staff engineer / orchestrator)
+The 31-repo registry the Apeiron (main agent / staff engineer / orchestrator)
 queries when it needs to load a skill, an agent, or a tool on demand.
 
 Architecture:
@@ -11,21 +11,21 @@ Architecture:
     entry as `installed: bool` plus which skills / binaries are present.
   * **Mandatory global-skills pre-search**: `discover_global_skills()` walks
     `~/.claude/skills/` and reads every SKILL.md frontmatter, building an
-    index the Mavis (and `--prewarm`) uses to find skills that match the
-    task keywords. Runs AUTOMATICALLY — the Mavis does not need to opt in.
+    index the Apeiron (and `--prewarm`) uses to find skills that match the
+    task keywords. Runs AUTOMATICALLY — the Apeiron does not need to opt in.
   * `match_skills_to_task(task, top_n)` scores each global skill against
     the task description (keyword overlap + name match + description
     match) and returns the top N matches.
   * Query functions: `list_installed()`, `list_available()`, `find_by_kind()`,
     `info(name)`, `install_hint(name)`.
-  * Mavis is the decision authority: it sees the auto-discovered matches
+  * Apeiron is the decision authority: it sees the auto-discovered matches
     and decides which to actually call `skill` tool on.
 
 Lazy-load contract:
   * The 35 catalog entries are RECOMMENDATIONS (some installed, some not).
   * The auto-discovered global skills are RECOMMENDATIONS based on task
-    keywords — the Mavis still decides what to actually load.
-  * Sub-agents inherit the Mavis's choice (or get their own subset via
+    keywords — the Apeiron still decides what to actually load.
+  * Sub-agents inherit the Apeiron's choice (or get their own subset via
     delegation briefs).
 """
 
@@ -182,7 +182,7 @@ INTEGRATIONS: List[Integration] = [
         kind="cli",
         role="One-shot coding style — minimal deps, just commit",
         summary="A code-review / commit helper that enforces short, direct "
-                "diffs. Useful as a 'no-bloat' coding style for the Mavis "
+                "diffs. Useful as a 'no-bloat' coding style for the Apeiron "
                 "supervisor to apply on sub-agents.",
         install_cmd=(
             "git clone --depth 1 https://github.com/JuliusBrussee/caveman "
@@ -430,7 +430,7 @@ INTEGRATIONS: List[Integration] = [
         role="Metric-driven iteration loop (Karpathy-style autoresearch)",
         summary="14 slash commands implementing Karpathy's autoresearch "
                 "pattern: have a goal, a metric, a loop, and never quit. "
-                "Composable with /mavis-ship for PERFORMANCE paths.",
+                "Composable with /apeiron-ship for PERFORMANCE paths.",
         install_cmd=(
             "git clone --depth 1 https://github.com/uditgoenka/autoresearch "
             "/tmp/autoresearch && "
@@ -620,8 +620,8 @@ INTEGRATIONS: List[Integration] = [
         repo="https://github.com/imMamdouhaboammar/delegate-team",
         kind="orchestrator",
         role="The supersystem itself (this project)",
-        summary="The `dt` CLI + `/mavis-ship` orchestrator. The multi-agent "
-                "supersystem that mavis-ship is a thin front for. Already "
+        summary="The `dt` CLI + `/apeiron-ship` orchestrator. The multi-agent "
+                "supersystem that apeiron-ship is a thin front for. Already "
                 "installed at ~/delegate-team/.",
         install_cmd="(already installed at ~/delegate-team)",
         detect_paths=["~/delegate-team"],
@@ -630,57 +630,57 @@ INTEGRATIONS: List[Integration] = [
     Integration(
         id="big-boss",
         name="big-boss",
-        repo="https://github.com/imMamdouhaboammar/mavis-ship",
+        repo="https://github.com/imMamdouhaboammar/apeiron-ship",
         kind="persona",
-        role="Mavis staff-engineer persona: full agency, terminal mastery, sub-agent delegation, skill loading, rigor",
-        summary="The Big Boss persona skill. Loaded by the Mavis session whenever "
+        role="Apeiron staff-engineer persona: full agency, terminal mastery, sub-agent delegation, skill loading, rigor",
+        summary="The Big Boss persona skill. Loaded by the Apeiron session whenever "
                 "the user asks for a non-trivial coding task. Enforces 6 laws: "
                 "(1) use the right tool for the job, (2) delegate aggressively, "
                 "(3) load skills on demand, (4) verify with terminal, "
                 "(5) be rigorous (tests, type checks, lint), (6) show your work. "
-                "Pairs with: mavis-ship, mavis-team, expert-engineer, mini-coder-max.",
-        install_cmd="(Mavis local skill — installed at ~/.mavis/skills/big-boss/)",
-        detect_paths=["~/.mavis/skills/big-boss"],
+                "Pairs with: apeiron-ship, apeiron-team, expert-engineer, mini-coder-max.",
+        install_cmd="(Apeiron local skill — installed at ~/.apeiron/skills/big-boss/)",
+        detect_paths=["~/.apeiron/skills/big-boss"],
         detect_skill_names=["big-boss"],
     ),
     Integration(
         id="autopilot",
         name="autopilot",
-        repo="https://github.com/imMamdouhaboammar/mavis-ship",
+        repo="https://github.com/imMamdouhaboammar/apeiron-ship",
         kind="god-command",
         role="The GOD command: prewarm → brainstorm → plan → execute → review → quality-guard → report",
         summary="The autopilot runner. The user invokes it, walks away, "
                 "and comes back to a finished module. The 7 stages run "
-                "end-to-end without Mavis supervision. The brainstorming "
+                "end-to-end without Apeiron supervision. The brainstorming "
                 "stage uses the superpowers+codex gpt-5.5-high mix for "
                 "highest-quality ideation. The execution stage hands off to "
                 "delegate-team (or any chosen backend) via dt. The review "
                 "and quality-guard stages produce the final report. "
                 "Use --background to detach and return a PID + log path, "
                 "or --dry-run to see the plan without executing.",
-        install_cmd="(Mavis local — installed at ~/delegate-team/bin/autopilot.sh)",
+        install_cmd="(Apeiron local — installed at ~/delegate-team/bin/autopilot.sh)",
         detect_paths=["~/delegate-team/bin/autopilot.sh"],
         detect_bins=["autopilot"],
     ),
     Integration(
-        id="mavis-ship-uni",
-        name="mavis-ship-uni",
-        repo="https://github.com/imMamdouhaboammar/mavis-ship",
+        id="apeiron-ship-uni",
+        name="apeiron-ship-uni",
+        repo="https://github.com/imMamdouhaboammar/apeiron-ship",
         kind="god-command",
-        role="Smart universal wrapper: detects calling runtime (Mavis / codex / claude / gemini / opencode / mmx / shell) and dispatches to the right flow",
+        role="Smart universal wrapper: detects calling runtime (Apeiron / codex / claude / gemini / opencode / mmx / shell) and dispatches to the right flow",
         summary="The smart universal wrapper. Detects the calling runtime "
-                "via env vars (MAVIS_SESSION_ID, CODEX_HOME, CLAUDECODE, "
+                "via env vars (APEIRON_SESSION_ID, CODEX_HOME, CLAUDECODE, "
                 "GEMINI_CLI, OPENCODE_CONFIG_DIR, MMX_HOME) + parent "
-                "process argv0 fallback, then dispatches: Mavis session → "
-                "orchestrate --prewarm (Mavis decides + loads skills); "
+                "process argv0 fallback, then dispatches: Apeiron session → "
+                "orchestrate --prewarm (Apeiron decides + loads skills); "
                 "codex/claude/gemini/opencode/mmx → autopilot --background "
                 "(so the agent returns immediately while the chain runs); "
                 "plain shell → autopilot foreground (you watch the log). "
                 "Use this from any agent or shell — it's the single entry "
                 "point that picks the right flow automatically.",
-        install_cmd="(Mavis local — installed at ~/delegate-team/bin/mavis-ship-uni)",
-        detect_paths=["~/delegate-team/bin/mavis-ship-uni"],
-        detect_bins=["mavis-ship-uni"],
+        install_cmd="(Apeiron local — installed at ~/delegate-team/bin/apeiron-ship-uni)",
+        detect_paths=["~/delegate-team/bin/apeiron-ship-uni"],
+        detect_bins=["apeiron-ship-uni"],
     ),
     # ----- Delegate skills (delegate-skills/ component) -----
     # Each wraps a CLI implementer agent behind the same loop: write a brief,
@@ -757,12 +757,12 @@ INTEGRATIONS: List[Integration] = [
 CLAUDE_SKILLS_DIR = Path(os.path.expanduser("~/.claude/skills"))
 CLAUDE_COMMANDS_DIR = Path(os.path.expanduser("~/.claude/commands"))
 AGENTS_SKILLS_DIR = Path(os.path.expanduser("~/.agents/skills"))
-MAVIS_SKILLS_DIR = Path(os.path.expanduser("~/.mavis/skills"))
+APEIRON_SKILLS_DIR = Path(os.path.expanduser("~/.apeiron/skills"))
 
 # Priority order for dedupe when the same skill name appears in multiple sources.
-# Earlier wins. mavis/agents is the broadest; claude is the most canonical.
+# Earlier wins. apeiron/agents is the broadest; claude is the most canonical.
 SKILL_SOURCES: List[Tuple[Path, str]] = [
-    (MAVIS_SKILLS_DIR, "mavis"),
+    (APEIRON_SKILLS_DIR, "apeiron"),
     (AGENTS_SKILLS_DIR, "agents"),
     (CLAUDE_SKILLS_DIR, "claude"),
 ]
@@ -847,13 +847,13 @@ def install_hint(id_or_name: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Auto-discovery of global skills (the Mavis pre-search)
+# Auto-discovery of global skills (the Apeiron pre-search)
 # ---------------------------------------------------------------------------
 #
-# When the Mavis session gets any task, BEFORE starting the chain, it must
+# When the Apeiron session gets any task, BEFORE starting the chain, it must
 # search `~/.claude/skills/` for skills whose frontmatter / name / description
 # matches the task. This is the "mandatory pre-search" — runs automatically
-# on every --prewarm / dispatch. The Mavis still decides what to actually
+# on every --prewarm / dispatch. The Apeiron still decides what to actually
 # load, but the candidate set is built here.
 
 @dataclass
@@ -863,7 +863,7 @@ class GlobalSkill:
     description: str         # first ~200 chars of frontmatter description
     frontmatter: dict        # parsed name + description
     keywords: List[str]      # tokens extracted from name + description
-    source: str = ""         # which folder it came from: "mavis" | "agents" | "claude"
+    source: str = ""         # which folder it came from: "apeiron" | "agents" | "claude"
 
     def to_dict(self) -> dict:
         return {
@@ -916,11 +916,11 @@ def discover_global_skills() -> List[GlobalSkill]:
     list of GlobalSkill entries, with frontmatter parsed + keywords extracted.
 
     Sources (priority order — first wins on name conflict):
-      1. ~/.mavis/skills/   (Mavis's own skills)
+      1. ~/.apeiron/skills/   (Apeiron's own skills)
       2. ~/.agents/skills/  (the broader agent skills registry — 1800+ skills)
       3. ~/.claude/skills/  (Claude Code's skills folder)
 
-    This is the mandatory pre-search. The Mavis calls it on every task;
+    This is the mandatory pre-search. The Apeiron calls it on every task;
     orchestrate.py --prewarm calls it too.
     """
     seen: Dict[str, GlobalSkill] = {}
@@ -959,7 +959,7 @@ def discover_global_skills() -> List[GlobalSkill]:
 
 def discover_global_skills_all_sources() -> Dict[str, List[GlobalSkill]]:
     """Like discover_global_skills() but returns per-source lists (no dedupe).
-    Useful for the Mavis to know "this skill exists in mavis AND agents".
+    Useful for the Apeiron to know "this skill exists in apeiron AND agents".
     """
     out: Dict[str, List[GlobalSkill]] = {}
     for skills_dir, source in SKILL_SOURCES:
@@ -997,9 +997,9 @@ def discover_global_skills_all_sources() -> Dict[str, List[GlobalSkill]]:
 # Similarity / duplicate detection
 # ---------------------------------------------------------------------------
 #
-# The Mavis session has 3 skill folders. Names can collide, but the
+# The Apeiron session has 3 skill folders. Names can collide, but the
 # contents can also be near-duplicates (same role, slightly different
-# naming). We surface these so the Mavis is aware before loading them.
+# naming). We surface these so the Apeiron is aware before loading them.
 #
 # Two passes:
 #   1. find_similar_skills() — token overlap on name + description
@@ -1147,7 +1147,7 @@ def match_skills_to_task(task: str, top_n: int = 8) -> List[dict]:
     """Return the top N global skills that match the task. Each entry is:
         {"name": ..., "path": ..., "description": ..., "score": float, "matched_keywords": [...]}
 
-    This is the function the Mavis (and --prewarm) call to find candidates.
+    This is the function the Apeiron (and --prewarm) call to find candidates.
     """
     idx = discover_global_skills()
     if not idx:

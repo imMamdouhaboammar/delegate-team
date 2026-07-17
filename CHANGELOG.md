@@ -3,6 +3,12 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.0.7] - 2026-07-17
+
+### Changed
+- Globally renamed any occurrences of `mavis` (case-insensitive) to `apeiron` across codebase files, configuration files, shell scripts, markdown docs, and tests.
+- Renamed the CLI script file `scaffolder/bin/mavis-skill-scaffold` to `scaffolder/bin/apeiron-skill-scaffold`.
+
 ## [3.0.6] - 2026-07-17
 
 ### Added
@@ -37,9 +43,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [3.0.0] - 2026-07-17
 
 ### Added
-- **Apeiron Integration** — Renamed the `/mavis-ship` universal orchestrator to `/Apeiron` globally.
+- **Apeiron Integration** — Renamed the `/apeiron-ship` universal orchestrator to `/Apeiron` globally.
 - Integrated `/Apeiron` directly into the `dt` CLI parser under `dt apeiron` (with `dt ship` alias).
-- Integrated MMAS (Mavis Multi-Agent System) directly into the `dt` CLI under `dt mmas`.
+- Integrated MMAS (Apeiron Multi-Agent System) directly into the `dt` CLI under `dt mmas`.
 - Reconfigured dispatcher (`dt run`) to route complexity scores >= 8 directly to `mmas` (instead of `metagpt`).
 - Registered `apeiron-uni` wrapper globally on path.
 
@@ -93,7 +99,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   CLI entry point that resolves `delegate-skills/<agent>-delegate/scripts/relay.mjs`
   and invokes it. Pure `buildDelegateArgs()` is unit-tested in `tests/delegate-cli.test.ts`.
 - `./install.sh --delegate-skills` installs the five skills into
-  `~/.mavis/skills/` + symlinks for `~/.claude/skills/` and `~/.codex/skills/`,
+  `~/.apeiron/skills/` + symlinks for `~/.claude/skills/` and `~/.codex/skills/`,
   with a `verify` line and idempotent uninstall.
 - Router (`orchestrate.py`) now returns a `DELEGATE path — <agent>-delegate skill`
   verdict for explicit "delegate this to grok" / "have codex do X" / "run it
@@ -173,7 +179,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- Full Mavis arsenal packaged into `delegate-team`.
+- Full Apeiron arsenal packaged into `delegate-team`.
 - Standalone `apeiron/` skill bundle.
 - `bin/autopilot.sh` 7-stage command wrapper.
 - `bin/apeiron-uni` universal runtime wrapper.

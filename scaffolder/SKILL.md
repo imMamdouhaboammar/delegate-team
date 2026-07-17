@@ -1,19 +1,19 @@
 ---
 name: skill-scaffold
 description: |
-  Scaffold a new Mavis skill with proper frontmatter, section structure, and optional companion
+  Scaffold a new Apeiron skill with proper frontmatter, section structure, and optional companion
   artifacts (PreToolUse hook, slash command, bash test stub). Use when creating a new skill,
-  bootstrapping a capability for the Mavis agent arsenal, or standardizing an existing skill's
-  structure. Triggers on: "create a new skill", "scaffold a skill", "add a Mavis skill",
-  "standardize this skill", "skill-scaffold", "mavis-skill-scaffold". Backed by the
-  `mavis-skill-scaffold` bash script at `~/.mavis/bin/mavis-skill-scaffold`. Do NOT use for
+  bootstrapping a capability for the Apeiron agent arsenal, or standardizing an existing skill's
+  structure. Triggers on: "create a new skill", "scaffold a skill", "add a Apeiron skill",
+  "standardize this skill", "skill-scaffold", "apeiron-skill-scaffold". Backed by the
+  `apeiron-skill-scaffold` bash script at `~/.apeiron/bin/apeiron-skill-scaffold`. Do NOT use for
   editing existing skills (use `skill-refiner`) or for creating agents (use `create-agent`).
 ---
 
 # Skill Scaffold
 
-> **Capability skill** — wraps the `mavis-skill-scaffold` CLI. Generates a properly-structured
-> Mavis skill directory in one shot: frontmatter, sections, optional companion hook/command/tests.
+> **Capability skill** — wraps the `apeiron-skill-scaffold` CLI. Generates a properly-structured
+> Apeiron skill directory in one shot: frontmatter, sections, optional companion hook/command/tests.
 
 ## What this skill IS
 
@@ -27,7 +27,7 @@ description: |
 
 - Not a content generator — scaffolds structure only. The human (or model) fills in the substance.
 - Not a skill refiner — use `skill-refiner` for editing existing skills.
-- Not an agent scaffolder — use `create-agent` for new Mavis agents.
+- Not an agent scaffolder — use `create-agent` for new Apeiron agents.
 - Not a memory tool — doesn't write to `MEMORY.md` or `user.md`. Use `self-improve` for that.
 
 ---
@@ -35,10 +35,10 @@ description: |
 ## The CLI
 
 ```bash
-mavis-skill-scaffold [OPTIONS]
+apeiron-skill-scaffold [OPTIONS]
 ```
 
-Location: `~/.mavis/bin/mavis-skill-scaffold` (on PATH). Source: 16KB bash script with
+Location: `~/.apeiron/bin/apeiron-skill-scaffold` (on PATH). Source: 16KB bash script with
 `set -euo pipefail`, color-aware output, and full argument validation.
 
 ### Quick reference
@@ -49,13 +49,13 @@ Location: `~/.mavis/bin/mavis-skill-scaffold` (on PATH). Source: 16KB bash scrip
 | `--description "<triggers>"` | Required. Must include trigger keywords ("Use when...", triggers on 'X'). |
 | `--type <type>` | `capability` (default) \| `bundle` \| `atomic`. |
 | `--with-hooks` | Scaffold companion PreToolUse hook at `~/.claude/hooks/<name>-mindset.js`. |
-| `--with-tests` | Scaffold bash test stub at `~/.mavis/skills/<name>/test-<name>.sh`. |
+| `--with-tests` | Scaffold bash test stub at `~/.apeiron/skills/<name>/test-<name>.sh`. |
 | `--with-command` | Scaffold `/<name>` slash command at `~/.claude/commands/<name>.md`. |
 | `--update` | Preserve existing content; only fill gaps. |
 | `--dry-run` | Preview without writing. |
 | `--list` | List all skills in `--skills-root`. |
 | `--validate <name>` | Check existing skill against best practices. |
-| `--skills-root <path>` | Override default (`$HOME/.mavis/skills`). |
+| `--skills-root <path>` | Override default (`$HOME/.apeiron/skills`). |
 | `-h \| --help` | Show full usage. |
 
 ### Skill types (drives section template)
@@ -73,10 +73,10 @@ Location: `~/.mavis/bin/mavis-skill-scaffold` (on PATH). Source: 16KB bash scrip
 1. **Receive request** — user says "make a skill for X" or "scaffold me a skill for Y".
 2. **Pick type** — capability (default) | bundle | atomic based on scope.
 3. **Draft description** — must include "Use when..." + trigger keywords. Aim for 100+ chars.
-4. **Dry-run first** — `mavis-skill-scaffold --name X --description "..." --dry-run` to preview.
+4. **Dry-run first** — `apeiron-skill-scaffold --name X --description "..." --dry-run` to preview.
 5. **Generate** — drop `--dry-run`. Confirm files created.
 6. **Fill substance** — edit `SKILL.md` to replace `...` placeholders with real content.
-7. **Validate** — `mavis-skill-scaffold --validate X` to confirm structure passes.
+7. **Validate** — `apeiron-skill-scaffold --validate X` to confirm structure passes.
 8. **Wire companions** — if `--with-hooks` was used, edit `~/.claude/settings.json` PreToolUse.
 9. **Test** — if `--with-tests` was used, add real assertions and run the script.
 
@@ -90,15 +90,15 @@ Location: `~/.mavis/bin/mavis-skill-scaffold` (on PATH). Source: 16KB bash scrip
 
 **Behavior**:
 ```bash
-mavis-skill-scaffold --name api-rate-limiter \
+apeiron-skill-scaffold --name api-rate-limiter \
   --description "Rate limiting for APIs. Use when implementing request throttling, token bucket,
 or leaky bucket algorithms in HTTP handlers. Triggers on 'rate limit', 'throttle', 'API quota'." \
   --type atomic --with-tests
 ```
 
 **Output**:
-- `~/.mavis/skills/api-rate-limiter/SKILL.md` — atomic-type template with Methodology section
-- `~/.mavis/skills/api-rate-limiter/test-api-rate-limiter.sh` — bash test stub
+- `~/.apeiron/skills/api-rate-limiter/SKILL.md` — atomic-type template with Methodology section
+- `~/.apeiron/skills/api-rate-limiter/test-api-rate-limiter.sh` — bash test stub
 
 Then edit `SKILL.md` to document token bucket algorithm, leaky bucket variants, Redis vs in-memory storage.
 
@@ -108,7 +108,7 @@ Then edit `SKILL.md` to document token bucket algorithm, leaky bucket variants, 
 
 **Behavior**:
 ```bash
-mavis-skill-scaffold --name security-audit \
+apeiron-skill-scaffold --name security-audit \
   --description "Security audit workflow for authentication, authorization, and input handling code.
 Use when reviewing auth flows, adding new endpoints, or hardening existing routes. Triggers on
 'security audit', 'auth review', 'penetration test'." \
@@ -123,14 +123,14 @@ Use when reviewing auth flows, adding new endpoints, or hardening existing route
 
 **Behavior**:
 ```bash
-mavis-skill-scaffold --name api-design-master \
+apeiron-skill-scaffold --name api-design-master \
   --description "Full API design workflow covering REST, GraphQL, and gRPC. Use when designing
 new APIs or refactoring existing ones. Triggers on 'API design', 'REST API', 'GraphQL schema'." \
   --type bundle --with-hooks --with-command
 ```
 
 **Output**:
-- `~/.mavis/skills/api-design-master/SKILL.md` — bundle-type template with routing table
+- `~/.apeiron/skills/api-design-master/SKILL.md` — bundle-type template with routing table
 - `~/.claude/hooks/api-design-master-mindset.js` — PreToolUse reminder hook
 - `~/.claude/commands/api-design-master.md` — `/api-design-master` slash command
 
@@ -143,11 +143,11 @@ Then wire the hook into `~/.claude/settings.json` PreToolUse matcher `Edit|Write
 **Behavior**:
 ```bash
 # For agent-specific skills
-mavis-skill-scaffold --validate expert-engineer \
-  --skills-root ${HOME}/.mavis/agents/mavis/skills
+apeiron-skill-scaffold --validate expert-engineer \
+  --skills-root ${HOME}/.apeiron/agents/apeiron/skills
 
-# For global Mavis skills (default location)
-mavis-skill-scaffold --validate team-architect
+# For global Apeiron skills (default location)
+apeiron-skill-scaffold --validate team-architect
 ```
 
 **Output**: Checks frontmatter exists, `name:` matches directory, `description:` present (50+ chars),
@@ -159,7 +159,7 @@ mavis-skill-scaffold --validate team-architect
 
 **Behavior**:
 ```bash
-mavis-skill-scaffold --list
+apeiron-skill-scaffold --list
 ```
 
 **Output**: Table of all skill names + first line of description.
@@ -197,20 +197,20 @@ If any error → exit 1. If only warnings → exit 0 with warnings printed.
 
 ## Cross-references
 
-- **Companion CLI**: `~/.mavis/bin/mavis-skill-scaffold` (this file's backing script)
-- **Harness floor**: `~/.mavis/agents/mavis/harness/GLOBAL.md` §3 Workflow + §6 Security Arsenal
-- **Accumulated lessons**: `~/.mavis/agents/mavis/memory/MEMORY.md`
+- **Companion CLI**: `~/.apeiron/bin/apeiron-skill-scaffold` (this file's backing script)
+- **Harness floor**: `~/.apeiron/agents/apeiron/harness/GLOBAL.md` §3 Workflow + §6 Security Arsenal
+- **Accumulated lessons**: `~/.apeiron/agents/apeiron/memory/MEMORY.md`
 - **Sibling skills**:
   - `skill-creator` — higher-level skill authoring workflow (meta-skill for skill design)
   - `skill-refiner` — for editing/improving existing skills
   - `self-improve` — for capturing lessons learned into the right memory layer
-  - `create-agent` — for creating new Mavis agents (parallel to this for skills)
-- **Existing Mavis skills** at `~/.mavis/skills/` (35 skills as of 2026-06-30):
-  - `team-architect`, `quality-guard`, `self-improve` — the three Mavis-native capability skills
+  - `create-agent` — for creating new Apeiron agents (parallel to this for skills)
+- **Existing Apeiron skills** at `~/.apeiron/skills/` (35 skills as of 2026-06-30):
+  - `team-architect`, `quality-guard`, `self-improve` — the three Apeiron-native capability skills
   - `mcp-*` (5 skills) — MCP server capability adapters
   - 25+ other skills covering review, refactor, debug, UI/UX, scraping, video, etc.
 
 ---
 
-**Last updated**: 2026-06-30 — created by Mamdouh + Mavis after building the vertex-coder inspiration.
-**Maintained by**: Mamdouh + Mavis (collaboratively).
+**Last updated**: 2026-06-30 — created by Mamdouh + Apeiron after building the vertex-coder inspiration.
+**Maintained by**: Mamdouh + Apeiron (collaboratively).

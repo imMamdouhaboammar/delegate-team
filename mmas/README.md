@@ -35,20 +35,20 @@ Handled by parent `./install.sh`:
 ./install.sh --all
 ```
 
-The installer copies the framework to `~/.mavis/agents/mavis/multi-agent/`.
+The installer copies the framework to `~/.apeiron/agents/apeiron/multi-agent/`.
 
 ## Usage
 
 ```bash
 # Auto-pick (Atlas autonomous mode)
-python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py --atlas
+python3 ~/.apeiron/agents/apeiron/multi-agent/spawn-team.py --atlas
 
 # Explicit team
-python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py \
+python3 ~/.apeiron/agents/apeiron/multi-agent/spawn-team.py \
     --agents atlas,forge,scout,reviewer \
     --task "Refactor the database layer for multi-tenancy"
 
-# In Claude Code: /mavis-team <task>
+# In Claude Code: /apeiron-team <task>
 ```
 
 ## How it works
@@ -60,7 +60,7 @@ python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py \
 3. **watchdog.sh** polls each PID every 30s. Determines state from:
    - PID alive (`kill -0`)
    - Last log line (`DONE` / `FAILED` / `WAITING`)
-   Reports to the boss via `mavis communication send`.
+   Reports to the boss via `apeiron communication send`.
 4. **hash-edit.py** is the agents' only edit primitive. It accepts `LINE#HASH` anchored
    edits that fail safely if the file changed since the anchor was computed (borrowed
    from oh-my-openagent's success-rate fix).
@@ -77,8 +77,8 @@ python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py \
 
 ## Compatibility
 
-- Requires Python 3.10+ (uses `subprocess.Popen` + `mavis communication send`)
-- Requires `mavis` daemon running for watchdog reporting
+- Requires Python 3.10+ (uses `subprocess.Popen` + `apeiron communication send`)
+- Requires `apeiron` daemon running for watchdog reporting
 - Does NOT depend on the orchestrator; can run standalone
 
 ## See also

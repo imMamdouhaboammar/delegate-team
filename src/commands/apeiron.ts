@@ -9,7 +9,7 @@ export function resolveAutopilotScript(): string {
   if (existsSync(localPath)) {
     return localPath;
   }
-  return join(homedir(), '.mavis', 'bin', 'autopilot.sh'); // fallback
+  return join(homedir(), '.apeiron', 'bin', 'autopilot.sh'); // fallback
 }
 
 export function runApeiron(prompt: string, options: any = {}): Promise<number> {

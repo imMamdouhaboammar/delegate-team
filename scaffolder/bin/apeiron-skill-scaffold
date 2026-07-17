@@ -1,29 +1,29 @@
 #!/usr/bin/env bash
 #
-# mavis-skill-scaffold — Generate a properly-structured Mavis skill directory.
+# apeiron-skill-scaffold — Generate a properly-structured Apeiron skill directory.
 #
 # Inspired by vertex-coder's persistent scaffolding pattern. Takes a name + trigger
-# description and produces a Mavis-format SKILL.md with the right frontmatter,
+# description and produces a Apeiron-format SKILL.md with the right frontmatter,
 # sections, and (optionally) companion hook + slash command + test stub.
 #
 # Usage:
-#   mavis-skill-scaffold --name <kebab-name> --description "<trigger-desc>" [options]
-#   mavis-skill-scaffold --list
-#   mavis-skill-scaffold --validate <name>
-#   mavis-skill-scaffold --help
+#   apeiron-skill-scaffold --name <kebab-name> --description "<trigger-desc>" [options]
+#   apeiron-skill-scaffold --list
+#   apeiron-skill-scaffold --validate <name>
+#   apeiron-skill-scaffold --help
 #
 # Examples:
-#   mavis-skill-scaffold --name api-rate-limiter \
+#   apeiron-skill-scaffold --name api-rate-limiter \
 #     --description "Rate limiting for APIs. Use when implementing throttling."
 #
-#   mavis-skill-scaffold --name security-audit \
+#   apeiron-skill-scaffold --name security-audit \
 #     --description "Security audit workflow for auth code." \
 #     --type capability --with-tests
 #
-#   mavis-skill-scaffold --name api-design-master \
+#   apeiron-skill-scaffold --name api-design-master \
 #     --description "Full API design workflow" --type bundle --with-hooks
 #
-#   mavis-skill-scaffold --name security-audit --update --dry-run
+#   apeiron-skill-scaffold --name security-audit --update --dry-run
 
 set -euo pipefail
 
@@ -38,9 +38,9 @@ DRY_RUN=false
 UPDATE_MODE=false
 LIST_MODE=false
 VALIDATE_TARGET=""
-SKILLS_ROOT="${MAVIS_SKILLS_ROOT:-$HOME/.mavis/skills}"
-HOOKS_ROOT="${MAVIS_HOOKS_ROOT:-$HOME/.claude/hooks}"
-COMMANDS_ROOT="${MAVIS_COMMANDS_ROOT:-$HOME/.claude/commands}"
+SKILLS_ROOT="${APEIRON_SKILLS_ROOT:-$HOME/.apeiron/skills}"
+HOOKS_ROOT="${APEIRON_HOOKS_ROOT:-$HOME/.claude/hooks}"
+COMMANDS_ROOT="${APEIRON_COMMANDS_ROOT:-$HOME/.claude/commands}"
 
 # ---------- Colors (only if TTY) ----------
 if [[ -t 1 ]]; then
@@ -63,13 +63,13 @@ log_error()   { echo -e "${RED}✗${NC}  $*" >&2; exit 1; }
 # ---------- Usage ----------
 usage() {
   cat <<'EOF'
-mavis-skill-scaffold — Generate a properly-structured Mavis skill directory.
+apeiron-skill-scaffold — Generate a properly-structured Apeiron skill directory.
 
 USAGE:
-  mavis-skill-scaffold --name <kebab-name> --description "<trigger-desc>" [options]
-  mavis-skill-scaffold --list
-  mavis-skill-scaffold --validate <name>
-  mavis-skill-scaffold --help
+  apeiron-skill-scaffold --name <kebab-name> --description "<trigger-desc>" [options]
+  apeiron-skill-scaffold --list
+  apeiron-skill-scaffold --validate <name>
+  apeiron-skill-scaffold --help
 
 OPTIONS:
   --name <name>             Skill name (kebab-case: lowercase letters, digits, hyphens)
@@ -80,7 +80,7 @@ OPTIONS:
   --with-command            Also scaffold a /<name> slash command
   --update                  Update existing skill (preserve content, fill gaps)
   --dry-run                 Preview without writing
-  --skills-root <path>      Override skills root (default: $HOME/.mavis/skills)
+  --skills-root <path>      Override skills root (default: $HOME/.apeiron/skills)
   --list                    List all existing skills
   --validate <name>         Validate existing skill structure
   -h | --help               Show this help
@@ -95,23 +95,23 @@ SKILL TYPES:
 
 EXAMPLES:
   # Atomic skill
-  mavis-skill-scaffold --name api-rate-limiter \
+  apeiron-skill-scaffold --name api-rate-limiter \
     --description "Rate limiting for APIs. Use when implementing throttling."
 
   # Capability skill (default)
-  mavis-skill-scaffold --name security-audit \
+  apeiron-skill-scaffold --name security-audit \
     --description "Security audit workflow for auth code." \
     --type capability --with-tests
 
   # Bundle skill with hook + slash command
-  mavis-skill-scaffold --name api-design-master \
+  apeiron-skill-scaffold --name api-design-master \
     --description "Full API design workflow" --type bundle \
     --with-hooks --with-command
 
   # Validate an existing skill
-  mavis-skill-scaffold --validate expert-engineer
+  apeiron-skill-scaffold --validate expert-engineer
 
-For full design rationale, see: ~/.mavis/skills/skill-scaffold/SKILL.md
+For full design rationale, see: ~/.apeiron/skills/skill-scaffold/SKILL.md
 EOF
 }
 
@@ -136,7 +136,7 @@ done
 
 # ---------- List mode ----------
 if [[ "$LIST_MODE" == true ]]; then
-  echo -e "${BOLD}Mavis skills in $SKILLS_ROOT:${NC}"
+  echo -e "${BOLD}Apeiron skills in $SKILLS_ROOT:${NC}"
   if [[ ! -d "$SKILLS_ROOT" ]]; then
     log_warn "Skills root doesn't exist yet: $SKILLS_ROOT"
     exit 0
@@ -350,8 +350,8 @@ $workflow_section
 
 ## Cross-references
 
-- **Harness floor**: \`~/.mavis/agents/mavis/harness/GLOBAL.md\`
-- **Accumulated lessons**: \`~/.mavis/agents/mavis/memory/MEMORY.md\`
+- **Harness floor**: \`~/.apeiron/agents/apeiron/harness/GLOBAL.md\`
+- **Accumulated lessons**: \`~/.apeiron/agents/apeiron/memory/MEMORY.md\`
 - **Component skills**: (list any skills this one orchestrates)
 
 ---
@@ -362,7 +362,7 @@ EOF
 }
 
 # ---------- Plan ----------
-echo -e "${BOLD}Mavis Skill Scaffold Plan${NC}"
+echo -e "${BOLD}Apeiron Skill Scaffold Plan${NC}"
 echo -e "  ${DIM}Name${NC}         ${GREEN}$SKILL_NAME${NC}"
 echo -e "  ${DIM}Type${NC}         ${GREEN}$SKILL_TYPE${NC}"
 echo -e "  ${DIM}Description${NC}  ${GREEN}$SKILL_DESCRIPTION${NC}"
@@ -405,7 +405,7 @@ if [[ -f "$skill_file" ]] && [[ "$UPDATE_MODE" == true ]]; then
   log_info "Updating existing $skill_file (preserving content)"
   {
     echo
-    echo "<!-- Updated $NOW_ISO by mavis-skill-scaffold -->"
+    echo "<!-- Updated $NOW_ISO by apeiron-skill-scaffold -->"
     echo "<!-- TODO: review diff and merge changes manually -->"
     echo
   } >> "$skill_file"
@@ -465,7 +465,7 @@ if [[ "$WITH_TESTS" == true ]]; then
 #!/usr/bin/env bash
 #
 # Tests for $SKILL_NAME skill
-# Run: bash ~/.mavis/skills/$SKILL_NAME/test-${SKILL_NAME}.sh
+# Run: bash ~/.apeiron/skills/$SKILL_NAME/test-${SKILL_NAME}.sh
 #
 
 set -euo pipefail
@@ -514,7 +514,7 @@ description: Force-load the $SKILL_NAME skill
 
 When the user invokes /\$SKILL_NAME, load the $SKILL_NAME skill immediately and apply its methodology to the user's task.
 
-**Load**: \`~/.mavis/skills/$SKILL_NAME/SKILL.md\`
+**Load**: \`~/.apeiron/skills/$SKILL_NAME/SKILL.md\`
 
 Then proceed with the user's actual task using the loaded skill's workflow and routing rules.
 CMDEOF
@@ -535,4 +535,4 @@ fi
 if [[ "$WITH_TESTS" == true ]]; then
   echo "  5. Add real tests to $skill_dir/test-${SKILL_NAME}.sh"
 fi
-echo "  Validate:  mavis-skill-scaffold --validate $SKILL_NAME"
+echo "  Validate:  apeiron-skill-scaffold --validate $SKILL_NAME"

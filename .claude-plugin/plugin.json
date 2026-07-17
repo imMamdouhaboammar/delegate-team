@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
   "name": "delegate-team",
-  "version": "3.0.6",
+  "version": "3.0.7",
   "description": "Agentic engineering supersystem - install once, run /apeiron \"<task>\" or dt run \"<task>\" anywhere. Bundles the /apeiron orchestrator, multi-agent team framework, skill scaffolder, agent-kernel (memory + governance), and four companion frameworks (superpowers, Waza, unslop-preflight, autoresearch) on top of the original dt gateway CLI.",
   "author": {
     "name": "Mamdouh Aboammar",

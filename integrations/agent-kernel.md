@@ -89,7 +89,7 @@ agent-kernel episode search "stripe webhook"
 | `/apeiron` orchestrator | Saves chain outcome as an episode at the end |
 | `mm/multi-agent` (MMAS) | All 8 agents read the same memory; proposals go to inbox |
 | `dt` CLI / backends | Pull context via `memory search` before delegating |
-| `mavis-skill-scaffold` | Registers new skills as memories |
+| `apeiron-skill-scaffold` | Registers new skills as memories |
 | All agents (Claude / Codex / Cursor / Gemini / OpenCode / 60+ via Skills.sh) | Read compiled `AGENTS.md` / `CLAUDE.md` / `.cursor/rules/*.mdc` etc. |
 
 See [`agent-kernel/MEMORY.md`](../agent-kernel/MEMORY.md) for the deep guide.
