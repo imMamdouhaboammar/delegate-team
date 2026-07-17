@@ -3,6 +3,12 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.0.8] - 2026-07-17
+
+### Added
+- Added `dt integrations` (alias `intg`) command and `bin/integrations.sh` to automatically check, install, and update all companion frameworks (Waza, unslop-preflight, superpowers, autoresearch) in one command.
+- Integrated automated checker/installer with `install.sh --integrations` to run the verified script.
+
 ## [3.0.7] - 2026-07-17
 
 ### Changed

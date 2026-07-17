@@ -288,43 +288,13 @@ install_delegate_skills() {
 }
 
 install_integrations() {
-    log "Installing companion frameworks..."
-
-    # Waza (one-liner, official installer)
-    if command -v npx >/dev/null 2>&1; then
-        if network_allowed "npx skills add tw93/Waza"; then
-            run_cmd "Waza skills install" npx -y skills add tw93/Waza -a claude-code -g -y 2>&1 | tail -3 || warn "Waza install failed (non-fatal)"
-        fi
+    log "Installing/Updating companion frameworks..."
+    network_allowed "installing companion frameworks" || true
+    if [ "$DRY_RUN" = 1 ]; then
+        drylog "would run bin/integrations.sh"
     else
-        warn "  npx not available; skip Waza"
+        NO_NETWORK="$NO_NETWORK" bash "$ROOT/bin/integrations.sh"
     fi
-
-    # unslop-preflight (npm global)
-    if command -v npm >/dev/null 2>&1; then
-        if [ "$NO_NETWORK" = 1 ]; then
-            warn "[no-network] skipping unslop-preflight (npm global)"
-        elif ! command -v unslop >/dev/null 2>&1; then
-            if network_allowed "git clone unslop-preflight to /tmp"; then
-                run_cmd "git clone unslop-preflight" git clone --depth 1 https://github.com/imMamdouhaboammar/unslop-preflight /tmp/unslop-preflight 2>/dev/null || true
-            fi
-            if [ -d /tmp/unslop-preflight ] && [ "$DRY_RUN" != 1 ]; then
-                if network_allowed "npm install -g unslop-preflight"; then
-                    run_cmd "npm install -g unslop" bash -c "cd /tmp/unslop-preflight && npm install -g . 2>&1 | tail -2" || warn "unslop install failed (non-fatal)"
-                fi
-                ensure_dir "$HOME/.claude/skills/unslop"
-                copy_if_changed "/tmp/unslop-preflight/SKILL.md" "$HOME/.claude/skills/unslop/SKILL.md"
-            elif [ -d /tmp/unslop-preflight ] && [ "$DRY_RUN" = 1 ]; then
-                drylog "would copy /tmp/unslop-preflight/SKILL.md → $HOME/.claude/skills/unslop/"
-            fi
-        else
-            ok "  unslop already on PATH"
-        fi
-    fi
-
-    # superpowers + autoresearch are documented in integrations/{superpowers,waza,...}.md
-    warn "  superpowers + autoresearch need manual install (see integrations/{superpowers,autoresearch}.md)"
-
-    [ "$DRY_RUN" = 1 ] || ok "integrations done. Run: unslop doctor (then read integrations/*.md)"
 }
 
 verify() {
