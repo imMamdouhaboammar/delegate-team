@@ -31,7 +31,7 @@ description: |
 
 - Not a replacement for single-file edits — use minimax-coder directly.
 - Not a replacement for `apeiron team plan` — that's for static planner/coder/verifier flows.
-- Not a replacement for the existing delegate-team backends (vertex-coder, god-agent, minimax-coder).
+- Not a replacement for the existing delegate-team backends (vertex-coder, aonios-agent, minimax-coder).
 - Not a 24/7 daemon — you spawn a team when needed, watchdog exits when done.
 
 ---
@@ -263,6 +263,24 @@ spawn-team.py
 | `SKILL.md` | This file |
 | `README.md` | Same content as SKILL.md (for documentation) |
 
+## Write Modes Enforcement
+
+MMAS supports strict enforcement of safe write modes using the `--write-mode` option (or `--no-write` as an alias for `--write-mode none`).
+
+### Supported Write Modes:
+1. **`workspace`** (Default): Agents can read and write within the approved repository/workspace according to standard behavior.
+2. **`logs-only`**: Spawns agents in an isolated task directory (under `~/.apeiron/multi-agent/tasks/<task_id>`, overridable via `MMAS_TASKS_ROOT` env var). All logs, summaries, brief files, and temporary outputs are restricted to this directory. Path traversal and symlink escapes pointing outside this directory are strictly verified and rejected.
+3. **`none`**: Fully read-only execution. Subprocesses for write-capable backends are rejected before spawning (fail closed). In `none` mode, `watchdog.sh` transitions agent status to `done` on clean exit without requiring a summary file.
+
+### Backend Compatibility Matrix:
+- **`mock-backend`**: Fully compatible with `workspace`, `logs-only`, and `none`.
+- All other backends (`minimax-coder`, `vertex-coder`, `aonios-agent`, `agy`, `codex`, `grok`, `kimi`, `opencode`, `relay-fallback`): Compatible **only** with `workspace`.
+
+### Enforcement & Fail-Closed Behavior:
+- **Backend Compatibility Check**: Spawning a team containing an incompatible backend for the requested write mode fails closed immediately (non-zero exit code 3). No subprocesses are spawned, and the rejection event is recorded in the task metadata.
+- **Path Containment Check**: Every generated path (e.g., brief files, logs, summary files, output directories) is checked dynamically to ensure it does not escape the task directory (detecting path traversal `..` or symlink escapes). Any violation triggers an immediate fail-closed termination.
+- **Environment & Prompt Defense**: Subprocesses are spawned with a minimized environment (essential keys only), overriding `DT_WORKSPACE_ROOT` to the task directory in `logs-only` and `none` modes, and disabling unsafe commands or package installations. Write policy instructions are added to agent system prompts as defense-in-depth.
+
 ---
 
 ## Cross-references
@@ -270,10 +288,10 @@ spawn-team.py
 - **Apeiron expert-engineer**: `~/.apeiron/agents/apeiron/skills/expert-engineer/SKILL.md` (boss-mode routing section)
 - **MiniMax Coder**: `${DELEGATE_TEAM_ROOT}/minimax-coder/` (transport for Atlas/Forge/Scout/Oracle/Visionary)
 - **Vertex Coder**: `${DELEGATE_TEAM_ROOT}/vertex-coder/` (transport for Librarian)
-- **God Agent**: `${DELEGATE_TEAM_ROOT}/god-agent/` (transport for Reviewer/Sentinel)
+- **Aonios Agent**: `${DELEGATE_TEAM_ROOT}/aonios-agent/` (transport for Reviewer/Sentinel)
 - **Inspiration**: NousResearch/hermes-agent (learning loop), code-yeongyu/oh-my-openagent (specialized agents + team mode)
 
 ---
 
-**Last updated**: 2026-06-30 — initial build.
+**Last updated**: 2026-07-17 — write modes enforcement.
 **Maintained by**: Mamdouh + Apeiron (collaboratively).
