@@ -1,0 +1,364 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# ai-autofix.yml  —  Autonomous AI Auto-Fixer
+# ──────────────────────────────────────────────────────────────────────────────
+# Triggers  : workflow_dispatch (from ai-guardian on critical severity)
+#             Also supports manual trigger for targeted fixes
+# What it does:
+#   1. Receives AI analysis report with fixable issues
+#   2. Runs auto-fixable tools (eslint --fix, prettier, etc.)
+#   3. For deeper fixes: calls AI Gateway to produce a diff
+#   4. Applies the diff safely and opens a Pull Request
+#   5. Documents what was changed and why in the PR body
+# ──────────────────────────────────────────────────────────────────────────────
+
+name: 🔧 AI Auto-Fixer
+
+on:
+  workflow_dispatch:
+    inputs:
+      ai_report:
+        description: 'JSON report from ai-guardian (stringified)'
+        required: false
+        default: ''
+      trigger_run:
+        description: 'Guardian run ID that triggered this fix'
+        required: false
+        default: ''
+      fix_scope:
+        description: 'What to fix'
+        required: false
+        default: 'auto'
+        type: choice
+        options:
+          - auto         # Only safe auto-fixes (format/lint)
+          - ai-suggest   # Also apply AI-suggested fixes
+          - format-only  # Only prettier/eslint --fix
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  # ────────────────────────────────────────────────────────────────
+  # 1. DETECT — Find what can be auto-fixed
+  # ────────────────────────────────────────────────────────────────
+  detect-fixable:
+    name: 🔍 Detect Fixable Issues
+    runs-on: ubuntu-latest
+    outputs:
+      has_format_issues: ${{ steps.detect.outputs.has_format_issues }}
+      fixable_issues:    ${{ steps.detect.outputs.fixable_issues }}
+      branch_name:       ${{ steps.branch.outputs.branch_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate fix branch name
+        id: branch
+        run: |
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          BRANCH="ai-autofix/guardian-$TIMESTAMP"
+          echo "branch_name=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "✓ Fix branch will be: $BRANCH"
+
+      - name: Detect fixable issues
+        id: detect
+        env:
+          AI_REPORT_JSON: ${{ inputs.ai_report }}
+        run: |
+          echo "Checking for formatting issues..."
+
+          # Run typecheck — capture errors
+          npm run typecheck 2>&1 | head -50 > /tmp/typecheck_errors.txt || true
+          TS_ERRORS=$(wc -l < /tmp/typecheck_errors.txt)
+
+          # Parse AI report for auto_fixable issues
+          node --input-type=module <<'JSEOF'
+          import { appendFileSync, writeFileSync } from 'fs';
+
+          const reportJson = process.env.AI_REPORT_JSON || '{}';
+          let report = {};
+          try { report = JSON.parse(reportJson); } catch (_) {}
+
+          const fixableIssues = (report.issues || []).filter(i => i.auto_fixable === true);
+
+          appendFileSync(process.env.GITHUB_OUTPUT,
+            `has_format_issues=${fixableIssues.length > 0 ? 'true' : 'false'}\n`);
+
+          const delim = 'FIXABLE_EOF';
+          appendFileSync(process.env.GITHUB_OUTPUT,
+            `fixable_issues<<${delim}\n${JSON.stringify(fixableIssues)}\n${delim}\n`);
+
+          writeFileSync('/tmp/fixable_issues.json', JSON.stringify(fixableIssues, null, 2));
+          console.log(`Found ${fixableIssues.length} auto-fixable issue(s)`);
+          JSEOF
+
+  # ────────────────────────────────────────────────────────────────
+  # 2. FIX — Apply safe automatic fixes
+  # ────────────────────────────────────────────────────────────────
+  apply-autofix:
+    name: 🛠️ Apply Auto-Fixes
+    runs-on: ubuntu-latest
+    needs: detect-fixable
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure git identity
+        run: |
+          git config user.name  "AI Guardian Bot"
+          git config user.email "ai-guardian@delegate-team.dev"
+
+      - name: Create fix branch
+        run: |
+          git checkout -b "${{ needs.detect-fixable.outputs.branch_name }}"
+
+      # ── Safe automatic fixes ─────────────────────────────────────
+      - name: Fix 1 — TypeScript strict mode helpers
+        continue-on-error: true
+        run: |
+          echo "Running tsc --noEmit to identify ts errors..."
+          npm run typecheck 2>&1 | head -30 || true
+
+      - name: Fix 2 — YAML validation auto-fix hints
+        continue-on-error: true
+        run: |
+          python3 - <<'PYEOF'
+          import yaml, glob, sys
+
+          fixed = 0
+          for f in glob.glob('mmas/agents/*.yaml'):
+              try:
+                  with open(f) as fh:
+                      data = yaml.safe_load(fh)
+                  # Re-serialise to normalise formatting
+                  normalised = yaml.dump(data, default_flow_style=False, allow_unicode=True)
+                  with open(f, 'w') as fh:
+                      fh.write(normalised)
+                  print(f'  ✓ normalised {f}')
+                  fixed += 1
+              except Exception as e:
+                  print(f'  ✗ could not fix {f}: {e}')
+
+          print(f'Fixed {fixed} YAML file(s)')
+          PYEOF
+
+      # ── AI-assisted fix for deeper issues ───────────────────────
+      - name: Fix 3 — AI-suggested patches
+        if: inputs.fix_scope != 'format-only'
+        env:
+          AI_GATEWAY_KEY: ${{ secrets.AI_GATEWAY_KEY }}
+          FIXABLE_ISSUES: ${{ needs.detect-fixable.outputs.fixable_issues }}
+        run: |
+          node --input-type=module <<'JSEOF'
+          import { readFileSync, writeFileSync, existsSync } from 'fs';
+
+          const GATEWAY_KEY  = process.env.AI_GATEWAY_KEY;
+          const GATEWAY_URL  = 'https://ai-gateway-1044452917221.us-central1.run.app/v1/chat/completions';
+          const MODEL        = 'gemini-3.5-flash';
+
+          let fixableIssues = [];
+          try {
+            fixableIssues = JSON.parse(process.env.FIXABLE_ISSUES || '[]');
+          } catch (_) {}
+
+          if (fixableIssues.length === 0) {
+            console.log('No AI-fixable issues to process');
+            process.exit(0);
+          }
+
+          console.log(`Processing ${fixableIssues.length} AI-fixable issue(s)`);
+          const appliedFixes = [];
+
+          for (const issue of fixableIssues.slice(0, 3)) { // max 3 AI fixes per run
+            if (!issue.file || !existsSync(issue.file)) {
+              console.log(`  ↩ Skipping (no file): ${issue.id}`);
+              continue;
+            }
+
+            console.log(`  Processing: ${issue.id} in ${issue.file}`);
+            const fileContent = readFileSync(issue.file, 'utf8');
+
+            const prompt = `You are an automated code repair bot.
+          Fix this specific issue in the file:
+
+          Issue: ${JSON.stringify(issue, null, 2)}
+
+          File content (${issue.file}):
+          \`\`\`
+          ${fileContent.slice(0, 3000)}
+          \`\`\`
+
+          Return ONLY JSON (no markdown fences):
+          {
+            "fixed_content": "the complete fixed file content",
+            "explanation": "what was changed",
+            "confidence": 0-100,
+            "safe_to_apply": true
+          }
+          If you cannot safely fix, set safe_to_apply: false.`;
+
+            try {
+              const res = await fetch(GATEWAY_URL, {
+                method:  'POST',
+                headers: {
+                  'Content-Type':  'application/json',
+                  'X-API-Key':     GATEWAY_KEY,
+                  'Authorization': `Bearer ${GATEWAY_KEY}`,
+                },
+                body: JSON.stringify({
+                  model:       MODEL,
+                  max_tokens:  4096,
+                  temperature: 0.1,
+                  messages: [
+                    { role: 'system', content: 'You are a code repair bot. Return only valid JSON.' },
+                    { role: 'user',   content: prompt },
+                  ],
+                }),
+              });
+
+              if (!res.ok) throw new Error(`Gateway ${res.status}: ${await res.text()}`);
+              const json    = await res.json();
+              const rawText = json.choices?.[0]?.message?.content ?? '{}';
+              const cleaned = rawText.replace(/^```json\s*/, '').replace(/```\s*$/, '').trim();
+              const fix     = JSON.parse(cleaned);
+
+              if (fix.safe_to_apply && fix.confidence >= 70 && fix.fixed_content) {
+                writeFileSync(issue.file, fix.fixed_content);
+                console.log(`    ✓ Applied fix (confidence: ${fix.confidence}%): ${fix.explanation}`);
+                appliedFixes.push({ file: issue.file, explanation: fix.explanation, issue_id: issue.id });
+              } else {
+                console.log(`    ↩ Skipped (safe_to_apply=${fix.safe_to_apply}, confidence=${fix.confidence}%)`);
+              }
+            } catch (e) {
+              console.error(`    ✗ AI fix failed for ${issue.id}: ${e.message}`);
+            }
+
+            await new Promise(r => setTimeout(r, 1000));
+          }
+
+          writeFileSync('/tmp/applied_fixes.json', JSON.stringify(appliedFixes, null, 2));
+          console.log(`\n✓ Applied ${appliedFixes.length} AI fix(es)`);
+          JSEOF
+
+      - name: Check for changes
+        id: git_status
+        run: |
+          git diff --quiet && echo "has_changes=false" >> "$GITHUB_OUTPUT" \
+                           || echo "has_changes=true"  >> "$GITHUB_OUTPUT"
+          git diff --name-only | head -20
+
+      - name: Commit changes
+        if: steps.git_status.outputs.has_changes == 'true'
+        run: |
+          git add -A
+          ISSUE_COUNT=$(git diff --cached --name-only | wc -l | tr -d ' ')
+          git commit -m "fix(ai-autofix): apply AI-generated fixes 🤖
+
+          Applied by AI Guardian auto-fixer
+          Trigger: guardian run ${{ inputs.trigger_run || github.run_id }}
+          Files changed: $ISSUE_COUNT
+
+          Co-authored-by: AI Guardian <ai-guardian@delegate-team.dev>"
+
+      - name: Push fix branch
+        if: steps.git_status.outputs.has_changes == 'true'
+        run: |
+          git push origin "${{ needs.detect-fixable.outputs.branch_name }}"
+
+      - name: Open Pull Request
+        if: steps.git_status.outputs.has_changes == 'true'
+        uses: actions/github-script@v7
+        env:
+          AI_GATEWAY_KEY: ${{ secrets.AI_GATEWAY_KEY }}
+          FIXABLE_ISSUES: ${{ needs.detect-fixable.outputs.fixable_issues }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fixableIssues = JSON.parse(process.env.FIXABLE_ISSUES || '[]');
+            const issueList = fixableIssues
+              .map(i => `- [ ] \`${i.id}\` — **${i.title}** (${i.severity})`)
+              .join('\n') || '- General code quality improvements';
+
+            const guardianRunUrl = `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ inputs.trigger_run || github.run_id }}`;
+
+            const prBody = `## 🤖 AI Auto-Fix PR
+
+            This PR was automatically generated by the **AI Guardian** system.
+
+            ### 🔧 Issues Addressed
+            ${issueList}
+
+            ### 🧠 How this was generated
+            1. \`ai-guardian.yml\` detected code quality issues during its scheduled scan
+            2. \`ai-autofix.yml\` was triggered with the analysis report
+            3. Safe fixes were applied automatically using AI suggestions (gemini-3.5-flash)
+
+            ### ✅ What to verify before merging
+            - [ ] All existing tests still pass
+            - [ ] The applied changes are correct and intentional
+            - [ ] No unintended side effects in the changed files
+
+            ### 🔗 References
+            - Guardian Run: [View Run](${guardianRunUrl})
+            - Fix Scope: \`${{ inputs.fix_scope || 'auto' }}\`
+
+            ---
+            > 🤖 *Auto-generated by AI Auto-Fixer · powered by gemini-3.5-flash*
+            > ⚠️ *Always review AI-generated changes before merging*`;
+
+            const pr = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              title: `🔧 AI Auto-Fix: Code quality improvements [run #${{ github.run_number }}]`,
+              body:  prBody,
+              head:  '${{ needs.detect-fixable.outputs.branch_name }}',
+              base:  '${{ github.ref_name }}',
+              draft: true,  // Open as draft — human must review before merge
+            });
+
+            console.log(`✓ PR #${pr.data.number} opened: ${pr.data.html_url}`);
+
+            // Add labels
+            await github.rest.issues.addLabels({
+              owner:  context.repo.owner,
+              repo:   context.repo.repo,
+              issue_number: pr.data.number,
+              labels: ['ai-reported', 'auto-scan'],
+            });
+
+      - name: No changes summary
+        if: steps.git_status.outputs.has_changes == 'false'
+        run: |
+          echo "## 🔧 AI Auto-Fixer" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "No safe changes to apply — all detected issues require manual review." >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Check the [guardian report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details." >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,510 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# ai-guardian.yml  —  Autonomous AI Code Guardian
+# ──────────────────────────────────────────────────────────────────────────────
+# Triggers  : Daily 06:00 UTC  |  every push to main/master  |  manual dispatch
+# What it does:
+#   1. Runs full health scan (lint, typecheck, tests, YAML/JSON lint)
+#   2. Sends results to AI Gateway (gemini-3.5-flash) for analysis
+#   3. Writes an AI-generated Markdown report as a Job Summary
+#   4. Dispatches ai-issue-reporter workflow when issues are found
+#   5. Dispatches ai-autofix workflow for auto-fixable problems
+# ──────────────────────────────────────────────────────────────────────────────
+
+name: 🤖 AI Guardian
+
+on:
+  schedule:
+    - cron: '0 6 * * *'       # Daily at 06:00 UTC
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: 'Enable verbose debug output'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['true', 'false']
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: ai-guardian-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ────────────────────────────────────────────────────────────────
+  # 1. HEALTH SCAN — Run all checks and collect results as JSON
+  # ────────────────────────────────────────────────────────────────
+  health-scan:
+    name: 🔍 Health Scan
+    runs-on: ubuntu-latest
+    outputs:
+      report_json: ${{ steps.collect.outputs.report_json }}
+      has_failures: ${{ steps.collect.outputs.has_failures }}
+      failure_count: ${{ steps.collect.outputs.failure_count }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Python dependencies
+        run: pip install pyyaml --quiet
+
+      - name: Run typecheck
+        id: typecheck
+        continue-on-error: true
+        run: |
+          npm run typecheck 2>&1 | tee /tmp/typecheck.log
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Run build
+        id: build
+        continue-on-error: true
+        run: |
+          npm run build 2>&1 | tee /tmp/build.log
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Run tests
+        id: tests
+        continue-on-error: true
+        run: |
+          npm test 2>&1 | tee /tmp/tests.log
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Version sync check
+        id: version
+        continue-on-error: true
+        run: |
+          npm run version:check 2>&1 | tee /tmp/version.log
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Shell script syntax check
+        id: shell
+        continue-on-error: true
+        run: |
+          {
+            for f in install.sh orchestrator/scripts/orchestrate.sh \
+                     mmas/watchdog.sh scaffolder/bin/apeiron-skill-scaffold \
+                     agent-kernel/install.sh agent-kernel/wrapper.sh; do
+              [ -f "$f" ] && bash -n "$f" && echo "✓ $f" || echo "✗ $f"
+            done
+          } 2>&1 | tee /tmp/shell.log
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Python syntax check
+        id: python
+        continue-on-error: true
+        run: |
+          {
+            python -m py_compile vertex-coder/*.py 2>&1 && echo "✓ vertex-coder"
+            python -m py_compile minimax-coder/*.py 2>&1 && echo "✓ minimax-coder"
+            python -m py_compile mmas/spawn-team.py mmas/hash-edit.py 2>&1 && echo "✓ mmas"
+          } 2>&1 | tee /tmp/python.log
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: YAML / JSON lint
+        id: lint
+        continue-on-error: true
+        run: |
+          {
+            python -c "
+          import yaml, json, sys, glob
+          errors = []
+          # YAML
+          for f in glob.glob('mmas/agents/*.yaml'):
+              try:
+                  yaml.safe_load(open(f))
+                  print(f'✓ {f}')
+              except Exception as e:
+                  errors.append(f'✗ {f}: {e}')
+                  print(f'✗ {f}: {e}')
+          # JSON
+          for f in ['package.json','tsconfig.json','.claude-plugin/plugin.json',
+                    '.claude-plugin/marketplace.json','skills.sh.json']:
+              try:
+                  json.load(open(f))
+                  print(f'✓ {f}')
+              except Exception as e:
+                  errors.append(f'✗ {f}: {e}')
+                  print(f'✗ {f}: {e}')
+          sys.exit(len(errors))
+          " 2>&1
+          } | tee /tmp/lint.log
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: SKILL.md frontmatter check
+        id: skill_md
+        continue-on-error: true
+        run: |
+          python3 - <<'PYEOF' 2>&1 | tee /tmp/skill_md.log
+          import re, sys, glob
+          errors = []
+          skill_files = glob.glob('**/SKILL.md', recursive=True)
+          for path in skill_files:
+              try:
+                  text = open(path).read()
+              except FileNotFoundError:
+                  continue
+              m = re.match(r'---\n(.*?)\n---', text, re.DOTALL)
+              if not m:
+                  errors.append(f'✗ no YAML frontmatter: {path}')
+                  continue
+              fm = m.group(1)
+              if 'name:' not in fm:
+                  errors.append(f'✗ no name: {path}')
+              elif 'description:' not in fm:
+                  errors.append(f'✗ no description: {path}')
+              else:
+                  print(f'✓ {path}')
+          for e in errors:
+              print(e)
+          sys.exit(len(errors))
+          PYEOF
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Collect results into JSON report
+        id: collect
+        run: |
+          REPO="${{ github.repository }}"
+          BRANCH="${{ github.ref_name }}"
+          SHA="${{ github.sha }}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          # Read logs safely (max 500 chars each)
+          read_log() { [ -f "$1" ] && head -c 500 "$1" || echo "(no output)"; }
+
+          TC_LOG=$(read_log /tmp/typecheck.log)
+          BUILD_LOG=$(read_log /tmp/build.log)
+          TEST_LOG=$(read_log /tmp/tests.log)
+          VER_LOG=$(read_log /tmp/version.log)
+          SHELL_LOG=$(read_log /tmp/shell.log)
+          PY_LOG=$(read_log /tmp/python.log)
+          LINT_LOG=$(read_log /tmp/lint.log)
+          SKILL_LOG=$(read_log /tmp/skill_md.log)
+
+          TC_CODE="${{ steps.typecheck.outputs.exit_code }}"
+          BUILD_CODE="${{ steps.build.outputs.exit_code }}"
+          TEST_CODE="${{ steps.tests.outputs.exit_code }}"
+          VER_CODE="${{ steps.version.outputs.exit_code }}"
+          SHELL_CODE="${{ steps.shell.outputs.exit_code }}"
+          PY_CODE="${{ steps.python.outputs.exit_code }}"
+          LINT_CODE="${{ steps.lint.outputs.exit_code }}"
+          SKILL_CODE="${{ steps.skill_md.outputs.exit_code }}"
+
+          FAILURES=0
+          for code in "$TC_CODE" "$BUILD_CODE" "$TEST_CODE" "$VER_CODE" "$SHELL_CODE" "$PY_CODE" "$LINT_CODE" "$SKILL_CODE"; do
+            [ "${code:-0}" != "0" ] && FAILURES=$((FAILURES + 1))
+          done
+
+          python3 - <<PYEOF
+          import json, os
+
+          data = {
+            "repo":    "$REPO",
+            "branch":  "$BRANCH",
+            "sha":     "$SHA",
+            "run_url": "$RUN_URL",
+            "checks": {
+              "typecheck":  {"exit_code": int("${TC_CODE:-0}"    or 0), "log": """$TC_LOG"""},
+              "build":      {"exit_code": int("${BUILD_CODE:-0}" or 0), "log": """$BUILD_LOG"""},
+              "tests":      {"exit_code": int("${TEST_CODE:-0}"  or 0), "log": """$TEST_LOG"""},
+              "version":    {"exit_code": int("${VER_CODE:-0}"   or 0), "log": """$VER_LOG"""},
+              "shell":      {"exit_code": int("${SHELL_CODE:-0}" or 0), "log": """$SHELL_LOG"""},
+              "python":     {"exit_code": int("${PY_CODE:-0}"    or 0), "log": """$PY_LOG"""},
+              "lint":       {"exit_code": int("${LINT_CODE:-0}"  or 0), "log": """$LINT_LOG"""},
+              "skill_md":   {"exit_code": int("${SKILL_CODE:-0}" or 0), "log": """$SKILL_LOG"""},
+            },
+            "total_failures": $FAILURES
+          }
+
+          report_str = json.dumps(data)
+          # Write to GITHUB_OUTPUT using multiline delimiter
+          delim = "REPORT_EOF"
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"report_json<<{delim}\n{report_str}\n{delim}\n")
+              f.write(f"has_failures={'true' if $FAILURES > 0 else 'false'}\n")
+              f.write(f"failure_count=$FAILURES\n")
+
+          print(f"Collected report — failures: $FAILURES")
+          PYEOF
+
+  # ────────────────────────────────────────────────────────────────
+  # 2. AI ANALYSIS — Send scan results to AI Gateway
+  # ────────────────────────────────────────────────────────────────
+  ai-analysis:
+    name: 🧠 AI Analysis
+    runs-on: ubuntu-latest
+    needs: health-scan
+    outputs:
+      ai_report: ${{ steps.analyse.outputs.ai_report }}
+      severity:  ${{ steps.analyse.outputs.severity }}
+      score:     ${{ steps.analyse.outputs.score }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: Verify AI Gateway connectivity
+        env:
+          AI_GATEWAY_KEY: ${{ secrets.AI_GATEWAY_KEY }}
+        run: |
+          echo "Testing AI Gateway connection…"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST \
+            "https://ai-gateway-1044452917221.us-central1.run.app/v1/chat/completions" \
+            -H "Content-Type: application/json" \
+            -H "X-API-Key: $AI_GATEWAY_KEY" \
+            -d '{"model":"gemini-3.5-flash","messages":[{"role":"user","content":"ping"}],"max_tokens":5}')
+          echo "Gateway HTTP status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "⚠️  Gateway returned $STATUS — AI analysis will be skipped"
+            echo "gateway_ok=false" >> "$GITHUB_ENV"
+          else
+            echo "✓ Gateway reachable"
+            echo "gateway_ok=true" >> "$GITHUB_ENV"
+          fi
+
+      - name: Run AI analysis
+        id: analyse
+        env:
+          AI_GATEWAY_KEY: ${{ secrets.AI_GATEWAY_KEY }}
+          AI_GATEWAY_MODEL: gemini-3.5-flash
+        run: |
+          if [ "$gateway_ok" = "false" ]; then
+            echo "Skipping AI analysis (gateway unreachable)"
+            echo 'ai_report={"summary":"AI gateway unavailable","score":50,"severity":"warning","issues":[],"positives":[],"recommended_actions":[]}' >> "$GITHUB_OUTPUT"
+            echo "severity=warning" >> "$GITHUB_OUTPUT"
+            echo "score=50" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Write scan data to temp file
+          cat > /tmp/scan_data.json <<'SCANEOF'
+          ${{ needs.health-scan.outputs.report_json }}
+          SCANEOF
+
+          # Call AI Gateway using Node.js inline script
+          node --input-type=module <<'JSEOF'
+          import { readFileSync, writeFileSync } from 'fs';
+          import { appendFileSync } from 'fs';
+          import { env } from 'process';
+
+          const GATEWAY_KEY  = env.AI_GATEWAY_KEY;
+          const GATEWAY_URL  = 'https://ai-gateway-1044452917221.us-central1.run.app/v1/chat/completions';
+          const MODEL        = env.AI_GATEWAY_MODEL || 'gemini-3.5-flash';
+
+          const SYSTEM_PROMPT = `You are an expert code reviewer and software quality guardian.
+          Analyse the provided CI/test results and return a structured JSON report with this exact schema:
+          {
+            "summary": "one-line overall health status",
+            "score": 0-100,
+            "severity": "ok|warning|critical",
+            "issues": [
+              {
+                "id": "unique-slug",
+                "title": "short title",
+                "severity": "low|medium|high|critical",
+                "file": "path/to/file or null",
+                "description": "what is wrong",
+                "suggestion": "how to fix it",
+                "auto_fixable": true
+              }
+            ],
+            "positives": ["what is working well"],
+            "recommended_actions": ["ordered list of next steps"]
+          }
+          Return ONLY valid JSON, no markdown fences.`;
+
+          const scanData = readFileSync('/tmp/scan_data.json', 'utf8');
+
+          const res = await fetch(GATEWAY_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-API-Key': GATEWAY_KEY,
+              'Authorization': `Bearer ${GATEWAY_KEY}`,
+            },
+            body: JSON.stringify({
+              model: MODEL,
+              max_tokens: 4096,
+              temperature: 0.1,
+              messages: [
+                { role: 'system', content: SYSTEM_PROMPT },
+                { role: 'user',   content: `Analyse this CI scan:\n${scanData}` },
+              ],
+            }),
+          });
+
+          if (!res.ok) {
+            const err = await res.text();
+            console.error(`AI Gateway error ${res.status}: ${err}`);
+            process.exit(1);
+          }
+
+          const json      = await res.json();
+          const rawText   = json.choices?.[0]?.message?.content ?? '{}';
+
+          // Strip markdown fences if present
+          const cleaned   = rawText.replace(/^```json\s*/,'').replace(/```\s*$/,'').trim();
+          writeFileSync('/tmp/ai_report.json', cleaned);
+
+          // Parse to extract severity + score
+          let parsed = {};
+          try { parsed = JSON.parse(cleaned); } catch (_) { parsed = { severity: 'warning', score: 50 }; }
+
+          const ghOutput = process.env.GITHUB_OUTPUT;
+          const severity = parsed.severity || 'warning';
+          const score    = parsed.score    || 50;
+
+          // Safely write multiline output
+          const delim = 'AI_REPORT_EOF';
+          appendFileSync(ghOutput, `ai_report<<${delim}\n${cleaned}\n${delim}\n`);
+          appendFileSync(ghOutput, `severity=${severity}\n`);
+          appendFileSync(ghOutput, `score=${score}\n`);
+
+          console.log(`✓ AI analysis complete — severity: ${severity}, score: ${score}`);
+          JSEOF
+
+  # ────────────────────────────────────────────────────────────────
+  # 3. REPORT — Write GitHub Job Summary
+  # ────────────────────────────────────────────────────────────────
+  generate-report:
+    name: 📊 Generate Report
+    runs-on: ubuntu-latest
+    needs: [health-scan, ai-analysis]
+    steps:
+      - name: Write Job Summary
+        env:
+          AI_GATEWAY_KEY: ${{ secrets.AI_GATEWAY_KEY }}
+          AI_GATEWAY_MODEL: gemini-3.5-flash
+        run: |
+          SCORE="${{ needs.ai-analysis.outputs.score }}"
+          SEVERITY="${{ needs.ai-analysis.outputs.severity }}"
+          FAILURES="${{ needs.health-scan.outputs.failure_count }}"
+          BRANCH="${{ github.ref_name }}"
+          SHA="${{ github.sha }}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          # Choose badge colour
+          case "$SEVERITY" in
+            ok)       BADGE="brightgreen" ; EMOJI="✅" ;;
+            warning)  BADGE="yellow"      ; EMOJI="⚠️" ;;
+            critical) BADGE="red"         ; EMOJI="🚨" ;;
+            *)        BADGE="lightgrey"   ; EMOJI="❓" ;;
+          esac
+
+          cat >> "$GITHUB_STEP_SUMMARY" <<SUMMARY
+          # 🤖 AI Guardian Report $EMOJI
+
+          ![Health Score](https://img.shields.io/badge/Health%20Score-${SCORE}%25-${BADGE})
+          ![Severity](https://img.shields.io/badge/Severity-${SEVERITY}-${BADGE})
+
+          | Field | Value |
+          |-------|-------|
+          | 📌 Branch | \`$BRANCH\` |
+          | 🔑 Commit | \`${SHA:0:8}\` |
+          | ❌ Failed checks | $FAILURES |
+          | 🎯 AI Score | $SCORE / 100 |
+          | 🔗 Run | [View Run]($RUN_URL) |
+
+          ---
+
+          ## 🧠 AI Analysis
+
+          \`\`\`json
+          ${{ needs.ai-analysis.outputs.ai_report }}
+          \`\`\`
+
+          ---
+          *Generated by AI Guardian · powered by gemini-3.5-flash via custom AI Gateway*
+          SUMMARY
+
+          echo "✓ Job Summary written"
+
+      - name: Save report as artifact
+        run: |
+          mkdir -p ai-reports
+          cat > ai-reports/guardian-report-${{ github.run_number }}.json <<'EOF'
+          {
+            "run": ${{ github.run_number }},
+            "sha": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}",
+            "score": ${{ needs.ai-analysis.outputs.score }},
+            "severity": "${{ needs.ai-analysis.outputs.severity }}",
+            "failure_count": ${{ needs.health-scan.outputs.failure_count }},
+            "ai_analysis": ${{ needs.ai-analysis.outputs.ai_report }}
+          }
+          EOF
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-guardian-report-${{ github.run_number }}
+          path: ai-reports/
+          retention-days: 30
+
+  # ────────────────────────────────────────────────────────────────
+  # 4. DISPATCH — Trigger downstream workflows if issues found
+  # ────────────────────────────────────────────────────────────────
+  dispatch-workflows:
+    name: 🚀 Dispatch Downstream
+    runs-on: ubuntu-latest
+    needs: [health-scan, ai-analysis]
+    if: needs.health-scan.outputs.has_failures == 'true'
+    steps:
+      - name: Trigger AI Issue Reporter
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner:   context.repo.owner,
+              repo:    context.repo.repo,
+              workflow_id: 'ai-issue-reporter.yml',
+              ref:     context.ref,
+              inputs: {
+                ai_report:     `${{ needs.ai-analysis.outputs.ai_report }}`.slice(0, 5000),
+                severity:      '${{ needs.ai-analysis.outputs.severity }}',
+                trigger_run:   String(context.runId),
+              }
+            });
+            console.log('✓ Dispatched ai-issue-reporter');
+
+      - name: Trigger AI Auto-Fix (critical/high only)
+        if: needs.ai-analysis.outputs.severity == 'critical'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner:   context.repo.owner,
+              repo:    context.repo.repo,
+              workflow_id: 'ai-autofix.yml',
+              ref:     context.ref,
+              inputs: {
+                ai_report:   `${{ needs.ai-analysis.outputs.ai_report }}`.slice(0, 5000),
+                trigger_run: String(context.runId),
+              }
+            });
+            console.log('✓ Dispatched ai-autofix (critical severity)');

@@ -1,0 +1,364 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# ai-issue-reporter.yml  —  Autonomous AI Issue Creator
+# ──────────────────────────────────────────────────────────────────────────────
+# Triggers  : workflow_dispatch (from ai-guardian)  |  weekly Sunday 08:00 UTC
+# What it does:
+#   1. Receives AI analysis JSON from ai-guardian (or runs its own mini-scan)
+#   2. For each high/critical issue → calls AI Gateway to write a GitHub Issue
+#   3. Deduplicates against existing open issues (checks label ai-reported)
+#   4. Opens GitHub Issues with proper labels + body
+#   5. Posts a weekly summary Issue every Sunday
+# ──────────────────────────────────────────────────────────────────────────────
+
+name: 📋 AI Issue Reporter
+
+on:
+  workflow_dispatch:
+    inputs:
+      ai_report:
+        description: 'JSON report from ai-guardian (stringified)'
+        required: false
+        default: ''
+      severity:
+        description: 'Severity from guardian (ok|warning|critical)'
+        required: false
+        default: 'warning'
+      trigger_run:
+        description: 'Run ID that triggered this workflow'
+        required: false
+        default: ''
+  schedule:
+    - cron: '0 8 * * 0'    # Weekly on Sunday at 08:00 UTC
+
+permissions:
+  issues: write
+  contents: read
+  actions: read
+
+jobs:
+  # ────────────────────────────────────────────────────────────────
+  # 1. PREP — Ensure required labels exist in the repo
+  # ────────────────────────────────────────────────────────────────
+  ensure-labels:
+    name: 🏷️ Ensure Labels
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create ai-reported label if missing
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const labels = [
+              { name: 'ai-reported',    color: '7B68EE', description: 'Opened automatically by AI Guardian' },
+              { name: 'high-priority',  color: 'e11d48', description: 'High priority issue' },
+              { name: 'low-priority',   color: '6ee7b7', description: 'Low priority issue'  },
+              { name: 'technical-debt', color: 'f59e0b', description: 'Technical debt'       },
+              { name: 'auto-scan',      color: '06b6d4', description: 'Created by automated scan' },
+            ];
+
+            for (const label of labels) {
+              try {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo:  context.repo.repo,
+                  ...label,
+                });
+                console.log(`✓ Created label: ${label.name}`);
+              } catch (e) {
+                if (e.status === 422) {
+                  console.log(`Label already exists: ${label.name}`);
+                } else {
+                  console.error(`Failed to create label ${label.name}: ${e.message}`);
+                }
+              }
+            }
+
+  # ────────────────────────────────────────────────────────────────
+  # 2. ISSUE CREATION — Parse AI report and open Issues
+  # ────────────────────────────────────────────────────────────────
+  create-issues:
+    name: 🐛 Create Issues from AI Report
+    runs-on: ubuntu-latest
+    needs: ensure-labels
+    if: github.event_name == 'workflow_dispatch' && inputs.ai_report != ''
+    steps:
+      - name: Parse report and create issues
+        uses: actions/github-script@v7
+        env:
+          AI_GATEWAY_KEY: ${{ secrets.AI_GATEWAY_KEY }}
+          AI_REPORT_JSON: ${{ inputs.ai_report }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const aiGatewayKey = process.env.AI_GATEWAY_KEY;
+            const gatewayUrl   = 'https://ai-gateway-1044452917221.us-central1.run.app/v1/chat/completions';
+            const model        = 'gemini-3.5-flash';
+
+            // ── Parse incoming AI report ──────────────────────────
+            let report;
+            try {
+              report = JSON.parse(process.env.AI_REPORT_JSON || '{}');
+            } catch (e) {
+              console.log('No valid AI report JSON — nothing to create');
+              return;
+            }
+
+            const issues = (report.issues || []).filter(i =>
+              i.severity === 'critical' || i.severity === 'high'
+            );
+
+            if (issues.length === 0) {
+              console.log('No high/critical issues found — skipping issue creation');
+              return;
+            }
+
+            console.log(`Found ${issues.length} high/critical issue(s) to process`);
+
+            // ── Fetch existing open ai-reported issues for dedup ──
+            const existingIssues = await github.rest.issues.listForRepo({
+              owner:  context.repo.owner,
+              repo:   context.repo.repo,
+              labels: 'ai-reported',
+              state:  'open',
+              per_page: 100,
+            });
+
+            const existingTitles = new Set(
+              existingIssues.data.map(i => i.title.toLowerCase())
+            );
+
+            // ── Process each issue ────────────────────────────────
+            for (const issue of issues) {
+              console.log(`\nProcessing: ${issue.id} — ${issue.title}`);
+
+              // Dedup check
+              const potentialTitle = issue.title.toLowerCase();
+              const isDuplicate = [...existingTitles].some(t =>
+                t.includes(potentialTitle.slice(0, 30)) ||
+                potentialTitle.includes(t.slice(0, 30))
+              );
+
+              if (isDuplicate) {
+                console.log(`  ↩ Skipping duplicate: ${issue.title}`);
+                continue;
+              }
+
+              // ── Ask AI to write the GitHub Issue body ───────────
+              const issuePrompt = `Write a clear GitHub Issue for this detected code quality problem:
+            ${JSON.stringify(issue, null, 2)}
+
+            Return ONLY JSON (no markdown fences):
+            {
+              "title": "emoji + concise title",
+              "body": "Full GitHub-flavored Markdown body with: ## Problem, ## Context, ## Suggested Fix, ## Severity sections",
+              "labels": ["list from: bug, enhancement, documentation, technical-debt, high-priority, low-priority"],
+              "priority": "low|medium|high|critical"
+            }`;
+
+              let issueData;
+              try {
+                const res = await fetch(gatewayUrl, {
+                  method:  'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key':    aiGatewayKey,
+                    'Authorization': `Bearer ${aiGatewayKey}`,
+                  },
+                  body: JSON.stringify({
+                    model,
+                    max_tokens:  2048,
+                    temperature: 0.3,
+                    messages: [
+                      { role: 'system', content: 'You are a technical GitHub Issues writer. Return only valid JSON.' },
+                      { role: 'user',   content: issuePrompt },
+                    ],
+                  }),
+                });
+
+                if (!res.ok) throw new Error(`Gateway ${res.status}`);
+                const json    = await res.json();
+                const rawText = json.choices?.[0]?.message?.content ?? '{}';
+                const cleaned = rawText.replace(/^```json\s*/, '').replace(/```\s*$/, '').trim();
+                issueData = JSON.parse(cleaned);
+              } catch (e) {
+                console.error(`  AI issue-write failed: ${e.message} — using fallback body`);
+                issueData = {
+                  title:  `${issue.severity === 'critical' ? '🚨' : '⚠️'} ${issue.title}`,
+                  body:   `## Problem\n${issue.description}\n\n## Suggested Fix\n${issue.suggestion}\n\n## Severity\n\`${issue.severity}\``,
+                  labels: issue.severity === 'critical' ? ['high-priority'] : [],
+                };
+              }
+
+              // Ensure ai-reported + auto-scan labels are always present
+              const finalLabels = [...new Set([
+                'ai-reported',
+                'auto-scan',
+                ...(issueData.labels || []),
+              ])];
+
+              // Add severity label
+              if (issue.severity === 'critical' || issue.severity === 'high') {
+                finalLabels.push('high-priority');
+              }
+
+              // ── Create the GitHub Issue ──────────────────────────
+              const footer = `\n\n---\n> 🤖 *Auto-opened by AI Guardian · Run [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) · powered by gemini-3.5-flash*`;
+
+              try {
+                const created = await github.rest.issues.create({
+                  owner:  context.repo.owner,
+                  repo:   context.repo.repo,
+                  title:  issueData.title || issue.title,
+                  body:   (issueData.body || issue.description) + footer,
+                  labels: finalLabels.filter(l => typeof l === 'string' && l.length > 0),
+                });
+                console.log(`  ✓ Created Issue #${created.data.number}: ${created.data.title}`);
+                existingTitles.add((issueData.title || issue.title).toLowerCase());
+              } catch (e) {
+                console.error(`  ✗ Failed to create issue: ${e.message}`);
+              }
+
+              // Small delay to avoid rate limiting
+              await new Promise(r => setTimeout(r, 1500));
+            }
+
+  # ────────────────────────────────────────────────────────────────
+  # 3. WEEKLY REPORT — Sunday summary Issue
+  # ────────────────────────────────────────────────────────────────
+  weekly-report:
+    name: 📅 Weekly Summary Issue
+    runs-on: ubuntu-latest
+    needs: ensure-labels
+    if: github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Gather weekly stats
+        id: stats
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+            // Recent commits
+            const commits = await github.rest.repos.listCommits({
+              owner:    context.repo.owner,
+              repo:     context.repo.repo,
+              since,
+              per_page: 100,
+            });
+
+            // Open issues this week
+            const openIssues = await github.rest.issues.listForRepo({
+              owner:    context.repo.owner,
+              repo:     context.repo.repo,
+              state:    'open',
+              labels:   'ai-reported',
+              per_page: 50,
+            });
+
+            // Closed issues this week
+            const closedIssues = await github.rest.issues.listForRepo({
+              owner:    context.repo.owner,
+              repo:     context.repo.repo,
+              state:    'closed',
+              labels:   'ai-reported',
+              since,
+              per_page: 50,
+            });
+
+            const stats = {
+              commit_count:         commits.data.length,
+              open_ai_issues:       openIssues.data.length,
+              closed_ai_issues:     closedIssues.data.length,
+              week_start:           since.slice(0, 10),
+              week_end:             new Date().toISOString().slice(0, 10),
+            };
+
+            core.setOutput('stats_json', JSON.stringify(stats));
+            console.log('Weekly stats:', stats);
+
+      - name: Generate weekly summary with AI
+        id: weekly_ai
+        env:
+          AI_GATEWAY_KEY: ${{ secrets.AI_GATEWAY_KEY }}
+          STATS_JSON: ${{ steps.stats.outputs.stats_json }}
+        run: |
+          node --input-type=module <<'JSEOF'
+          import { appendFileSync } from 'fs';
+
+          const GATEWAY_KEY = process.env.AI_GATEWAY_KEY;
+          const GATEWAY_URL = 'https://ai-gateway-1044452917221.us-central1.run.app/v1/chat/completions';
+          const stats       = JSON.parse(process.env.STATS_JSON || '{}');
+
+          const prompt = `Generate a concise weekly project health summary for a GitHub Issue.
+          Repository: delegate-team (Agentic Engineering Supersystem)
+          Week: ${stats.week_start} → ${stats.week_end}
+          Stats: ${JSON.stringify(stats, null, 2)}
+
+          Write in GitHub-flavored Markdown. Include:
+          - 📊 Weekly Snapshot table
+          - 🏥 Health Assessment (1-2 sentences)
+          - ✅ Wins this week
+          - 🔧 Areas to watch
+          - 📋 Recommended focus for next week
+          Keep it under 600 words, use emoji, be direct and actionable.`;
+
+          try {
+            const res = await fetch(GATEWAY_URL, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key':    GATEWAY_KEY,
+                'Authorization': `Bearer ${GATEWAY_KEY}`,
+              },
+              body: JSON.stringify({
+                model: 'gemini-3.5-flash',
+                max_tokens: 1500,
+                temperature: 0.4,
+                messages: [
+                  { role: 'user', content: prompt },
+                ],
+              }),
+            });
+
+            const json    = await res.json();
+            const summary = json.choices?.[0]?.message?.content ?? 'AI summary unavailable.';
+            appendFileSync(process.env.GITHUB_OUTPUT,
+              `weekly_summary<<WEEKLY_EOF\n${summary}\nWEEKLY_EOF\n`);
+            console.log('✓ AI weekly summary generated');
+          } catch (e) {
+            console.error(`AI weekly summary failed: ${e.message}`);
+            appendFileSync(process.env.GITHUB_OUTPUT,
+              `weekly_summary<<WEEKLY_EOF\n# Weekly Report\nAI summary unavailable this week.\n**Stats:** ${JSON.stringify(stats)}\nWEEKLY_EOF\n`);
+          }
+          JSEOF
+
+      - name: Open weekly summary Issue
+        uses: actions/github-script@v7
+        env:
+          WEEKLY_SUMMARY: ${{ steps.weekly_ai.outputs.weekly_summary }}
+          STATS_JSON: ${{ steps.stats.outputs.stats_json }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const today   = new Date().toISOString().slice(0, 10);
+            const summary = process.env.WEEKLY_SUMMARY;
+            const stats   = JSON.parse(process.env.STATS_JSON || '{}');
+
+            const footer = `\n\n---\n> 🤖 *Weekly summary auto-generated by AI Guardian · ${today} · powered by gemini-3.5-flash*`;
+
+            const created = await github.rest.issues.create({
+              owner:  context.repo.owner,
+              repo:   context.repo.repo,
+              title:  `📅 Weekly AI Health Report — ${today}`,
+              body:   summary + footer,
+              labels: ['ai-reported', 'auto-scan'],
+            });
+
+            console.log(`✓ Weekly report Issue #${created.data.number} created`);
+
+            // Post in Job Summary too
+            const summaryContent = `# 📅 Weekly AI Health Report\n\n${summary}\n\n[View Issue #${created.data.number}](${created.data.html_url})`;
+            await core.summary.addRaw(summaryContent).write();
