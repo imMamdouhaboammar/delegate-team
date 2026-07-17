@@ -63,7 +63,7 @@ README documents **four** install paths under "Quick install":
 
 - The README's four install paths are not clearly differentiated by what they
   actually install. A user who picks Path A does **not** get the
-  `/mavis-ship` skill, MMAS, or agent-kernel — the README does not say this.
+  `/apeiron` skill, MMAS, or agent-kernel — the README does not say this.
 - "Four routing layers" in the hero quote is unverified marketing and should
   be removed or clarified.
 
@@ -128,7 +128,7 @@ dynamic gcloud auth).
 
 - `SECURITY.md` does not mention `install.sh` risk surface (writes to `~/.mavis/`,
   `~/.claude/`, `~/.local/bin/`, downloads companion frameworks via `npx` + `git clone`).
-- `SECURITY.md` does not mention the orchestrator (`/mavis-ship`) routing risk.
+- `SECURITY.md` does not mention the orchestrator (`/apeiron`) routing risk.
 - `SECURITY.md` does not mention agent-kernel policy guard or the proposal inbox.
 - `SECURITY.md` does not mention MMAS subprocess spawning risk.
 - `SECURITY.md` does not mention MCP `DT_ENABLE_MCP` switch being honored at install time.

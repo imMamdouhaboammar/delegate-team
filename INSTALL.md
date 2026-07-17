@@ -1,7 +1,7 @@
 # INSTALL — v2.7.0
 
 One-command install for the entire `delegate-team` supersystem (with the full
-v2.7.0 arsenal: `/mavis-ship` orchestrator, autopilot, mavis-ship-uni).
+v2.7.0 arsenal: `/apeiron` orchestrator, autopilot, apeiron-uni).
 
 ## Quickstart (recommended)
 
@@ -14,10 +14,10 @@ cd delegate-team
 This installs:
 
 - **`dt` CLI** (the gateway, built via npm)
-- **`/mavis-ship` orchestrator** + 47-case router (`orchestrate.py --selftest`)
-- **`mavis-ship` standalone skill bundle** (NEW v2.7.0)
+- **`/apeiron` orchestrator** + 47-case router (`orchestrate.py --selftest`)
+- **`apeiron` standalone skill bundle** (NEW v2.7.0)
 - **`autopilot.sh`** — 7-stage GOD command (NEW v2.7.0)
-- **`mavis-ship-uni`** — smart universal wrapper (NEW v2.7.0)
+- **`apeiron-uni`** — smart universal wrapper (NEW v2.7.0)
 - **`agents-health.sh`** — health check for 10 coding agents
 - **`mavis-skill-scaffold`** CLI
 - **MMAS** multi-agent framework
@@ -37,8 +37,8 @@ orchestrate.py --selftest    # 47/47 routing cases
 
 ```bash
 ./install.sh --dt             # Just the dt CLI
-./install.sh --orchestrator   # Just the /mavis-ship skill (root + orchestrator/)
-./install.sh --mavis-ship     # Just the standalone mavis-ship skill bundle (NEW v2.7.0)
+./install.sh --orchestrator   # Just the /apeiron skill (root + orchestrator/)
+./install.sh --apeiron     # Just the standalone apeiron skill bundle (NEW v2.7.0)
 ./install.sh --scaffolder     # Just the skill scaffolder
 ./install.sh --mmas           # Just the multi-agent framework
 ./install.sh --kernel         # Just agent-kernel (memory + governance)
@@ -50,10 +50,10 @@ orchestrate.py --selftest    # 47/47 routing cases
 
 | Component | Path after install | What it does |
 |---|---|---|
-| `orchestrate.py` | `~/.mavis/skills/mavis-ship/scripts/orchestrate.py` | 47-case router, classifies task signature → picks the right chain |
-| `catalog.py` | `~/.mavis/skills/mavis-ship/scripts/catalog.py` | 38 curated integrations + 1890 auto-discovered skills indexer |
+| `orchestrate.py` | `~/.mavis/skills/apeiron/scripts/orchestrate.py` | 47-case router, classifies task signature → picks the right chain |
+| `catalog.py` | `~/.mavis/skills/apeiron/scripts/catalog.py` | 38 curated integrations + 1890 auto-discovered skills indexer |
 | `autopilot.sh` | `~/delegate-team/bin/autopilot.sh` | The GOD command — runs the full 7-stage chain in fg or `--background` |
-| `mavis-ship-uni` | `~/delegate-team/bin/mavis-ship-uni` | Smart universal wrapper — detects Mavis / codex / claude / gemini / opencode / mmx / shell, dispatches the right flow |
+| `apeiron-uni` | `~/delegate-team/bin/apeiron-uni` | Smart universal wrapper — detects Mavis / codex / claude / gemini / opencode / mmx / shell, dispatches the right flow |
 | `agents-health.sh` | `~/delegate-team/bin/agents-health.sh` | Health check for the 10 symlinks in `~/delegate-team/bin/` |
 
 ## Manual install for parts `install.sh` can't automate
@@ -82,13 +82,13 @@ uninstalled separately using their respective `uninstall` commands.
 |---|---|
 | dt CLI gateway | `which dt` |
 | Orchestrator skill (root) | `~/.mavis/skills/delegate-team/SKILL.md` exists |
-| Orchestrator skill (mavis-ship) | `~/.mavis/skills/mavis-ship/SKILL.md` exists |
+| Orchestrator skill (apeiron) | `~/.mavis/skills/apeiron/SKILL.md` exists |
 | Orchestrator scripts | `orchestrate.py --selftest` returns 47/47 |
 | Catalog | `catalog.py` lists 38 integrations + 1890 skills |
 | autopilot.sh | `autopilot.sh --help` works |
-| mavis-ship-uni | `mavis-ship-uni --list-runtimes` works |
+| apeiron-uni | `apeiron-uni --list-runtimes` works |
 | agents-health.sh | `agents-health.sh` returns 10/10 ready |
-| Slash command | `~/.claude/commands/mavis-ship.md` exists (symlink) |
+| Slash command | `~/.claude/commands/apeiron.md` exists (symlink) |
 | Skill scaffolder | `which mavis-skill-scaffold` |
 | MMAS framework | `~/.mavis/agents/mavis/multi-agent/spawn-team.py` exists |
 | agent-kernel | `~/.mavis/agents/mavis/kernel/` exists |
@@ -104,20 +104,20 @@ Run `./install.sh --verify` to check all at once.
 In a Mavis session (canonical):
 
 ```bash
-mavis-ship "Make API p95 < 200ms"
+apeiron "Make API p95 < 200ms"
 ```
 
-In any agent session (codex / claude / gemini / opencode / mmx) — uses mavis-ship-uni:
+In any agent session (codex / claude / gemini / opencode / mmx) — uses apeiron-uni:
 
 ```bash
-mavis-ship-uni "Build a CLI to convert CSV to JSON"
+apeiron-uni "Build a CLI to convert CSV to JSON"
 # → autopilot --background (agent returns immediately + chain runs detached)
 ```
 
 From any shell (foreground — you watch the log scroll):
 
 ```bash
-mavis-ship-uni "Refactor the user model for multi-tenancy"
+apeiron-uni "Refactor the user model for multi-tenancy"
 # → autopilot foreground
 ```
 

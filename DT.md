@@ -94,7 +94,7 @@ The local proxy binds to `127.0.0.1` and requires a proxy token.
 
 `dt` is the execution engine referenced by:
 
-- `/mavis-ship` orchestrator when the routed stage needs backend execution.
+- `/apeiron` orchestrator when the routed stage needs backend execution.
 - `/delegate-team` slash command in Claude Code.
 - MMAS when specialist agents delegate implementation or review tasks.
 

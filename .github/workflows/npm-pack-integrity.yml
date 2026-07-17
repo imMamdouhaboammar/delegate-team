@@ -53,7 +53,7 @@ jobs:
         run: grep -Fxq 'dist/cli.js' /tmp/npm-pack-files.txt
 
       - name: Package contains universal wrapper
-        run: grep -Fxq 'bin/mavis-ship-uni' /tmp/npm-pack-files.txt
+        run: grep -Fxq 'bin/apeiron-uni' /tmp/npm-pack-files.txt
 
       - name: Package contains autopilot
         run: grep -Fxq 'bin/autopilot.sh' /tmp/npm-pack-files.txt

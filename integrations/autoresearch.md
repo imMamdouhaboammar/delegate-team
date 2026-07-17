@@ -72,4 +72,4 @@ Iterations: 15
 - Hard problems with a metric → autoresearch's loop does the boring iteration
 - Bounded scope (specific files/globs) → safe to iterate unattended
 - Local iteration would burn many turns (10+) → let autoresearch burn them for you
-- Composes with `/mavis-ship`: when a task has a metric, autoresearch is the engine
+- Composes with `/apeiron`: when a task has a metric, autoresearch is the engine

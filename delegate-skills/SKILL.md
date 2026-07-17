@@ -7,7 +7,7 @@ description: |
   Use when the user says "delegate this to Grok", "have Codex do X", "run it
   through opencode", or any phrasing that should drive a background implementer
   while the orchestrator stays the reviewer. Composes with `dt delegate` (the CLI
-  entry point) and the /mavis-ship router.
+  entry point) and the /apeiron router.
 license: MIT
 compatibility: Requires the matching CLI installed + authenticated (e.g. `grok`
   for grok-delegate), Node 18+, and git. The orchestrating agent must be able to

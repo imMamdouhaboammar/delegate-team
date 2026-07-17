@@ -3,6 +3,15 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.0.0] - 2026-07-17
+
+### Added
+- **Apeiron Integration** — Renamed the `/mavis-ship` universal orchestrator to `/Apeiron` globally.
+- Integrated `/Apeiron` directly into the `dt` CLI parser under `dt apeiron` (with `dt ship` alias).
+- Integrated MMAS (Mavis Multi-Agent System) directly into the `dt` CLI under `dt mmas`.
+- Reconfigured dispatcher (`dt run`) to route complexity scores >= 8 directly to `mmas` (instead of `metagpt`).
+- Registered `apeiron-uni` wrapper globally on path.
+
 ## [2.9.0] - 2026-07-17
 
 ### Added
@@ -134,9 +143,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Full Mavis arsenal packaged into `delegate-team`.
-- Standalone `mavis-ship/` skill bundle.
+- Standalone `apeiron/` skill bundle.
 - `bin/autopilot.sh` 7-stage command wrapper.
-- `bin/mavis-ship-uni` universal runtime wrapper.
+- `bin/apeiron-uni` universal runtime wrapper.
 - `bin/agents-health.sh` health check helper.
 - Python orchestrator and catalog scripts synced into the repo.
 
@@ -147,7 +156,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Compatibility
 
-- Existing `dt`, `delegate-team`, `mavis-ship-uni`, `autopilot`, and `agents-health` bin entries remain available.
+- Existing `dt`, `delegate-team`, `apeiron-uni`, `autopilot`, and `agents-health` bin entries remain available.
 - Existing v2.6.0 installer modes remain supported.
 
 ## [2.6.0] - 2026-06-30

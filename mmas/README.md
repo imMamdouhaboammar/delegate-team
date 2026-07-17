@@ -84,4 +84,4 @@ python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py \
 ## See also
 
 - `integrations/README.md` — companion frameworks
-- `/mavis-ship` orchestrator at `../orchestrator/` — drives MMAS via the routing chain
+- `/apeiron` orchestrator at `../orchestrator/` — drives MMAS via the routing chain

@@ -6,7 +6,7 @@
 | Lane | You want | What gets installed | Time |
 |---|---|---|---|
 | **Lane 1** | Just the `dt` CLI | npm package → `dt` on PATH | 30s |
-| **Lane 2** | `/mavis-ship` in Claude Code | Lane 1 + the `mavis-ship` skill + `mavis-orchestrate` CLI | 2m |
+| **Lane 2** | `/apeiron` in Claude Code | Lane 1 + the `apeiron` skill + `apeiron` CLI | 2m |
 | **Lane 3** | Full local agent OS | Lane 2 + MMAS + agent-kernel + companion frameworks | 5–10m |
 
 Don't know which lane? Read the [README](../README.md) first. The rest of this
@@ -51,12 +51,12 @@ npm uninstall -g delegate-team
 frameworks, no network calls at runtime unless you explicitly dispatch to a
 backend that uses network credentials.
 
-**What you do NOT get**: `/mavis-ship`, MMAS, agent-kernel, or companion
+**What you do NOT get**: `/apeiron`, MMAS, agent-kernel, or companion
 framework installation. Those are Lane 2 / Lane 3.
 
 ---
 
-## Lane 2 — `/mavis-ship` in Claude Code
+## Lane 2 — `/apeiron` in Claude Code
 
 ```bash
 # 1. Install the dt CLI first (Lane 1)
@@ -69,16 +69,16 @@ cd delegate-team
 
 # 3. Restart Claude Code so the slash command is registered.
 # 4. Verify
-mavis-orchestrate "what is a closure in JS"    # prints routing decision
-/mavis-ship "your task here"                    # in any Claude Code session
+apeiron "what is a closure in JS"    # prints routing decision
+/apeiron "your task here"                    # in any Claude Code session
 dt route --last                                 # latest saved route trace
 
 # Uninstall
 ./install.sh --uninstall
 ```
 
-**What you get**: the `mavis-ship` skill + `mavis-orchestrate` CLI on your
-PATH + a `/mavis-ship` slash command registered in `~/.claude/commands/`.
+**What you get**: the `apeiron` skill + `apeiron` CLI on your
+PATH + a `/apeiron` slash command registered in `~/.claude/commands/`.
 
 **What you do NOT get**: MMAS, agent-kernel memory layer, companion frameworks.
 Use Lane 3 for those.
@@ -111,7 +111,7 @@ cd delegate-team
 **What you get**:
 
 - `dt` CLI (Lane 1)
-- `/mavis-ship` orchestrator (Lane 2)
+- `/apeiron` orchestrator (Lane 2)
 - MMAS multi-agent framework → `~/.mavis/agents/mavis/multi-agent/`
 - agent-kernel memory + governance → `~/.agent-kernel/`
 - Companion frameworks (superpowers, Waza, unslop-preflight, autoresearch)
@@ -203,8 +203,8 @@ registry state.
 | Component | Lane 1 | Lane 2 | Lane 3 |
 |---|---|---|---|
 | `dt` CLI | ✅ | ✅ | ✅ |
-| `mavis-ship` skill + slash command | — | ✅ | ✅ |
-| `mavis-orchestrate` CLI | — | ✅ | ✅ |
+| `apeiron` skill + slash command | — | ✅ | ✅ |
+| `apeiron` CLI | — | ✅ | ✅ |
 | MMAS (multi-agent team) | — | — | ✅ |
 | agent-kernel (memory + governance) | — | — | ✅ |
 | superpowers | — | — | ✅ (manual install) |
@@ -266,8 +266,8 @@ without cloud mutations.
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | `dt: command not found` | npm bin dir not on PATH | `npm bin -g` and add to PATH |
-| `/mavis-ship` not found in Claude Code | slash command symlink missing | re-run `./install.sh --orchestrator` and restart Claude Code |
-| `mavis-orchestrate: command not found` | `~/.local/bin` not on PATH | `export PATH="$HOME/.local/bin:$PATH"` |
+| `/apeiron` not found in Claude Code | slash command symlink missing | re-run `./install.sh --orchestrator` and restart Claude Code |
+| `apeiron: command not found` | `~/.local/bin` not on PATH | `export PATH="$HOME/.local/bin:$PATH"` |
 | `agent-kernel: command not found` | kernel install skipped | `./install.sh --kernel` |
 | Permission denied on `~/.local/bin` | bindir mode | use `mkdir -p ~/.local/bin && chmod 700 ~/.local/bin` |
 | `dt setup --yes` aborts with no project | non-interactive setup needs a project | add `--project <id>` |

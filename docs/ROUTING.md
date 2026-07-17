@@ -1,6 +1,6 @@
 # Routing
 
-> How `/mavis-ship` decides which stages a task should go through.
+> How `/apeiron` decides which stages a task should go through.
 
 This doc covers the orchestrator's signal-scoring algorithm, the verdict
 priority, and how to inspect the decision.
@@ -79,13 +79,13 @@ uses it to decide what stages to actually invoke.
 ### Quick check (no trace)
 
 ```bash
-mavis-orchestrate "Build a pricing page with shadcn components"
+apeiron "Build a pricing page with shadcn components"
 ```
 
 Output:
 
 ```
-# /mavis-ship route for: "Build a pricing page with shadcn components"
+# /apeiron route for: "Build a pricing page with shadcn components"
 
 Stages (descending score):
   • unslop audit (UI gate)        (score=4)

@@ -284,7 +284,7 @@ jobs:
             package/README.md \
             package/LICENSE \
             package/dist/cli.js \
-            package/bin/mavis-ship-uni \
+            package/bin/apeiron-uni \
             package/bin/autopilot.sh \
             package/bin/agents-health.sh \
             package/delegate-team/scripts/relay.mjs \

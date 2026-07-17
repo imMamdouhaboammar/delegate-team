@@ -19,7 +19,7 @@ Each framework below has a one-page guide: what it does, why we use it, install 
 ## How they compose
 
 ```
-[mavis-ship "<task>"]
+[apeiron "<task>"]
     │
     ▼  Waza /think                          ← vocabulary front door
     │

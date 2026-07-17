@@ -44,5 +44,5 @@ Debug+verify:  /hunt → fix → /check
 - 8 skills cover the natural-language vocabulary users actually use
 - Each skill has one clear trigger and one clear output — no overlap
 - `/think` produces "decision-complete plans another agent can implement" — perfect
-  hand-off target for `/mavis-ship` orchestrator
+  hand-off target for `/apeiron` orchestrator
 - `/check` is the universal review gate — runs at end of every chain

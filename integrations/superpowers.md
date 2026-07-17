@@ -47,5 +47,5 @@ Or use the bundled script: `./install.sh --superpowers`
 - Hard-gates the AI reflex to dive into code without a design
 - Encodes a proven workflow: brainstorm → write plan → TDD → verify → review → ship
 - Provides 14 narrow skills, each with one job and a clear trigger (no overlap)
-- Composes with `/mavis-ship`: `/think` (Waza) outputs a decision-complete plan →
+- Composes with `/apeiron`: `/think` (Waza) outputs a decision-complete plan →
   `writing-plans` (superpowers) expands to checkpoints → execute

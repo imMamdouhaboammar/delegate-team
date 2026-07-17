@@ -18,7 +18,7 @@ the per-component docs linked below.
 │     events flow through one trace bus. `dt mesh` inspects it.          │
 ├──────────────────────────────────────────────────────────────────────┤
 │  1. dt CLI                       — npm gateway, low-level dispatch   │
-│  2. /mavis-ship orchestrator     — single-command natural-language     │
+│  2. /apeiron orchestrator     — single-command natural-language     │
 │                                    routing of any task                  │
 │  3. agent-kernel                 — memory + governance (companion)     │
 │  4. MMAS                         — multi-agent team runtime            │
@@ -31,7 +31,7 @@ the per-component docs linked below.
 - npm package: `delegate-team`.
 - Surfaces: `dt run`, `dt run --dry-run`, `dt doctor --json`, `dt metagpt`,
   `dt serve`, `dt route`, `dt mesh`, `dt delegate`.
-- Standalone: does not require `/mavis-ship`, agent-kernel, or MMAS.
+- Standalone: does not require `/apeiron`, agent-kernel, or MMAS.
 - Use when: you want to inspect or dispatch a task to a backend, run the LLM
   gateway proxy on `127.0.0.1:3000`, or **inspect the whole system as one
   connected piece** via `dt mesh`.
@@ -50,10 +50,10 @@ the per-component docs linked below.
   `dt mesh --trace`.
 - See [NEURAL-MESH.md](./NEURAL-MESH.md) for the full model.
 
-### Layer 2 — /mavis-ship orchestrator
+### Layer 2 — /apeiron orchestrator
 
 - Bash + Skills.sh skill at `orchestrator/`.
-- Symlinks installed to `~/.mavis/skills/mavis-ship/` and `~/.claude/commands/mavis-ship.md`.
+- Symlinks installed to `~/.mavis/skills/apeiron/` and `~/.claude/commands/apeiron.md`.
 - Inspects the natural-language task, scores stage signals, picks a verdict,
   and writes a structured route trace.
 - `dt route --last` selects the newest trace by file modification time.
@@ -90,13 +90,13 @@ the per-component docs linked below.
 
 ---
 
-## Data flow (a single `/mavis-ship "X"` invocation)
+## Data flow (a single `/apeiron "X"` invocation)
 
 ```
-1. User types:    /mavis-ship "X"
+1. User types:    /apeiron "X"
 2. Slash command loads orchestrator/SKILL.md
-3. Orchestrator runs: mavis-orchestrate "X"
-4. mavis-orchestrate:
+3. Orchestrator runs: apeiron "X"
+4. apeiron:
      a. Lowercases + scores stage signals
      b. Picks verdict (RESEARCH / MEMORY / BUILD / PERF / UI / MMAS / BUG / FEATURE / default)
      c. Writes trace JSON
@@ -143,7 +143,7 @@ is already present.
 | Lives in repo | Lives on user machine after install |
 |---|---|
 | `src/cli.ts` (TypeScript source) | `dist/cli.js` (compiled) |
-| `orchestrator/SKILL.md`, `orchestrate.sh` | `~/.mavis/skills/mavis-ship/`, `~/.claude/commands/mavis-ship.md` |
+| `orchestrator/SKILL.md`, `orchestrate.sh` | `~/.mavis/skills/apeiron/`, `~/.claude/commands/apeiron.md` |
 | `mmas/spawn-team.py`, `watchdog.sh`, `agents/*.yaml` | `~/.mavis/agents/mavis/multi-agent/` |
 | `agent-kernel/dist/cli.mjs` | `~/.agent-kernel/` (memory home), `~/.local/bin/agent-kernel` |
 | `install.sh` | run from clone |
@@ -155,7 +155,7 @@ is already present.
 
 1. **`dt` is sandboxed**: workspace-bound, command-allowlisted, MCP opt-in via
    `DT_ENABLE_MCP=true`. See [SECURITY-MODEL.md](./SECURITY-MODEL.md).
-2. **`/mavis-ship` is advisory**: the orchestrator prints a routing decision
+2. **`/apeiron` is advisory**: the orchestrator prints a routing decision
    and the SKILL.md drives execution through Claude Code's tool surface. The
    orchestrator never executes code directly; it tells the agent what to do.
 3. **MMAS is process-spawning**: agents run as detached subprocess groups. Each

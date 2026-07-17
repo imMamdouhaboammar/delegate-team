@@ -73,7 +73,7 @@ venv/
 .DS_Store
 
 # bin/ symlinks — machine-specific (install.sh recreates these at install time)
-# The real scripts (autopilot.sh, agents-health.sh, mavis-ship-uni) ARE tracked.
+# The real scripts (autopilot.sh, agents-health.sh, apeiron-uni) ARE tracked.
 bin/agent-kernel
 bin/agents
 bin/agents-health

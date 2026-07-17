@@ -52,4 +52,4 @@ unslop autopilot   # Full loop: init → audit → safe repair → final report
   generic copy, broken mobile, blind z-index). unslop-preflight enforces taste.
 - Spec-time gate is cheaper than delivery-time gate. Fix the design doc, not the
   production build.
-- Mandatory in `/mavis-ship` UI path: `unslop audit` BLOCKS execution if score <70.
+- Mandatory in `/apeiron` UI path: `unslop audit` BLOCKS execution if score <70.

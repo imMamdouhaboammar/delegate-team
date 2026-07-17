@@ -21,7 +21,7 @@
 | If you want... | Lane | What gets installed | Time |
 |---|---|---|---|
 | Just the `dt` CLI to dispatch tasks to backends | **[Lane 1 — `dt` CLI](#lane-1--dt-cli-only)** | npm package → `dt` on PATH | 30 s |
-| `/mavis-ship "X"` slash command in Claude Code | **[Lane 2 — `/mavis-ship`](#lane-2--mavis-ship-in-claude-code)** | Lane 1 + orchestrator skill | 2 m |
+| `/apeiron "X"` slash command in Claude Code | **[Lane 2 — `/apeiron`](#lane-2--apeiron-in-claude-code)** | Lane 1 + orchestrator skill | 2 m |
 | The full local agent OS (memory, multi-agent, governance) | **[Lane 3 — full local agent OS](#lane-3--full-local-agent-os)** | Lane 2 + MMAS + agent-kernel | 5–10 m |
 
 **Not sure?** Most users start with Lane 1. You can always add Lane 2 / 3
@@ -50,27 +50,27 @@ backend.
 
 ---
 
-## Lane 2 — `/mavis-ship` in Claude Code
+## Lane 2 — `/apeiron` in Claude Code
 
 ```bash
 npm install -g delegate-team                     # Lane 1 first
 git clone https://github.com/imMamdouhaboammar/delegate-team
 cd delegate-team
 ./install.sh --orchestrator                      # install the skill
-# Restart Claude Code so /mavis-ship is registered
+# Restart Claude Code so /apeiron is registered
 ```
 
 Then in any Claude Code session:
 
 ```bash
-/mavis-ship "Build a CSV → JSON CLI"
-mavis-orchestrate "ship v0.2.0 to npm"           # routing decision only
+/apeiron "Build a CSV → JSON CLI"
+apeiron "ship v0.2.0 to npm"           # routing decision only
 dt route --explain "<task>"                       # full JSON trace
 dt route --last                                   # newest saved trace
 ```
 
-**What you get:** the `mavis-ship` skill + `/mavis-ship` slash command +
-`mavis-orchestrate` CLI on PATH. No MMAS, no agent-kernel.
+**What you get:** the `apeiron` skill + `/apeiron` slash command +
+`apeiron` CLI on PATH. No MMAS, no agent-kernel.
 
 **Uninstall:** `./install.sh --uninstall`
 
@@ -135,7 +135,7 @@ python3 ~/.mavis/agents/mavis/multi-agent/spawn-team.py \
 | Component | What it does | Lane | Docs |
 |---|---|---|---|
 | **`dt` CLI** | Dispatch tasks to backends, run the proxy, check health | 1+ | [`DT.md`](./DT.md) |
-| **`/mavis-ship` orchestrator** | Natural-language task routing with structured traces | 2+ | [`docs/ROUTING.md`](./docs/ROUTING.md) |
+| **`/apeiron` orchestrator** | Natural-language task routing with structured traces | 2+ | [`docs/ROUTING.md`](./docs/ROUTING.md) |
 | **agent-kernel** | Local memory + governance (companion) | 3 | [`docs/AGENT-KERNEL-INTEGRATION.md`](./docs/AGENT-KERNEL-INTEGRATION.md) |
 | **MMAS** | Multi-agent team runtime with guardrails | 3 | [`docs/MMAS.md`](./docs/MMAS.md) |
 | **Skill scaffolder** | `mavis-skill-scaffold` CLI for new skills | 3 | [`scaffolder/`](./scaffolder/) |
@@ -223,7 +223,7 @@ Full threat model + opt-in switches: **[docs/SECURITY-MODEL.md](./docs/SECURITY-
 | Component | Maturity | Notes |
 |---|---|---|
 | `dt` CLI | Stable | npm package |
-| `/mavis-ship` orchestrator | Stable | bash + Skills.sh skill |
+| `/apeiron` orchestrator | Stable | bash + Skills.sh skill |
 | agent-kernel (vendored v0.0.5) | Stable | companion memory + governance |
 | MMAS multi-agent | Beta | runtime + guardrails |
 

@@ -86,7 +86,7 @@ agent-kernel episode search "stripe webhook"
 
 | Component | How it uses the kernel |
 |---|---|
-| `/mavis-ship` orchestrator | Saves chain outcome as an episode at the end |
+| `/apeiron` orchestrator | Saves chain outcome as an episode at the end |
 | `mm/multi-agent` (MMAS) | All 8 agents read the same memory; proposals go to inbox |
 | `dt` CLI / backends | Pull context via `memory search` before delegating |
 | `mavis-skill-scaffold` | Registers new skills as memories |

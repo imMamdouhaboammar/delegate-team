@@ -131,7 +131,7 @@ The `wrapper.sh` shim picks the right one:
 
 ## See also
 
-- `MEMORY.md` — how delegate-team uses agent-kernel for the /mavis-ship memory layer
+- `MEMORY.md` — how delegate-team uses agent-kernel for the /apeiron memory layer
 - `docs/MEMORY_PROTOCOL.md` — rule + episode data model
 - `docs/MCP_SERVER.md` — MCP tool definitions for non-CLI integration
 - `docs/EPISODIC_MEMORY.md` — episode sync from Claude/Codex JSONL transcripts

@@ -1,6 +1,6 @@
 # Workflows
 
-> Real examples of `/mavis-ship "<task>"` and `dt run "<task>"`, grouped by
+> Real examples of `/apeiron "<task>"` and `dt run "<task>"`, grouped by
 > the routing verdict they trigger.
 
 Each example shows the input, the verdict, the trace file location, and the
@@ -11,7 +11,7 @@ expected execution path.
 ## 1. Trivial edit → handle locally
 
 ```bash
-/mavis-ship "rename userId to user_id in src/auth.ts"
+/apeiron "rename userId to user_id in src/auth.ts"
 ```
 
 Verdict: `TRIVIAL — handle locally, skip the chain.`
@@ -24,7 +24,7 @@ identifier. Suitable for edits a competent agent could do in one shot.
 ## 2. Bug fix → BUG path
 
 ```bash
-/mavis-ship "the Safari iOS header is rendering wrong, regression in PR #142"
+/apeiron "the Safari iOS header is rendering wrong, regression in PR #142"
 ```
 
 Verdict: `BUG path — systematic-debugging before any patch.`
@@ -45,7 +45,7 @@ Trace: `.logs/routing/<timestamp>.json`.
 ## 3. UI task → UI DELIVERY path
 
 ```bash
-/mavis-ship "build a pricing page with shadcn components"
+/apeiron "build a pricing page with shadcn components"
 ```
 
 Verdict: `UI DELIVERY path — unslop audit is BLOCKING before /delegate-team.`
@@ -67,7 +67,7 @@ explaining why the page would have looked generic.
 ## 4. Performance / metric task → PERFORMANCE/METRIC path
 
 ```bash
-/mavis-ship "make the API p95 < 200ms"
+/apeiron "make the API p95 < 200ms"
 ```
 
 Verdict: `PERFORMANCE/METRIC path — autoresearch loop is the engine.`
@@ -87,7 +87,7 @@ The autoresearch loop runs until the metric target is hit or the user aborts.
 ## 5. Multi-agent team → MULTI-AGENT TEAM path
 
 ```bash
-/mavis-ship "spawn a squad of specialists to audit the migration"
+/apeiron "spawn a squad of specialists to audit the migration"
 ```
 
 Verdict: `MULTI-AGENT TEAM path — /mavis-team MMAS Atlas+ agents.`
@@ -109,7 +109,7 @@ See [MMAS.md](./MMAS.md) for the runtime details and guardrails.
 ## 6. Build / publish / release → BUILD/PUBLISH path
 
 ```bash
-/mavis-ship "publish v0.2.0 to npm and create the GitHub release"
+/apeiron "publish v0.2.0 to npm and create the GitHub release"
 ```
 
 Verdict: `BUILD/PUBLISH path — /delegate-team with minimax-coder default.`
@@ -130,9 +130,9 @@ not block on unslop just because the project happens to have a UI.
 ## 7. Memory / recall → MEMORY path
 
 ```bash
-/mavis-ship "remember this rule: always pin Python deps"
-/mavis-ship "what did we do about Supabase last time?"
-/mavis-ship "search past episodes for offline support"
+/apeiron "remember this rule: always pin Python deps"
+/apeiron "what did we do about Supabase last time?"
+/apeiron "search past episodes for offline support"
 ```
 
 Verdict: `MEMORY path — agent-kernel remember / episode add / search.`
@@ -154,7 +154,7 @@ memory recall.
 ## 8. Research → RESEARCH path
 
 ```bash
-/mavis-ship "research what other teams do for retry backoff in queue workers"
+/apeiron "research what other teams do for retry backoff in queue workers"
 ```
 
 Verdict: `RESEARCH path — /read + /learn, no code.`
@@ -225,7 +225,7 @@ running the full chain. See [ROUTING.md](./ROUTING.md).
 If you suspect the router picked the wrong verdict, run:
 
 ```bash
-mavis-orchestrate "<task>"     # see the verdict without execution
+apeiron "<task>"     # see the verdict without execution
 dt route --explain "<task>"    # print the JSON trace
 ```
 

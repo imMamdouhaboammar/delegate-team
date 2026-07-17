@@ -36,7 +36,7 @@ Agent-kernel provides:
 delegate-team is the **router and orchestrator**. It does:
 
 - npm CLI `dt` for low-level dispatch.
-- `/mavis-ship` skill that inspects the task, picks the right stage chain,
+- `/apeiron` skill that inspects the task, picks the right stage chain,
   and writes a structured trace.
 - MMAS multi-agent runtime.
 - Install paths for all of the above.
@@ -53,9 +53,9 @@ remembers what was done.**
 
 ---
 
-## How `/mavis-ship` uses agent-kernel
+## How `/apeiron` uses agent-kernel
 
-When you run `/mavis-ship "<task>"`, the orchestrator:
+When you run `/apeiron "<task>"`, the orchestrator:
 
 1. Scores the task against its 11 stage signals (see [ROUTING.md](./ROUTING.md)).
 2. If `score_memory >= 2` (memory / recall / rule / agent-kernel keywords
@@ -87,7 +87,7 @@ agent-kernel — it does not replace any other stage.
 To get a clear warning that agent-kernel is missing, run:
 
 ```bash
-mavis-orchestrate --check-kernel "your task here"
+apeiron --check-kernel "your task here"
 ```
 
 The orchestrator will print the verdict **and** a soft warning if the
@@ -101,7 +101,7 @@ kernel CLI is not on `$PATH`.
 - The orchestrator's trace JSON includes a `kernel_used: true` flag.
 - Hooks installed by the kernel (Claude `PreToolUse` + git `pre-commit`)
   enforce policy decisions independently of the orchestrator.
-- The `/mavis-ship` SKILL.md lists `agent-kernel` as an explicit step.
+- The `/apeiron` SKILL.md lists `agent-kernel` as an explicit step.
 
 ---
 
@@ -129,7 +129,7 @@ it for a session:
 
 ```bash
 export AGENT_KERNEL_DISABLED=1
-mavis-orchestrate "<task>"
+apeiron "<task>"
 ```
 
 The orchestrator checks `AGENT_KERNEL_DISABLED` first and skips the memory
@@ -165,7 +165,7 @@ ls -la ~/.agent-kernel/
 agent-kernel doctor
 
 # Is the orchestrator using it?
-mavis-orchestrate --check-kernel "what did we do about auth last time?"
+apeiron --check-kernel "what did we do about auth last time?"
 ```
 
 If `agent-kernel --version` returns `0.0.5` and the orchestrator prints
@@ -182,7 +182,7 @@ If `agent-kernel --version` returns `0.0.5` and the orchestrator prints
 3. **Updating agent-kernel** = bumping `agent-kernel/VERSION`, replacing
    `agent-kernel/dist/cli.mjs`, regenerating `agent-kernel/SKILL.md` if the
    CLI surface changes. Update `agent-kernel/MEMORY.md` if the contract with
-   `/mavis-ship` changes.
+   `/apeiron` changes.
 4. **The orchestrator must always work without agent-kernel.** If you change
    `orchestrate.sh` to assume kernel features, you have broken Lane 2
    installs. Test with `AGENT_KERNEL_DISABLED=1`.

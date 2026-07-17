@@ -10,23 +10,23 @@ backbone. The vendored CLI ships at `agent-kernel/dist/cli.mjs`. The wrapper
 
 ---
 
-## 1. /mavis-ship chain uses kernel for cross-session memory
+## 1. /apeiron chain uses kernel for cross-session memory
 
-When you run `mavis-orchestrate "<task>"` and the verdict is BUILD/PUBLISH or
+When you run `apeiron "<task>"` and the verdict is BUILD/PUBLISH or
 FEATURE or BUG, the chain now writes an **episode** at the end so the next time
 you ask a similar question, the kernel can recall it.
 
 ```bash
-# After /mavis-ship finishes
-mavis-orchestrate-save "<task>" "<verdict>" "<what happened>"
+# After /apeiron finishes
+apeiron-save "<task>" "<verdict>" "<what happened>"
 # which under the hood runs:
 agent-kernel episode add \
-    --title "/mavis-ship: <task>" \
-    --tags mavis-ship,<verdict> \
+    --title "/apeiron: <task>" \
+    --tags apeiron,<verdict> \
     --text "<what happened>"
 ```
 
-Future `/mavis-ship` invocations automatically prepend `agent-kernel memory search`
+Future `/apeiron` invocations automatically prepend `agent-kernel memory search`
 matches and `agent-kernel episode search` hits to the plan.
 
 ---
