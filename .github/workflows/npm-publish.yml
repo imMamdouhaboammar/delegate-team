@@ -286,16 +286,13 @@ jobs:
             exit 1
           fi
 
-          PACK_FILE=$(python3 - <<'PY'
-          import json
-          import sys
-          with open('/tmp/npm-pack.json', 'r', encoding='utf-8') as handle:
-              data = json.load(handle)
-          if not isinstance(data, list) or not data or not data[0].get('filename'):
-              sys.exit('npm pack JSON did not include a filename')
-          print(data[0]['filename'])
-          PY
-          )
+          PACK_FILE=$(node -e "
+          const fs = require('fs');
+          const data = JSON.parse(fs.readFileSync('/tmp/npm-pack.json', 'utf8'));
+          const filename = Array.isArray(data) ? data[0]?.filename : data?.filename;
+          if (!filename) process.exit(1);
+          console.log(filename);
+          ")
 
           if [ -z "$PACK_FILE" ] || [ ! -f "$PACK_FILE" ]; then
             echo "::error::Could not resolve packed tarball from npm pack output: $PACK_FILE"
