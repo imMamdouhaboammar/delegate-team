@@ -3,6 +3,11 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.0.2] - 2026-07-17
+
+### Fixed
+- Fixed version consistency mismatch in `README.md` to ensure successful CI smoke test runs.
+
 ## [3.0.1] - 2026-07-17
 
 ### Fixed
