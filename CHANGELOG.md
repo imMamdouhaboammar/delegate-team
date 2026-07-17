@@ -3,6 +3,11 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.0.6] - 2026-07-17
+
+### Added
+- Extended MMAS `spawn-team.py` to route all unrecognized backends through `relay.mjs` or respective delegate skills.
+
 ## [3.0.5] - 2026-07-17
 
 ### Fixed

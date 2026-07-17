@@ -137,7 +137,36 @@ def build_agent_command(agent: dict, prompt: str, log_file: Path) -> list[str]:
         }
         return ["opencode", "run", "-m", model_map.get(model, model), full_prompt]
 
-    raise ValueError(f"Unknown backend: {backend}")
+    delegate_agents = ["agy", "codex", "grok", "kimi", "opencode"]
+    brief_file = log_file.with_suffix(".brief")
+    try:
+        with open(brief_file, "w", encoding="utf-8") as f:
+            f.write(full_prompt)
+    except Exception as e:
+        print(f"Failed to write brief file: {e}", file=sys.stderr)
+
+    if backend in delegate_agents:
+        relay_script = DELEGATE_TEAM_ROOT / "delegate-skills" / f"{backend}-delegate" / "scripts" / "relay.mjs"
+        if not relay_script.exists():
+            cli_script = DELEGATE_TEAM_ROOT / "dist" / "cli.js"
+            cmd = ["node", str(cli_script), "delegate", backend, "--brief", str(brief_file)]
+        else:
+            cmd = ["node", str(relay_script), "--brief", str(brief_file)]
+        if model:
+            cmd.extend(["--model", model])
+        return cmd
+
+    # Otherwise fallback to the main relay.mjs (gemini, openrouter, minimax, etc.)
+    relay_script = DELEGATE_TEAM_ROOT / "delegate-team/scripts/relay.mjs"
+    cmd = ["node", str(relay_script), "--backend", backend, "--brief", str(brief_file)]
+    
+    agent_dir = log_file.parent / name
+    agent_dir.mkdir(parents=True, exist_ok=True)
+    cmd.extend(["--out-dir", str(agent_dir)])
+    
+    if model:
+        cmd.extend(["--model", model])
+    return cmd
 
 
 def make_boulder(task_id: str, task: str, agents: list[dict], boss_session: str | None, guardrails: dict | None = None) -> dict:
