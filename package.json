@@ -128,9 +128,12 @@
     "@types/node": "^20.0.0",
     "tsup": "^8.5.1",
     "typescript": "^5.3.0",
-    "vitest": "^2.0.0"
+    "vitest": "^3.2.7"
   },
   "dependencies": {
     "commander": "^15.0.0"
+  },
+  "overrides": {
+    "esbuild": "0.28.1"
   }
 }
