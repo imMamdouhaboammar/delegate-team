@@ -42,10 +42,15 @@
     "god-agent",
     "agent-kernel",
     "scaffolder",
-    "mmas"
+    "mmas",
+    "delegate-team/scripts/relay.mjs",
+    "delegate-team/scripts/opencode-router.mjs",
+    "mmas/spawn-team.py",
+    "mmas/watchdog.sh",
+    "mmas/hash-edit.py"
   ],
   "engines": {
-    "node": ">=20",
+    "node": ">=24",
     "python": ">=3.10"
   },
   "publishConfig": {
