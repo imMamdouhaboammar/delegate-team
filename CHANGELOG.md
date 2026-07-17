@@ -3,6 +3,11 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.0.5] - 2026-07-17
+
+### Fixed
+- Fixed workflow parsing issue for npm pack JSON output across different npm versions.
+
 ## [3.0.4] - 2026-07-17
 
 ### Fixed
