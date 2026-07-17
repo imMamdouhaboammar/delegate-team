@@ -2,8 +2,8 @@
 
 import { readFileSync } from 'node:fs';
 
-const EXPECTED_ENGINE = '>=20';
-const EXPECTED_MAJORS = [20, 22, 24];
+const EXPECTED_ENGINE = '>=24';
+const EXPECTED_MAJORS = [24];
 
 function read(path) {
   return readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -40,15 +40,20 @@ if (packageJson.engines?.node !== EXPECTED_ENGINE) {
   fail(`package.json engines.node is ${JSON.stringify(packageJson.engines?.node)}, expected ${JSON.stringify(EXPECTED_ENGINE)}`);
 }
 
+const packageLock = JSON.parse(read('package-lock.json'));
+if (packageLock.packages?.['']?.engines?.node !== EXPECTED_ENGINE) {
+  fail(`package-lock.json root engines.node is ${JSON.stringify(packageLock.packages?.['']?.engines?.node)}, expected ${JSON.stringify(EXPECTED_ENGINE)}`);
+}
+
 assertMatrix('.github/workflows/ci.yml', 'node-version:', EXPECTED_MAJORS);
 assertMatrix('.github/workflows/quality-gate.yml', 'matrix:', EXPECTED_MAJORS);
 
 const installation = read('docs/INSTALLATION.md');
-if (!installation.includes('| Node.js | `>=20` |')) {
-  fail('docs/INSTALLATION.md must declare Node.js >=20');
+if (!installation.includes('| Node.js | `>=24` |')) {
+  fail('docs/INSTALLATION.md must declare Node.js >=24');
 }
-if (!installation.includes('CI matrix tests Node 20, 22, and 24')) {
-  fail('docs/INSTALLATION.md must list the tested Node majors');
+if (!installation.includes('CI tests Node 24')) {
+  fail('docs/INSTALLATION.md must state that CI tests Node 24');
 }
 
 if (!process.exitCode) {
