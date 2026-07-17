@@ -87,6 +87,10 @@ jobs:
         run: npm ci
         shell: bash
 
+      - name: Clear npm cache
+        run: npm cache clean --force
+        shell: bash
+
       - name: Version sync guard
         run: npm run version:check
         shell: bash
@@ -205,6 +209,30 @@ jobs:
 
       - name: Build
         run: npm run build
+        shell: bash
+
+      - name: Validate npm pack setup
+        run: |
+          set -euo pipefail
+          echo "Checking package.json#files existence..."
+          node -e "
+          const pkg = require('./package.json');
+          const fs = require('fs');
+          let missing = false;
+          pkg.files.forEach(f => {
+            try {
+              fs.statSync(f);
+            } catch(e) {
+              console.error('MISSING:', f);
+              missing = true;
+            }
+          });
+          if (missing) process.exit(1);
+          console.log('✓ All files in package.json#files exist');
+          "
+          echo "Testing npm pack..."
+          npm pack --json --dry-run --ignore-scripts | python3 -m json.tool > /tmp/test-pack.json
+          echo "✓ npm pack generates valid JSON"
         shell: bash
 
       - name: Test
