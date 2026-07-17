@@ -46,13 +46,13 @@ When a Claude Code agent loads this skill, it treats every incoming task as
 potentially runnable through the supersystem and applies the orchestrator's
 routing logic before deciding what to do.
 
-## Components wired (v2.7.0 — eleven)
+## Components wired (v2.8.0 — twelve)
 
 | Component | Path | Function | Status |
 |---|---|---|---|
-| `orchestrator/` | `./orchestrator/` | `/mavis-ship` skill + regex router (47-case selftest) | ✅ |
-| `orchestrator/scripts/orchestrate.py` | `./orchestrator/scripts/` | Router with 47 routing cases | ✅ |
-| `orchestrator/scripts/catalog.py` | `./orchestrator/scripts/` | 38 integrations + 1890 skills indexer | ✅ |
+| `orchestrator/` | `./orchestrator/` | `/mavis-ship` skill + regex router (53-case selftest) | ✅ |
+| `orchestrator/scripts/orchestrate.py` | `./orchestrator/scripts/` | Router with 53 routing cases | ✅ |
+| `orchestrator/scripts/catalog.py` | `./orchestrator/scripts/` | 43 integrations + 1890 skills indexer | ✅ |
 | `mavis-ship/` | `./mavis-ship/` | Standalone mavis-ship skill bundle (SKILL.md + scripts) | ✅ NEW v2.7.0 |
 | `bin/autopilot.sh` | `./bin/` | GOD command: 7-stage chain (PREWARM → BRAINSTORM → PLAN → EXECUTE → REVIEW → QUALITY-GUARD → REPORT) | ✅ NEW v2.7.0 |
 | `bin/mavis-ship-uni` | `./bin/` | Smart universal wrapper: detects Mavis / codex / claude / gemini / opencode / mmx / shell | ✅ NEW v2.7.0 |
@@ -63,7 +63,8 @@ routing logic before deciding what to do.
 | `god-agent/` | `./god-agent/` | Codex + opencode delegation backend | ✅ |
 | `minimax-coder/` | `./minimax-coder/` | MiniMax-M3 via `mmx` CLI backend | ✅ |
 | `vertex-coder/` | `./vertex-coder/` | Gemini backend | ✅ |
-| `dt` CLI | `./src/` + `./dist/` | Gateway CLI (built via `npm run build`) | ✅ |
+| `delegate-skills/` | `./delegate-skills/` | Delegate skills: hand a task to Grok/Codex/OpenCode/Kimi/AGY (`dt delegate`) | ✅ NEW v2.8.0 |
+| `dt` CLI | `./src/` + `./dist/` | Gateway CLI (built via `npm run build`) — `dt delegate <agent>` | ✅ |
 
 ## Companion frameworks (optional integrations, install via `integrations/` guides)
 
@@ -86,6 +87,7 @@ routing logic before deciding what to do.
 | "<task>" + measurable metric | autoresearch loop |
 | "<UI task>" | unslop audit (BLOCKING if score <70) then chain |
 | "<trivial edit>" | handle locally, skip chain |
+| "delegate this to grok / have codex do X / run it through opencode" | DELEGATE path → `<agent>-delegate` skill (review diff yourself); also `dt delegate <agent>` |
 | "build a CLI / make X faster / design Y" | routed by signature |
 
 See [`orchestrator/SKILL.md`](./orchestrator/SKILL.md) for the full routing matrix
@@ -138,8 +140,10 @@ npx skills list               # Should show: delegate-team
 
 - `SKILL.md` — **THIS FILE** — main skill manifest
 - `orchestrator/SKILL.md` — /mavis-ship specific skill (v2.7.0)
-- `orchestrator/scripts/orchestrate.py` — 47-case router (selftest)
-- `orchestrator/scripts/catalog.py` — 38 integrations + 1890 skills indexer
+- `orchestrator/scripts/orchestrate.py` — 53-case router (selftest)
+- `orchestrator/scripts/catalog.py` — 43 integrations + 1890 skills indexer
+- `delegate-skills/SKILL.md` — delegate skills component (v2.8.0)
+- `delegate-skills/*-delegate/` — grok/codex/opencode/kimi/agy delegate skills (v2.8.0)
 - `mavis-ship/SKILL.md` — standalone mavis-ship skill bundle (NEW v2.7.0)
 - `bin/autopilot.sh` — 7-stage GOD command (NEW v2.7.0)
 - `bin/mavis-ship-uni` — smart universal wrapper (NEW v2.7.0)

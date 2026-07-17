@@ -45,6 +45,7 @@ delegate-team/
 ├── god-agent/              # Backend #1 (Codex + opencode)
 ├── minimax-coder/          # Backend #2 (MiniMax via mmx)
 ├── vertex-coder/           # Backend #3 (Gemini)
+├── delegate-skills/         # Delegate skills: grok/codex/opencode/kimi/agy (dt delegate)
 │
 ├── integrations/           # 4 companion frameworks, one page each
 │   ├── README.md
@@ -82,6 +83,7 @@ delegate-team/
 | `god-agent` | `./god-agent/SKILL.md` | "run with god agent", "codex" |
 | `minimax-coder` | `./minimax-coder/SKILL.md` | "run with MiniMax", "MiniMax M3" |
 | `vertex-coder` | `./vertex-coder/SKILL.md` | "run with Gemini" |
+| `delegate-skills` | `./delegate-skills/SKILL.md` | "delegate to grok", "delegate this to codex", "run it through opencode", "use kimi delegate", `dt delegate` |
 
 ## Creating a new component
 

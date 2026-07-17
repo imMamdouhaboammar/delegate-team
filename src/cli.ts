@@ -9,6 +9,7 @@ import { installBackendRequestTimeout } from './proxy/request-timeout.js';
 import { runRouteExplain } from './commands/route.js';
 import { runKernelStatus, runKernelVersion } from './commands/kernel.js';
 import { parsePort } from './utils/port.js';
+import { runDelegate, DELEGATE_AGENTS } from './commands/delegate.js';
 import fs from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -180,6 +181,33 @@ program
   });
 
 program
+  .command('delegate <agent> [prompt...]')
+  .description(`Delegate a coding task to a CLI implementer agent, then review the diff yourself. Agents: ${DELEGATE_AGENTS.join(', ')}`)
+  .option('--brief <file>', 'Path to the self-contained brief file')
+  .option('--read-only', 'Review/diagnosis only (no edits; best-effort)')
+  .option('--full-access', 'Unrestricted auto-approve (opt-in)')
+  .option('--model <name>', 'Model to use for this run')
+  .option('--cd <dir>', 'Working root for the implementer (default: cwd)')
+  .option('--max-turns <n>', 'Maximum number of agent turns')
+  .action((agent: string, promptArray: string[], options: any) => {
+    const prompt = Array.isArray(promptArray) ? promptArray.join(' ') : (promptArray || '');
+    if (prompt && !options.brief) {
+      // Convenience: a bare prompt string becomes the brief contents via stdin
+      // is not supported here; require --brief for determinism.
+      console.error('\n❌ Provide the task via --brief <file> (a self-contained brief).');
+      process.exit(1);
+    }
+    runDelegate(agent, {
+      brief: options.brief,
+      readOnly: options.readOnly === true,
+      fullAccess: options.fullAccess === true,
+      model: options.model,
+      cd: options.cd,
+      maxTurns: options.maxTurns !== undefined ? Number(options.maxTurns) : undefined,
+    });
+  });
+
+program
   .command('serve [port]')
   .alias('proxy')
   .description('Start the LLM Gateway Proxy Server')
@@ -197,7 +225,7 @@ program
 
 // Check for unknown commands before parsing to prevent dangerous fallbacks
 if (process.argv.length > 2 && !process.argv[2].startsWith('-')) {
-  const isCommand = ['check', 'status', 'doctor', 'link-skill', 'setup', 'init', 'auth', 'gcp-enable', 'vertex-provision', 'vx', 'vertex', 'metagpt', 'mg', 'run', 'dispatch', 'serve', 'proxy', 'route', 'kernel', 'kernel-version', 'help'].includes(process.argv[2]);
+  const isCommand = ['check', 'status', 'doctor', 'link-skill', 'setup', 'init', 'auth', 'gcp-enable', 'vertex-provision', 'vx', 'vertex', 'metagpt', 'mg', 'run', 'dispatch', 'serve', 'proxy', 'route', 'kernel', 'kernel-version', 'delegate', 'help'].includes(process.argv[2]);
   if (!isCommand) {
     console.error(`\n❌ Error: Unknown command '${process.argv[2]}'.`);
     console.error(`Run 'dt --help' to see available commands.\n`);

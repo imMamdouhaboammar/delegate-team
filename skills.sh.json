@@ -36,6 +36,17 @@
       ]
     },
     {
+      "title": "Delegate skills",
+      "description": "Delegate a bounded coding task to a CLI implementer agent (Grok, Codex, OpenCode, Kimi, AGY), then review the diff and commit it yourself. Wired to `dt delegate <agent>`.",
+      "skills": [
+        "agy-delegate",
+        "codex-delegate",
+        "grok-delegate",
+        "kimi-delegate",
+        "opencode-delegate"
+      ]
+    },
+    {
       "title": "Companion frameworks",
       "description": "Methodology + UI quality + metric-driven iteration + memory layers that compose under mavis-ship.",
       "skills": [
@@ -51,7 +62,8 @@
     "delegate-team",
     "mavis-ship",
     "dt",
-    "agent-kernel"
+    "agent-kernel",
+    "grok-delegate"
   ],
   "metadata": {
     "repository": "https://github.com/imMamdouhaboammar/delegate-team",

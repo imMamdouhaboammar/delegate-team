@@ -1,25 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { setupFsChildMocks } from './helpers/fs-child-mocks.js';
 import { runDispatch } from '../src/commands/run.js';
-import * as cp from 'node:child_process';
-import * as fs from 'node:fs';
 
-vi.mock('node:child_process', () => ({
-  spawnSync: vi.fn(),
-}));
-
-vi.mock('node:fs', async () => {
-  const actual = await vi.importActual<typeof import('node:fs')>('node:fs');
-  return {
-    ...actual,
-    existsSync: vi.fn(actual.existsSync),
-    readFileSync: vi.fn(actual.readFileSync),
-    mkdirSync: vi.fn(),
-    rmSync: vi.fn(),
-    symlinkSync: vi.fn(),
-    writeFileSync: vi.fn(),
-    unlinkSync: vi.fn(),
-  };
-});
+const { fs, cp } = setupFsChildMocks();
 
 describe('Router Routing', () => {
   beforeEach(() => {
@@ -31,7 +14,7 @@ describe('Router Routing', () => {
     (fs.existsSync as any).mockReturnValue(true);
   });
 
-  it('should route to metagpt if score >= 8', () => {
+  it('routes to metagpt when router score is 8', () => {
     const spawnSyncMock = cp.spawnSync as any;
     spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
       if (args.some((a: string) => a.includes('opencode-router.mjs'))) {
@@ -46,7 +29,7 @@ describe('Router Routing', () => {
     expect(metagptCall).toBeDefined();
   });
 
-  it('should route to vertexcoder if 5 <= score < 8', () => {
+  it('routes to vertexcoder when router score is 6', () => {
     const spawnSyncMock = cp.spawnSync as any;
     spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
       if (args.some((a: string) => a.includes('opencode-router.mjs'))) {
@@ -61,7 +44,7 @@ describe('Router Routing', () => {
     expect(relayCall[1]).toContain('vertexcoder');
   });
 
-  it('should route to opencode if 0 < score <= 5', () => {
+  it('routes to opencode when router score is 3', () => {
     const spawnSyncMock = cp.spawnSync as any;
     spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
       if (args.some((a: string) => a.includes('opencode-router.mjs'))) {
@@ -76,7 +59,7 @@ describe('Router Routing', () => {
     expect(relayCall[1]).toContain('opencode');
   });
 
-  it('should route to minimax if score <= 0', () => {
+  it('routes to minimax when router score is 0', () => {
     const spawnSyncMock = cp.spawnSync as any;
     spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
       if (args.some((a: string) => a.includes('opencode-router.mjs'))) {
@@ -91,7 +74,7 @@ describe('Router Routing', () => {
     expect(relayCall[1]).toContain('minimax');
   });
 
-  it('should route to vertexcoder by default if router fails', () => {
+  it('falls back to vertexcoder when router errors', () => {
     const spawnSyncMock = cp.spawnSync as any;
     spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
       if (args.some((a: string) => a.includes('opencode-router.mjs'))) {

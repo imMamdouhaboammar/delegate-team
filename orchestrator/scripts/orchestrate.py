@@ -202,6 +202,26 @@ DELEGATE_SIGS = [
     r"\bintegrate\b", r"\bservice\b", r"\bmodule\b",
 ]
 
+# Explicit delegation to a specific CLI implementer agent.
+# "delegate this to grok" / "have codex do X" / "run it through opencode" etc.
+DELEGATE_TO_PATS = [
+    r"\bdelegate (?:this|it|the task|the work)?\s*(?:to|via|through|with)\s+(\w+)\b",
+    r"\bhave\s+(\w+)\s+(?:do|implement|build|fix|write|refactor|handle)\b",
+    r"\brun (?:it|this|the task)?\s*(?:through|via|with)\s+(\w+)\b",
+    r"\buse\s+(\w+)\s+delegate\b",
+    r"\bask\s+(\w+)\s+to\b",
+]
+
+# Map a captured agent alias → delegate skill id.
+DELEGATE_AGENT_ALIASES = {
+    "grok": "grok-delegate",
+    "codex": "codex-delegate",
+    "opencode": "opencode-delegate",
+    "open-code": "opencode-delegate",
+    "kimi": "kimi-delegate",
+    "agy": "agy-delegate",
+}
+
 # Multi-agent team signals (MMAS)
 MMAS_STRONG = [
     r"\bsquad\b", r"\bswarm\b", r"\bcrew\b",
@@ -229,6 +249,8 @@ MMAS_WEAK = [
 def score_task(task: str) -> Dict[str, int]:
     """Return a dict of stage→score. Empty dict means 'trivial'."""
     n = normalize(task)
+    # Reset per-call: explicit delegate-to target (carried to pick_verdict).
+    score_task.delegate_to = None  # type: ignore[attr-defined]
 
     # ----- MEMORY override (highest priority — recall from agent-kernel) -----
     # If the user explicitly says "remember this" or asks "what did we do",
@@ -296,6 +318,23 @@ def score_task(task: str) -> Dict[str, int]:
     # ----- /delegate-team -----
     if any_pat(DELEGATE_SIGS, n):
         scores["delegate"] += 3
+
+    # ----- Explicit delegate-to-<agent> (delegate-skills component) -----
+    # Captures the named CLI implementer (grok/codex/opencode/kimi/agy) and
+    # resolves it to the matching delegate skill. Stored on the function so the
+    # verdict can name the skill.
+    resolved_agent = None
+    for pat in DELEGATE_TO_PATS:
+        m = re.search(pat, n)
+        if m:
+            alias = (m.group(1) or "").lower()
+            resolved_agent = DELEGATE_AGENT_ALIASES.get(alias)
+            if resolved_agent:
+                break
+    score_task.delegate_to = resolved_agent  # type: ignore[attr-defined]
+    if resolved_agent:
+        # Strong signal: an explicit delegate request beats the generic FEATURE bump.
+        scores["delegate"] = max(scores["delegate"], 4)
 
     # ----- Default FEATURE bump -----
     # If the task is clearly a build (think ≥ 2) and nothing more specific
@@ -390,6 +429,11 @@ def pick_verdict(n: str, scores: Dict[str, int]) -> str:
         return "UI DELIVERY path — unslop audit (score≥70) is BLOCKING before delegate-team."
     if scores.get("mmas", 0) >= 3:
         return "MULTI-AGENT TEAM path — mavis-team (MMAS) with Atlas+ agents."
+    # Explicit delegate-to-<agent> (delegate-skills component): name the skill
+    # and remind the orchestrator it stays the reviewer (the relay never commits).
+    if getattr(score_task, "delegate_to", None):
+        return (f"DELEGATE path — {score_task.delegate_to} skill "
+                f"(write brief, review diff, land it yourself).")
     if scores.get("systematic", 0) >= 3:
         return "BUG path — debug-issue before any patch, then quality-guard."
     if scores.get("delegate", 0) >= 2:
@@ -1120,6 +1164,11 @@ SELFTEST_CASES: List[Tuple[str, str, str]] = [
     ("debug why the API is slow",           "BUG",           "debug + slow — bug wins"),
     ("optimize the dashboard page",         "UI",            "optimize + dashboard (UI wins)"),
     ("Make API p95 latency < 200ms",        "PERFORMANCE",   "p95 + latency"),
+    # ----- Explicit delegate-to-<agent> (delegate-skills component) -----
+    ("delegate this to grok",                "DELEGATE",      "delegate to grok → grok-delegate skill"),
+    ("have codex implement the parser",      "DELEGATE",      "have codex do X → codex-delegate skill"),
+    ("run it through opencode",              "DELEGATE",      "run through opencode → opencode-delegate skill"),
+    ("use kimi delegate the refactor",       "DELEGATE",      "use kimi delegate → kimi-delegate skill"),
 ]
 
 

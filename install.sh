@@ -9,6 +9,7 @@
 #   ./install.sh --mmas             # Multi-agent team framework
 #   ./install.sh --kernel           # agent-kernel (memory + governance layer)
 #   ./install.sh --integrations     # superpowers + Waza + unslop + autoresearch
+#   ./install.sh --delegate-skills   # delegate to Grok/Codex/OpenCode/Kimi/AGY
 #   ./install.sh --dt               # Build the dt CLI
 #   ./install.sh --verify           # Verify what's installed without changes
 #   ./install.sh --uninstall        # Remove everything install.sh added
@@ -257,6 +258,35 @@ install_kernel() {
     fi
 }
 
+install_delegate_skills() {
+    log "Installing delegate-skills/ → ~/.mavis/skills/<agent>-delegate + symlinks..."
+    local src="$ROOT/delegate-skills"
+    if [ ! -d "$src" ]; then
+        warn "delegate-skills/ missing — skipping"
+        return 1
+    fi
+    local dst_base="$HOME/.mavis/skills"
+    for skill_dir in "$src"/*-delegate; do
+        [ -d "$skill_dir" ] || continue
+        local name
+        name="$(basename "$skill_dir")"
+        local dst="$dst_base/$name"
+        ensure_dir "$dst"
+        # Copy the whole skill dir (SKILL.md, references/, scripts/relay.mjs).
+        if [ "$DRY_RUN" = 1 ]; then
+            drylog "cp -r $skill_dir/ → $dst/"
+        else
+            rm -rf "$dst"
+            cp -r "$skill_dir" "$dst"
+            chmod -R u+rwX "$dst"
+        fi
+        # Symlink for global discovery across agents.
+        link_if_missing "$dst" "$HOME/.claude/skills/$name"
+        link_if_missing "$dst" "$HOME/.codex/skills/$name"
+    done
+    [ "$DRY_RUN" = 1 ] || ok "delegate-skills installed. Try: dt delegate grok --brief brief.txt"
+}
+
 install_integrations() {
     log "Installing companion frameworks..."
 
@@ -312,6 +342,8 @@ verify() {
     command -v mavis-skill-scaffold >/dev/null && echo "yes" || echo "no"
     printf '%-40s ' "MMAS framework:"
     [ -e "$HOME/.mavis/agents/mavis/multi-agent/spawn-team.py" ] && echo "installed" || echo "missing"
+    printf '%-40s ' "delegate-skills (grok):"
+    [ -e "$HOME/.mavis/skills/grok-delegate/SKILL.md" ] && echo "installed" || echo "missing (run: ./install.sh --delegate-skills)"
     printf '%-40s ' "agent-kernel CLI:"
     command -v agent-kernel >/dev/null && echo "yes ($(command -v agent-kernel))" || echo "no (run: ./install.sh --kernel)"
     printf '%-40s ' "agent-kernel memory home:"
@@ -336,6 +368,11 @@ uninstall() {
     mavis-trash "$HOME/.mavis/skills/skill-scaffold" 2>/dev/null || true
     mavis-trash "$HOME/.mavis/bin/mavis-skill-scaffold" 2>/dev/null || true
     mavis-trash "$HOME/.mavis/agents/mavis/multi-agent" 2>/dev/null || true
+    # delegate-skills: remove each installed skill dir + discovery symlinks
+    for name in agy-delegate codex-delegate grok-delegate kimi-delegate opencode-delegate; do
+        mavis-trash "$HOME/.mavis/skills/$name" 2>/dev/null || true
+        rm -f "$HOME/.claude/skills/$name" "$HOME/.codex/skills/$name" 2>/dev/null || true
+    done
     # agent-kernel: only remove the symlinks we created in ~/.local/bin / ~/bin
     for bindir in "$HOME/.local/bin" "$HOME/bin"; do
         for cmd in agent-kernel ak; do
@@ -351,11 +388,11 @@ uninstall() {
 # ---- main ----
 
 main() {
-    local do_dt=0 do_orch=0 do_scaff=0 do_mmas=0 do_kernel=0 do_intg=0 do_verify=0 do_uninst=0
+    local do_dt=0 do_orch=0 do_scaff=0 do_mmas=0 do_kernel=0 do_intg=0 do_dskills=0 do_verify=0 do_uninst=0
 
     if [ $# -eq 0 ]; then
         # Auto-detect
-        do_dt=1; do_orch=1; do_scaff=1; do_mmas=1; do_kernel=1; do_intg=1
+        do_dt=1; do_orch=1; do_scaff=1; do_mmas=1; do_kernel=1; do_intg=1; do_dskills=1
     fi
 
     while [ $# -gt 0 ]; do
@@ -367,6 +404,7 @@ main() {
             --mmas)        do_mmas=1 ;;
             --kernel)      do_kernel=1 ;;
             --integrations) do_intg=1 ;;
+            --delegate-skills) do_dskills=1 ;;
             --verify)      do_verify=1 ;;
             --uninstall)   do_uninst=1 ;;
             --verbose|-v)  VERBOSE=1 ;;
@@ -407,6 +445,7 @@ main() {
     [ "$do_mmas"   = 1 ] && install_mmas
     [ "$do_kernel" = 1 ] && install_kernel
     [ "$do_intg"   = 1 ] && install_integrations
+    [ "$do_dskills" = 1 ] && install_delegate_skills
 
     if [ "$DRY_RUN" = 1 ]; then
         echo

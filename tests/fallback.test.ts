@@ -1,25 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { setupFsChildMocks } from './helpers/fs-child-mocks.js';
 import { runDispatch } from '../src/commands/run.js';
-import * as cp from 'node:child_process';
-import * as fs from 'node:fs';
 
-vi.mock('node:child_process', () => ({
-  spawnSync: vi.fn(),
-}));
-
-vi.mock('node:fs', async () => {
-  const actual = await vi.importActual<typeof import('node:fs')>('node:fs');
-  return {
-    ...actual,
-    existsSync: vi.fn(actual.existsSync),
-    mkdirSync: vi.fn(actual.mkdirSync),
-    rmSync: vi.fn(actual.rmSync),
-    symlinkSync: vi.fn(actual.symlinkSync),
-    writeFileSync: vi.fn(actual.writeFileSync),
-    readFileSync: vi.fn(actual.readFileSync),
-    unlinkSync: vi.fn(actual.unlinkSync),
-  };
-});
+const { fs, cp } = setupFsChildMocks();
 
 describe('Fallback Ring', () => {
   beforeEach(() => {

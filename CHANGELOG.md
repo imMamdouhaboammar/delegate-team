@@ -3,6 +3,33 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.8.0] - 2026-07-17
+
+### Added
+
+- **delegate-skills component** — integrated the five standalone delegate skills
+  (agy, codex, grok, kimi, opencode) as a first-class, discoverable, installable
+  part of the system. Each wraps a CLI implementer agent behind the same loop:
+  write a brief, dispatch via its `relay.mjs`, review the diff, land it yourself.
+- `dt delegate <agent> [--brief <file>] [--read-only|--full-access] [--model X] [--cd <dir>] [--max-turns N]`
+  CLI entry point that resolves `delegate-skills/<agent>-delegate/scripts/relay.mjs`
+  and invokes it. Pure `buildDelegateArgs()` is unit-tested in `tests/delegate-cli.test.ts`.
+- `./install.sh --delegate-skills` installs the five skills into
+  `~/.mavis/skills/` + symlinks for `~/.claude/skills/` and `~/.codex/skills/`,
+  with a `verify` line and idempotent uninstall.
+- Router (`orchestrate.py`) now returns a `DELEGATE path — <agent>-delegate skill`
+  verdict for explicit "delegate this to grok" / "have codex do X" / "run it
+  through opencode" phrasing (4 new selftest cases; 49 → 53).
+- Discovery: 5 delegate skills registered in `skills.sh.json` (new "Delegate
+  skills" grouping, featured `grok-delegate`) and `catalog.py` (43 integrations).
+- Tests: `tests/delegate-cli.test.ts` (10 cases), `tests/test-v2.7.0.sh` extended
+  to 13 cases (catalog count 38 → 43, delegate-skill discovery, install dry-run).
+
+### Changed
+
+- `skills.sh.json` integrations count 38 → 43; `orchestrate.py` selftest 49 → 53.
+- Updated `SKILL.md`, `README.md`, `AGENTS.md` component maps and trigger tables.
+
 ## [2.7.2] - 2026-07-04
 
 ### Added

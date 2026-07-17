@@ -72,14 +72,32 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────────
-# Test 2: catalog.py list (38 entries)
+# Test 2: catalog.py list (43 entries — 38 base + 5 delegate skills)
 # ─────────────────────────────────────────────────────────────────────────
-log "Test 2: catalog.py list (38 entries expected)"
+log "Test 2: catalog.py list (43 entries expected)"
 result=$($PY "$ROOT/orchestrator/scripts/catalog.py" list 2>&1 | /usr/bin/grep "^Total:" | /usr/bin/awk '{print $2}')
-if [ "$result" = "38" ]; then
-    pass "catalog.py: 38 integrations listed"
+if [ "$result" = "43" ]; then
+    pass "catalog.py: 43 integrations listed"
 else
-    fail "catalog.py: got '$result' (expected '38')"
+    fail "catalog.py: got '$result' (expected '43')"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────
+# Test 2b: delegate skills registered in skills.sh.json + catalog.py
+# ─────────────────────────────────────────────────────────────────────────
+log "Test 2b: delegate skills discoverable (skills.sh.json + catalog.py)"
+DELEGATE_IDS="agy-delegate codex-delegate grok-delegate kimi-delegate opencode-delegate"
+json_ok=1
+for id in $DELEGATE_IDS; do
+    if ! $PY -c "import sys,json; d=json.load(open('$ROOT/skills.sh.json')); assert any('$id' in g.get('skills',[]) for g in d['groupings']), '$id missing from skills.sh.json'" 2>/dev/null; then
+        json_ok=0; break
+    fi
+done
+catalog_ok=$($PY -c "import sys; sys.path.insert(0,'$ROOT/orchestrator/scripts'); import catalog; ids=[i.id for i in catalog.INTEGRATIONS]; assert all(x in ids for x in '$DELEGATE_IDS'.split()), 'missing delegate skill in catalog'" 2>&1 >/dev/null && echo 1 || echo 0)
+if [ "$json_ok" = "1" ] && [ "$catalog_ok" = "1" ]; then
+    pass "delegate skills: 5 skills in skills.sh.json + catalog.py"
+else
+    fail "delegate skills: json_ok=$json_ok catalog_ok=$catalog_ok"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -247,6 +265,22 @@ if [ -f "$ROOT/package.json" ]; then
     fi
 else
     fail "package.json: missing"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────
+# Test 11: install.sh --delegate-skills --dry-run emits copy targets + help
+# ─────────────────────────────────────────────────────────────────────────
+log "Test 11: install.sh --delegate-skills --dry-run"
+dry_out=$(bash "$ROOT/install.sh" --delegate-skills --dry-run 2>&1)
+if echo "$dry_out" | /usr/bin/grep -q "delegate-skills/grok-delegate"; then
+    pass "install.sh dry-run references delegate-skills/grok-delegate"
+else
+    fail "install.sh dry-run missing delegate-skills copy target"
+fi
+if bash "$ROOT/install.sh" --help 2>&1 | /usr/bin/grep -q "\-\-delegate-skills"; then
+    pass "install.sh --help mentions --delegate-skills"
+else
+    fail "install.sh --help missing --delegate-skills"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────
