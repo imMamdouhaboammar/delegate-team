@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setupFsChildMocks } from './helpers/fs-child-mocks.js';
+import { captureConsole } from './helpers/console-capture.js';
 import { runDispatch } from '../src/commands/run.js';
 
 const { fs, cp } = setupFsChildMocks();
@@ -8,13 +9,12 @@ describe('Router Routing', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(process, 'exit').mockImplementation((() => {}) as any);
-    vi.spyOn(console, 'log').mockImplementation(() => {});
-    vi.spyOn(console, 'error').mockImplementation(() => {});
     (fs.readFileSync as any).mockReturnValue('dummy brief content');
     (fs.existsSync as any).mockReturnValue(true);
   });
 
   it('routes to mmas when router score is 8', () => {
+    const output = captureConsole();
     const spawnSyncMock = cp.spawnSync as any;
     spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
       if (args.some((a: string) => a.includes('opencode-router.mjs'))) {
@@ -25,11 +25,13 @@ describe('Router Routing', () => {
 
     runDispatch('architecture task', {});
 
-    const mmasCall = spawnSyncMock.mock.calls.find((c: any) => c[1].some((arg: string) => arg.includes('mmas')));
-    expect(mmasCall).toBeDefined();
+    expect(output.logs.some((line) => line.includes('Routing to:') && line.includes('mmas'))).toBe(true);
+    expect(output.logs.some((line) => line.includes('Dispatching task to Multi-Agent System: [MMAS]'))).toBe(true);
+    expect(output.errors).toHaveLength(0);
   });
 
   it('routes to vertexcoder when router score is 6', () => {
+    const output = captureConsole();
     const spawnSyncMock = cp.spawnSync as any;
     spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
       if (args.some((a: string) => a.includes('opencode-router.mjs'))) {
@@ -40,11 +42,13 @@ describe('Router Routing', () => {
 
     runDispatch('hard task', {});
 
-    const relayCall = spawnSyncMock.mock.calls.find((c: any) => c[1].some((arg: string) => arg.includes('relay.mjs')));
-    expect(relayCall[1]).toContain('vertexcoder');
+    expect(output.logs.some((line) => line.includes('Routing to:') && line.includes('vertexcoder'))).toBe(true);
+    expect(output.logs.some((line) => line.includes('Task completed successfully by [VERTEXCODER]'))).toBe(true);
+    expect(output.errors).toHaveLength(0);
   });
 
   it('routes to opencode when router score is 3', () => {
+    const output = captureConsole();
     const spawnSyncMock = cp.spawnSync as any;
     spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
       if (args.some((a: string) => a.includes('opencode-router.mjs'))) {
@@ -55,11 +59,13 @@ describe('Router Routing', () => {
 
     runDispatch('medium task', {});
 
-    const relayCall = spawnSyncMock.mock.calls.find((c: any) => c[1].some((arg: string) => arg.includes('relay.mjs')));
-    expect(relayCall[1]).toContain('opencode');
+    expect(output.logs.some((line) => line.includes('Routing to:') && line.includes('opencode'))).toBe(true);
+    expect(output.logs.some((line) => line.includes('Task completed successfully by [OPENCODE]'))).toBe(true);
+    expect(output.errors).toHaveLength(0);
   });
 
   it('routes to minimax when router score is 0', () => {
+    const output = captureConsole();
     const spawnSyncMock = cp.spawnSync as any;
     spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
       if (args.some((a: string) => a.includes('opencode-router.mjs'))) {
@@ -70,22 +76,25 @@ describe('Router Routing', () => {
 
     runDispatch('easy task', {});
 
-    const relayCall = spawnSyncMock.mock.calls.find((c: any) => c[1].some((arg: string) => arg.includes('relay.mjs')));
-    expect(relayCall[1]).toContain('minimax');
+    expect(output.logs.some((line) => line.includes('Routing to:') && line.includes('minimax'))).toBe(true);
+    expect(output.logs.some((line) => line.includes('Task completed successfully by [MINIMAX]'))).toBe(true);
+    expect(output.errors).toHaveLength(0);
   });
 
   it('falls back to vertexcoder when router errors', () => {
+    const output = captureConsole();
     const spawnSyncMock = cp.spawnSync as any;
     spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
       if (args.some((a: string) => a.includes('opencode-router.mjs'))) {
-        return { status: 1, stderr: 'error' }; // router failed
+        return { status: 1, stderr: 'error' };
       }
       return { status: 0 };
     });
 
     runDispatch('task', {});
 
-    const relayCall = spawnSyncMock.mock.calls.find((c: any) => c[1].some((arg: string) => arg.includes('relay.mjs')));
-    expect(relayCall[1]).toContain('vertexcoder');
+    expect(output.logs.some((line) => line.includes('Router returned non-zero status') && line.includes('vertexcoder'))).toBe(true);
+    expect(output.logs.some((line) => line.includes('Task completed successfully by [VERTEXCODER]'))).toBe(true);
+    expect(output.errors).toHaveLength(0);
   });
 });
