@@ -7,7 +7,6 @@
   "bin": {
     "dt": "dist/cli.js",
     "delegate-team": "dist/cli.js",
-    "dt-config-check": "dist/config-check.js",
     "apeiron-uni": "bin/apeiron-uni",
     "autopilot": "bin/autopilot.sh",
     "agents-health": "bin/agents-health.sh"
