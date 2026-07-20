@@ -356,22 +356,16 @@ For the conceptual architecture, see **[docs/ARCHITECTURE.md](./docs/ARCHITECTUR
 
 ## 📦 Release and npm publishing
 
-Publishing is automatic but guarded:
+Releases are verified and published directly from a trusted maintainer machine. GitHub Actions does not publish to npm and does not create GitHub Releases.
 
 ```bash
-npm run version:check       # manifest + changelog version guard
-npm install --package-lock-only
-npm test
-npm publish --dry-run --access public
+npm whoami
+npm ci
+npm run release:verify
+npm run release:publish
 ```
 
-The GitHub Actions publish workflow validates version sync, warns about
-`package-lock.json` drift, tests the packed tarball in a temporary project,
-blocks secret-like files, publishes with provenance, verifies npm registry
-state, and creates the matching Git tag/release when publishing from `master`.
-
-Trusted Publishing with npm OIDC is preferred. `NPM_TOKEN` is treated as a
-fallback while npm-side Trusted Publisher settings are being configured.
+After npm registry verification, the maintainer pushes the matching Git tag and creates the GitHub Release manually. See **[docs/RELEASING.md](./docs/RELEASING.md)** for the complete procedure and safety rules.
 
 ---
 
@@ -404,6 +398,7 @@ Full threat model + opt-in switches: **[docs/SECURITY-MODEL.md](./docs/SECURITY-
 | [docs/AGENT-KERNEL-INTEGRATION.md](./docs/AGENT-KERNEL-INTEGRATION.md) | Memory + governance boundary contract |
 | [docs/MMAS.md](./docs/MMAS.md) | Multi-agent runtime + guardrails |
 | [docs/SECURITY-MODEL.md](./docs/SECURITY-MODEL.md) | Threat model + opt-in switches |
+| [docs/RELEASING.md](./docs/RELEASING.md) | Local verification, npm publish, tag, and GitHub Release procedure |
 | [INSTALL.md](./INSTALL.md) | Granular component-level install detail |
 | [DT.md](./DT.md) | Original `dt` CLI specifics |
 | [CHANGELOG.md](./CHANGELOG.md) | v1.0.0 → v3.1.0 release notes |
@@ -418,8 +413,6 @@ Full threat model + opt-in switches: **[docs/SECURITY-MODEL.md](./docs/SECURITY-
 | Workflow | Status | Purpose |
 |---|---|---|
 | CI | [![CI](https://img.shields.io/github/actions/workflow/status/imMamdouhaboammar/delegate-team/ci.yml?label=CI&style=flat-square)](https://github.com/imMamdouhaboammar/delegate-team/actions/workflows/ci.yml) | Build, typecheck, test, routing matrix, manifest validation |
-| npm publish | [![npm publish](https://img.shields.io/github/actions/workflow/status/imMamdouhaboammar/delegate-team/npm-publish.yml?label=npm&logo=npm&style=flat-square)](https://github.com/imMamdouhaboammar/delegate-team/actions/workflows/npm-publish.yml) | Version guard, tarball smoke test, provenance publish, npm verify |
-| Release | [![auto-release](https://img.shields.io/github/actions/workflow/status/imMamdouhaboammar/delegate-team/release.yml?label=auto-release&style=flat-square)](https://github.com/imMamdouhaboammar/delegate-team/actions/workflows/release.yml) | GitHub Release + tarball |
 
 | Backend | Maturity | Notes |
 |---|---|---|

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -31,24 +31,25 @@ describe('npm package file whitelist', () => {
   });
 });
 
-describe('npm publish artifact validation', () => {
-  it('allows only documented JSON files and requires the remote bootstrap template', () => {
-    const workflow = readFileSync(
-      join(ROOT, '.github', 'workflows', 'npm-publish.yml'),
+describe('local release policy', () => {
+  it('publishes from a trusted maintainer machine, not GitHub Actions', () => {
+    const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
+
+    expect(pkg.scripts['pack:verify']).toBe('node bin/verify-package.mjs');
+    expect(pkg.scripts['release:verify']).toContain('npm run version:check');
+    expect(pkg.scripts['release:verify']).toContain('npm run pack:verify');
+    expect(pkg.scripts['release:verify']).toContain('npm run publish:dry');
+    expect(pkg.scripts['release:publish']).toContain('npm publish --access public');
+    expect(existsSync(join(ROOT, 'docs', 'RELEASING.md'))).toBe(true);
+    expect(existsSync(join(ROOT, 'bin', 'verify-package.mjs'))).toBe(true);
+    expect(existsSync(join(ROOT, '.github', 'workflows', 'npm-publish.yml'))).toBe(false);
+    expect(existsSync(join(ROOT, '.github', 'workflows', 'release.yml'))).toBe(false);
+
+    const integrityWorkflow = readFileSync(
+      join(ROOT, '.github', 'workflows', 'npm-pack-integrity.yml'),
       'utf8',
     );
-
-    expect(workflow).toContain('package/templates/chatgpt-remote-bootstrap.md');
-    expect(workflow).toContain('/tmp/npm-json-allowlist.txt');
-    expect(workflow).toContain('LC_ALL=C sort -u /tmp/npm-json-allowlist.txt > /tmp/npm-json-allowlist-sorted.txt');
-    expect(workflow).toContain('LC_ALL=C comm -23 /tmp/npm-json-files.txt /tmp/npm-json-allowlist-sorted.txt');
-    expect(workflow).toContain("LC_ALL=C grep '\\.json$' /tmp/npm-pack-contents.txt | LC_ALL=C sort -u");
-    expect(workflow).toContain('comm -23');
-    expect(workflow).toContain('package/agent-kernel/develpment/backlog.json');
-    expect(workflow).toContain('package/agent-kernel/examples/json-memory-rule.json');
-    expect(workflow).toContain('package/agent-kernel/examples/sample-episode.json');
-    expect(workflow).toContain('package/agent-kernel/examples/sample-rule.json');
-    expect(workflow).toContain('package/mmas/examples/boulder.example.json');
-    expect(workflow).not.toContain('Expected only package.json as a JSON file');
+    expect(integrityWorkflow).toContain('npm run pack:verify');
+    expect(integrityWorkflow).not.toContain('npm publish');
   });
 });

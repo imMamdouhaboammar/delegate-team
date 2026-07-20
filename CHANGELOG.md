@@ -14,6 +14,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 - Fixed relay and router resolution when delegate-team is installed under paths containing spaces, `#`, URL-encoded characters, or symlink aliases such as `/tmp` and `/private/tmp`.
 - Fixed MMAS startup on Python 3.9 by postponing runtime evaluation of modern type annotations.
+- Fixed proxy security-test port collisions by using an ephemeral port and an explicit server lifecycle.
+
+### Changed
+- Replaced GitHub Actions npm publishing and automatic release creation with a documented, locally verified maintainer release process using the authenticated npm account on the trusted workstation.
 
 ### Security
 - Remote Agent permissions deny dependency installation, deletion, commits, push, merge, publishing, persistent system changes, and credential-file access until explicitly enabled.

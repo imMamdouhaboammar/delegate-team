@@ -116,25 +116,21 @@ the per-component docs linked below.
 
 ## Release flow
 
-```
+```text
 package.json version bump
         ↓
 npm run version:check
         ↓
-package-lock warning if stale
+npm run release:verify on a trusted maintainer machine
         ↓
-CI: typecheck + build + test + npm pack validation
+direct npm publish using the maintainer login
         ↓
-npm publish --provenance if version is new
+registry and clean-install verification
         ↓
-registry verify + npx install verify
-        ↓
-matching Git tag and GitHub Release
+manual matching Git tag and GitHub Release
 ```
 
-The publish workflow does not blindly publish on every push. It checks whether
-`package.json.version` already exists on npm and skips publish when the version
-is already present.
+CI validates code and package integrity, but it is not authorized to publish packages or create releases.
 
 ---
 
@@ -163,9 +159,7 @@ is already present.
    by process group.
 4. **agent-kernel is file-system-rooted**: its memory home is a regular
    directory the user can `cat`, `grep`, and back up with normal Unix tools.
-5. **npm publishing is CI-governed**: version drift, missing runtime files,
-   secret-like package contents, and mismatched tags are blocked or warned
-   before publish.
+5. **npm publishing is operator-governed**: a trusted maintainer runs local release verification, publishes with the locally authenticated npm account, verifies the registry, and then creates the matching tag and GitHub Release.
 
 ---
 

@@ -147,35 +147,27 @@ them.
 
 ## npm publish safety
 
-The npm publish workflow is intentionally stricter than a normal release job.
-Before publishing it runs:
+npm publishing is performed directly from a trusted maintainer workstation. GitHub Actions has no npm publish or GitHub Release authority.
+
+Before publishing, the maintainer runs:
 
 ```bash
+npm whoami
 npm ci
-npm run version:check
-npm run typecheck
-npm run build
-npm test
-npm audit --omit=dev --audit-level=high
-npm pack
+npm run release:verify
+npm run release:publish
 ```
 
-It also:
+The local verification includes version synchronization, type checking, linting, build, full tests, production dependency audit, packed-artifact inventory and clean-install smoke testing, and npm publish dry run.
 
-- Warns when `package-lock.json` version metadata is stale and prints the exact
-  fix: `npm install --package-lock-only`.
-- Blocks publish if the git tag does not match `package.json.version`.
-- Skips publish if the exact version already exists on npm.
-- Validates required runtime files inside the npm tarball.
-- Blocks secret-like files such as `.env`, `.npmrc`, private keys, `.pem`, and
-  `.key` from entering the package.
-- Installs the packed artifact into a temporary project and verifies `dt` plus
-  runtime scripts before publish.
-- Publishes with provenance.
-- Verifies the npm registry and `npx <package>@<version>` after publish.
+Security rules:
 
-Trusted Publishing with npm OIDC is preferred. `NPM_TOKEN` should only be kept as
-a fallback until npm-side Trusted Publisher settings are configured.
+- Never print or copy the npm access token into logs, prompts, or documentation.
+- Never use `sudo npm publish`.
+- Confirm the target version does not already exist.
+- Publish only from a clean, reviewed working tree on the intended commit.
+- Keep GitHub package-integrity workflows read-only.
+- Remove or rebuild obsolete release automation rather than bypassing failing checks blindly.
 
 ---
 

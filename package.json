@@ -25,7 +25,10 @@
     "size": "npm pack --dry-run",
     "publish:dry": "npm publish --dry-run --access public",
     "agents-health": "bash bin/agents-health.sh",
-    "autopilot": "bash bin/autopilot.sh"
+    "autopilot": "bash bin/autopilot.sh",
+    "release:verify": "npm run version:check && npm run typecheck && npm run lint && npm run build && npm test && npm audit --omit=dev --audit-level=high && npm run pack:verify && npm run publish:dry",
+    "release:publish": "npm run release:verify && npm publish --access public",
+    "pack:verify": "node bin/verify-package.mjs"
   },
   "files": [
     "dist",

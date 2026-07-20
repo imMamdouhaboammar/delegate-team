@@ -593,7 +593,10 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
 export function runServe(port: number) {
   const server = http.createServer(handleRequest);
   server.listen(port, '127.0.0.1', () => {
-    console.log(`\n🚀 Starting LLM Gateway Proxy Server on http://127.0.0.1:${port}...`);
+    const address = server.address();
+    const activePort = typeof address === 'object' && address ? address.port : port;
+    console.log(`\n🚀 Starting LLM Gateway Proxy Server on http://127.0.0.1:${activePort}...`);
     console.log(`[PROXY] Max body bytes: ${MAX_BODY_BYTES}`);
   });
+  return server;
 }

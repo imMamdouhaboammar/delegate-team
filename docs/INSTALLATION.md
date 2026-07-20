@@ -31,7 +31,7 @@ Complete the pairing flow, connect the Remote Desktop Commander app/MCP in ChatG
 | Runtime | Required | Why |
 |---|---|---|
 | Node.js | `>=20` | `dt` CLI, tsup build, npm package scripts |
-| npm | modern npm, npm `>=11.5.1` recommended for Trusted Publishing | publish workflow and provenance |
+| npm | modern npm with a valid maintainer login | local package verification and direct publish |
 | Python | `>=3.10` | MMAS, backend agents, modern type syntax |
 | Bash | `>=4` | orchestrator, installer, watchdog |
 
@@ -177,36 +177,24 @@ Flags:
 
 ## Release and publish checks
 
-Before bumping or publishing a version, run:
+Publishing is a local maintainer operation. GitHub Actions does not publish the package.
 
 ```bash
+npm whoami
 npm ci
-npm run version:check
-npm install --package-lock-only
-npm run typecheck
-npm test
-npm publish --dry-run --access public
+npm run release:verify
+npm run release:publish
 ```
 
-`npm run version:check` enforces version sync across:
+`npm run version:check` enforces version sync across `package.json`, plugin manifests, marketplace entries, and `CHANGELOG.md`.
 
-- `package.json`
-- `.claude-plugin/plugin.json`
-- `.claude-plugin/marketplace.json`
-- every marketplace plugin entry
-- `CHANGELOG.md`
-
-It intentionally prints a warning, not a hard failure, when `package-lock.json`
-version metadata is stale. Regenerate it with:
+If `package-lock.json` version metadata is stale, regenerate it before verification:
 
 ```bash
 npm install --package-lock-only
 ```
 
-The npm publish workflow runs the same version guard, prints a GitHub Actions
-warning for stale lockfiles, validates the tarball, smoke-tests the installed
-package, blocks secret-like files, publishes with provenance, then verifies npm
-registry state.
+The full maintainer procedure is documented in [RELEASING.md](./RELEASING.md).
 
 ---
 

@@ -1,18 +1,18 @@
-import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import http from 'node:http';
+import { once } from 'node:events';
 import { runServe } from '../src/proxy/server';
 import { execSync } from 'node:child_process';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import * as fs from 'node:fs';
 
-const PROXY_PORT = 3215; // use different port for tests
-const PROXY_URL = `http://127.0.0.1:${PROXY_PORT}`;
 
 describe('Delegate Team Security Behaviors', () => {
 
   describe('Proxy Server Security', () => {
-    let serverProcess: any;
+    let server: http.Server;
+    let proxyUrl: string;
     
     beforeAll(async () => {
       // Create dummy proxy config
@@ -28,13 +28,24 @@ describe('Delegate Team Security Behaviors', () => {
       fs.writeFileSync(configPath, JSON.stringify(config));
 
       // We run the server inline
-      runServe(PROXY_PORT);
-      // Wait a bit for server to listen
-      await new Promise(resolve => setTimeout(resolve, 500));
+      server = runServe(0);
+      await once(server, 'listening');
+      const address = server.address();
+      if (!address || typeof address === 'string') {
+        throw new Error('Proxy test server did not expose a TCP port');
+      }
+      proxyUrl = `http://127.0.0.1:${address.port}`;
+    });
+
+    afterAll(async () => {
+      if (!server?.listening) return;
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => error ? reject(error) : resolve());
+      });
     });
 
     it('should reject requests without a valid token', async () => {
-      const response = await fetch(PROXY_URL, {
+      const response = await fetch(proxyUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -45,7 +56,7 @@ describe('Delegate Team Security Behaviors', () => {
     });
 
     it('should apply CORS restrictively to valid tokens', async () => {
-      const response = await fetch(PROXY_URL, {
+      const response = await fetch(proxyUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -63,7 +74,7 @@ describe('Delegate Team Security Behaviors', () => {
     it('should reject payloads larger than 2MB', async () => {
       // Create a 3MB string
       const largeBody = 'a'.repeat(3 * 1024 * 1024);
-      const response = await fetch(PROXY_URL, {
+      const response = await fetch(proxyUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

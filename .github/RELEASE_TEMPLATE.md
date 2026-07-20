@@ -1,7 +1,7 @@
 # Release notes template
 # This file is the default body pre-filled when a maintainer creates a release
 # via the GitHub web UI. It mirrors the auto-generated format from
-# `.github/release.yml` so manual + automated releases look consistent.
+# manual GitHub Releases so maintainer-created releases stay consistent.
 
 ## 🛠️ delegate-team <version>
 
@@ -27,7 +27,7 @@ npx delegate-team@<version> --version
 ### 📋 What changed
 
 <!-- Drop-down the auto-generated "Features / Bug Fixes / Breaking / Docs" sections -->
-<!-- from `.github/release.yml`. The release-action workflow generates these -->
+<!-- Maintainers may generate these notes with `gh release create --generate-notes` or provide a curated notes file. -->
 <!-- automatically; for a manual release, paste them in below. -->
 
 #### Features

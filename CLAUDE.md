@@ -73,3 +73,10 @@ need to second-guess it. Just follow the chain it prescribes:
 Read `AGENTS.md` first — it has the repo's conventional decisions documented.
 If still unsure, prefer to ask the user rather than guess. This is a
 production-grade supersystem; "wrong guess" compounds.
+
+## Local release policy
+
+- Publish npm packages only from a trusted maintainer workstation using the locally authenticated npm account.
+- Do not add GitHub Actions that publish npm packages or create GitHub Releases automatically.
+- Keep CI read-only for build, tests, security, and package-integrity checks.
+- If a workflow repeatedly blocks work without protecting a valid invariant, remove it or rebuild it before proceeding.

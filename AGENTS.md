@@ -149,3 +149,11 @@ MIT — see [`LICENSE`](./LICENSE).
 - `CLAUDE.md` — Claude-Code-specific guidance
 - `install.sh --help` — installer entry points
 - https://skills.sh — registry where this repo gets indexed
+
+
+## Local release policy
+
+- Publish npm packages only from a trusted maintainer workstation using the locally authenticated npm account.
+- Do not add GitHub Actions that publish npm packages or create GitHub Releases automatically.
+- Keep CI read-only for build, tests, security, and package-integrity checks.
+- If a workflow repeatedly blocks work without protecting a valid invariant, remove it or rebuild it before proceeding.

@@ -35,45 +35,5 @@ jobs:
       - name: Build package
         run: npm run build
 
-      - name: Create package inventory
-        run: |
-          set -euo pipefail
-          npm pack --dry-run --json --ignore-scripts > /tmp/npm-pack.json
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-
-          payload = json.loads(Path('/tmp/npm-pack.json').read_text())
-          files = sorted(item['path'] for item in payload[0].get('files', []))
-          Path('/tmp/npm-pack-files.txt').write_text('\n'.join(files) + '\n')
-          print('\n'.join(files))
-          PY
-
-      - name: Package contains dist CLI
-        run: grep -Fxq 'dist/cli.js' /tmp/npm-pack-files.txt
-
-      - name: Package contains universal wrapper
-        run: grep -Fxq 'bin/apeiron-uni' /tmp/npm-pack-files.txt
-
-      - name: Package contains autopilot
-        run: grep -Fxq 'bin/autopilot.sh' /tmp/npm-pack-files.txt
-
-      - name: Package contains agent health check
-        run: grep -Fxq 'bin/agents-health.sh' /tmp/npm-pack-files.txt
-
-      - name: Package contains relay runtime
-        run: grep -Fxq 'delegate-team/scripts/relay.mjs' /tmp/npm-pack-files.txt
-
-      - name: Package contains router runtime
-        run: grep -Fxq 'delegate-team/scripts/opencode-router.mjs' /tmp/npm-pack-files.txt
-
-      - name: Install packed artifact
-        run: |
-          set -euo pipefail
-          PACK_FILE=$(npm pack --json --ignore-scripts | python3 -c "import json,sys; print(json.load(sys.stdin)[0]['filename'])")
-          TMP_DIR=$(mktemp -d)
-          npm init -y --prefix "$TMP_DIR" >/dev/null
-          npm install --prefix "$TMP_DIR" "$GITHUB_WORKSPACE/$PACK_FILE" --ignore-scripts >/dev/null
-          "$TMP_DIR/node_modules/.bin/dt" --version
-          test -f "$TMP_DIR/node_modules/delegate-team/delegate-team/scripts/relay.mjs"
-          test -f "$TMP_DIR/node_modules/delegate-team/delegate-team/scripts/opencode-router.mjs"
+      - name: Verify packed artifact
+        run: npm run pack:verify
