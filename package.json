@@ -21,6 +21,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "version:check": "node scripts/check-version-sync.mjs",
+    "config:check": "npm run build --silent && node dist/config-check.js",
     "size": "npm pack --dry-run",
     "publish:dry": "npm publish --dry-run --access public",
     "agents-health": "bash bin/agents-health.sh",
