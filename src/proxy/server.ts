@@ -6,23 +6,7 @@ import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 import { timingSafeEqual } from 'node:crypto';
 import { WORKSPACE_ROOT } from '../config/index.js';
-
-const DEFAULT_MAX_BODY_BYTES = 2 * 1024 * 1024;
-
-function readPositiveIntEnv(name: string, fallback: number): number {
-  const raw = process.env[name];
-  if (!raw) return fallback;
-
-  const parsed = Number.parseInt(raw, 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    console.warn(`[PROXY] Ignoring invalid ${name}=${raw}. Using ${fallback}.`);
-    return fallback;
-  }
-
-  return parsed;
-}
-
-const MAX_BODY_BYTES = readPositiveIntEnv("DT_PROXY_MAX_BODY", DEFAULT_MAX_BODY_BYTES);
+import { resolveProxyMaxBodyBytes } from './config.js';
 
 const FALLBACK_RING: Record<string, string[]> = {
   gemini: ["openrouter", "openai"],
@@ -328,7 +312,22 @@ function mapModel(backend: string, originalModel: string, useVertex = false): st
   return originalModel;
 }
 
-async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse) {
+type RequestSecurityOptions = {
+  maxBodyBytes: number;
+  requiredToken?: string;
+};
+
+export type ProxyServerOptions = {
+  maxBodyBytes?: number;
+  requiredToken?: string;
+  host?: string;
+};
+
+async function handleRequest(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  security: RequestSecurityOptions,
+) {
   // CORS Headers
   const origin = req.headers.origin || "";
   const allowedOrigins = new Set([
@@ -355,7 +354,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
   }
 
   const config = getLocalConfig();
-  const requiredToken = config.proxy_token || process.env.PROXY_TOKEN;
+  const requiredToken = security.requiredToken || config.proxy_token || process.env.PROXY_TOKEN;
 
   if (!requiredToken) {
     res.writeHead(500);
@@ -378,7 +377,7 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > MAX_BODY_BYTES) {
+    if (size > security.maxBodyBytes) {
       res.writeHead(413);
       return res.end("Payload Too Large");
     }
@@ -590,13 +589,20 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
   res.end(JSON.stringify({ error: "All backends failed in Fallback Ring" }));
 }
 
-export function runServe(port: number) {
-  const server = http.createServer(handleRequest);
-  server.listen(port, '127.0.0.1', () => {
+export function runServe(port: number, options: ProxyServerOptions = {}) {
+  const host = options.host || '127.0.0.1';
+  const maxBodyBytes = options.maxBodyBytes ?? resolveProxyMaxBodyBytes(process.env.DT_PROXY_MAX_BODY);
+  const server = http.createServer((req, res) => {
+    void handleRequest(req, res, {
+      maxBodyBytes,
+      requiredToken: options.requiredToken,
+    });
+  });
+  server.listen(port, host, () => {
     const address = server.address();
     const activePort = typeof address === 'object' && address ? address.port : port;
-    console.log(`\n🚀 Starting LLM Gateway Proxy Server on http://127.0.0.1:${activePort}...`);
-    console.log(`[PROXY] Max body bytes: ${MAX_BODY_BYTES}`);
+    console.log(`\n🚀 Starting LLM Gateway Proxy Server on http://${host}:${activePort}...`);
+    console.log(`[PROXY] Max body bytes: ${maxBodyBytes}`);
   });
   return server;
 }

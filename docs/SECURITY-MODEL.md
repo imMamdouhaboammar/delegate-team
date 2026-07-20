@@ -90,8 +90,9 @@ The local LLM gateway (`dt serve`):
 - Requires a proxy token.
 - Uses constant-time comparison for equal-length proxy tokens.
 - Strict CORS allowing only explicit localhost UI ports.
-- 2 MB request body size limit by default, configurable via `DT_PROXY_MAX_BODY`.
+- 2 MB request body size limit by default, configurable with a positive integer byte value in `DT_PROXY_MAX_BODY`. Invalid values emit a warning and fail closed to the 2 MB default.
 - Automatic log redaction for API keys and Bearer tokens.
+- Security tests inject a test-only token and never read or overwrite the maintainer's real `~/.config/dt/config.json`.
 
 ### 6. MCP process security
 
@@ -110,7 +111,7 @@ export DT_ENABLE_MCP=true
 `dt` avoids hardcoded keys in committed files. It uses dynamic CLI auth and
 caches local config at `~/.config/dt/config.json` with `0600` permissions.
 MetaGPT adapter config is written to `~/.metagpt/config2.yaml` with `0600`.
-Containing directories are set to `0700`.
+Containing directories are set to `0700`. Existing files and directories are hardened to those modes after each write; setup logs paths but never the generated proxy token or file contents.
 
 ---
 

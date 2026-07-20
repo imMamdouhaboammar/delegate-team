@@ -15,20 +15,8 @@ describe('Delegate Team Security Behaviors', () => {
     let proxyUrl: string;
     
     beforeAll(async () => {
-      // Create dummy proxy config
-      const configDir = path.join(os.homedir(), '.config', 'dt');
-      fs.mkdirSync(configDir, { recursive: true });
-      const configPath = path.join(configDir, 'config.json');
-      
-      let config = {};
-      if (fs.existsSync(configPath)) {
-        config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      }
-      config['proxy_token'] = 'test-security-token';
-      fs.writeFileSync(configPath, JSON.stringify(config));
-
-      // We run the server inline
-      server = runServe(0);
+      // Inject a test-only token so this suite never reads or writes the user's config.
+      server = runServe(0, { requiredToken: 'test-security-token' });
       await once(server, 'listening');
       const address = server.address();
       if (!address || typeof address === 'string') {

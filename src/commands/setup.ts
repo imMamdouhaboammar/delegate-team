@@ -16,14 +16,14 @@ type SetupOptions = {
   yes?: boolean;
 };
 
-function ensurePrivateDir(path: string) {
+export function ensurePrivateDir(path: string) {
   if (!existsSync(path)) {
     mkdirSync(path, { recursive: true, mode: 0o700 });
   }
   chmodSync(path, 0o700);
 }
 
-function writePrivateFile(path: string, content: string) {
+export function writePrivateFile(path: string, content: string) {
   writeFileSync(path, content, { encoding: 'utf8', mode: 0o600 });
   chmodSync(path, 0o600);
 }
