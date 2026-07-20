@@ -96,3 +96,6 @@ bin/opencode
 /tmp/
 workspace/
 /workspace/
+
+# Local Git worktrees
+.worktrees/
