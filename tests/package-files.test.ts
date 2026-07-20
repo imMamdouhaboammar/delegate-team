@@ -40,6 +40,9 @@ describe('npm publish artifact validation', () => {
 
     expect(workflow).toContain('package/templates/chatgpt-remote-bootstrap.md');
     expect(workflow).toContain('/tmp/npm-json-allowlist.txt');
+    expect(workflow).toContain('LC_ALL=C sort -u /tmp/npm-json-allowlist.txt > /tmp/npm-json-allowlist-sorted.txt');
+    expect(workflow).toContain('LC_ALL=C comm -23 /tmp/npm-json-files.txt /tmp/npm-json-allowlist-sorted.txt');
+    expect(workflow).toContain("LC_ALL=C grep '\\.json$' /tmp/npm-pack-contents.txt | LC_ALL=C sort -u");
     expect(workflow).toContain('comm -23');
     expect(workflow).toContain('package/agent-kernel/develpment/backlog.json');
     expect(workflow).toContain('package/agent-kernel/examples/json-memory-rule.json');

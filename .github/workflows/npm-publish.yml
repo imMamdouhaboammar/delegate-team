@@ -328,7 +328,7 @@ jobs:
             exit 1
           fi
 
-          grep '\.json$' /tmp/npm-pack-contents.txt | sort > /tmp/npm-json-files.txt
+          LC_ALL=C grep '\.json$' /tmp/npm-pack-contents.txt | LC_ALL=C sort -u > /tmp/npm-json-files.txt
           cat > /tmp/npm-json-allowlist.txt <<'EOF'
           package/agent-kernel/develpment/backlog.json
           package/agent-kernel/examples/json-memory-rule.json
@@ -337,8 +337,9 @@ jobs:
           package/mmas/examples/boulder.example.json
           package/package.json
           EOF
-          comm -23 /tmp/npm-json-files.txt /tmp/npm-json-allowlist.txt > /tmp/npm-json-unexpected.txt
-          comm -13 /tmp/npm-json-files.txt /tmp/npm-json-allowlist.txt > /tmp/npm-json-missing.txt
+          LC_ALL=C sort -u /tmp/npm-json-allowlist.txt > /tmp/npm-json-allowlist-sorted.txt
+          LC_ALL=C comm -23 /tmp/npm-json-files.txt /tmp/npm-json-allowlist-sorted.txt > /tmp/npm-json-unexpected.txt
+          LC_ALL=C comm -13 /tmp/npm-json-files.txt /tmp/npm-json-allowlist-sorted.txt > /tmp/npm-json-missing.txt
           if [[ -s /tmp/npm-json-unexpected.txt || -s /tmp/npm-json-missing.txt ]]; then
             echo "::error::Packed JSON files do not match the reviewed allowlist"
             echo "Unexpected JSON files:"
