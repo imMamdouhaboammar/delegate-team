@@ -64,6 +64,21 @@ describe('GitHub workflow hardening', () => {
       "JSON.parse(process.env.TEST_GUARD_REPORT_JSON || '{}')",
     );
     expect(guardian).not.toContain('JSON.parse(`${{ needs.');
+    expect(guardian).toContain('REPORT: ${{ steps.review.outputs.test_guard_report }}');
+    expect(guardian).toContain('HAS_V: ${{ steps.review.outputs.has_violations }}');
+    expect(guardian).toContain('MUST: ${{ steps.review.outputs.must_fix_count }}');
+    expect(guardian).not.toContain("REPORT='${{ steps.review.outputs.test_guard_report }}'");
+    expect(guardian).toContain('HEALTH_REPORT_JSON: ${{ needs.health-scan.outputs.report_json }}');
+    expect(guardian).toContain("const scanData = env.HEALTH_REPORT_JSON || '{}'");
+    expect(guardian).not.toContain("cat > /tmp/scan_data.json");
+    expect(guardian).not.toContain('"ai_analysis": ${{ needs.ai-analysis.outputs.ai_report }}');
+  });
+
+  it('keeps AI autofix issue classification internally consistent', () => {
+    const autofix = workflow('ai-autofix.yml');
+    expect(autofix).toContain('const fixableIssues = mechanicalFixes;');
+    expect(autofix).toContain("node-version: '24.x'");
+    expect(autofix).not.toContain("node-version: '22.x'");
   });
 
   it('keeps generated security scanner artifacts out of git', () => {

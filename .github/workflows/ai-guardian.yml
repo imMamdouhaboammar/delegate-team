@@ -53,7 +53,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
+          node-version: '24.x'
           cache: 'npm'
 
       - name: Setup Python
@@ -263,7 +263,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
+          node-version: '24.x'
 
       - name: Verify AI Gateway connectivity
         env:
@@ -290,6 +290,7 @@ jobs:
         env:
           AI_GATEWAY_KEY: ${{ secrets.AI_GATEWAY_KEY }}
           AI_GATEWAY_MODEL: gemini-3.5-flash
+          HEALTH_REPORT_JSON: ${{ needs.health-scan.outputs.report_json }}
         run: |
           if [ "$gateway_ok" = "false" ]; then
             echo "Skipping AI analysis (gateway unreachable)"
@@ -299,15 +300,9 @@ jobs:
             exit 0
           fi
 
-          # Write scan data to temp file
-          cat > /tmp/scan_data.json <<'SCANEOF'
-          ${{ needs.health-scan.outputs.report_json }}
-          SCANEOF
-
           # Call AI Gateway using Node.js inline script
           node --input-type=module <<'JSEOF'
-          import { readFileSync, writeFileSync } from 'fs';
-          import { appendFileSync } from 'fs';
+          import { appendFileSync, writeFileSync } from 'fs';
           import { env } from 'process';
 
           const GATEWAY_KEY  = env.AI_GATEWAY_KEY;
@@ -336,7 +331,7 @@ jobs:
           }
           Return ONLY valid JSON, no markdown fences.`;
 
-          const scanData = readFileSync('/tmp/scan_data.json', 'utf8');
+          const scanData = env.HEALTH_REPORT_JSON || '{}';
 
           const res = await fetch(GATEWAY_URL, {
             method: 'POST',
@@ -396,16 +391,14 @@ jobs:
     steps:
       - name: Write Job Summary
         env:
-          AI_GATEWAY_KEY: ${{ secrets.AI_GATEWAY_KEY }}
-          AI_GATEWAY_MODEL: gemini-3.5-flash
+          AI_REPORT_JSON: ${{ needs.ai-analysis.outputs.ai_report }}
+          SCORE: ${{ needs.ai-analysis.outputs.score }}
+          SEVERITY: ${{ needs.ai-analysis.outputs.severity }}
+          FAILURES: ${{ needs.health-scan.outputs.failure_count }}
+          BRANCH: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          SCORE="${{ needs.ai-analysis.outputs.score }}"
-          SEVERITY="${{ needs.ai-analysis.outputs.severity }}"
-          FAILURES="${{ needs.health-scan.outputs.failure_count }}"
-          BRANCH="${{ github.ref_name }}"
-          SHA="${{ github.sha }}"
-          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
           # Choose badge colour
           case "$SEVERITY" in
             ok)       BADGE="brightgreen" ; EMOJI="✅" ;;
@@ -433,7 +426,7 @@ jobs:
           ## 🧠 AI Analysis
 
           \`\`\`json
-          ${{ needs.ai-analysis.outputs.ai_report }}
+          $AI_REPORT_JSON
           \`\`\`
 
           ---
@@ -443,19 +436,36 @@ jobs:
           echo "✓ Job Summary written"
 
       - name: Save report as artifact
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+          SHA: ${{ github.sha }}
+          BRANCH: ${{ github.ref_name }}
+          SCORE: ${{ needs.ai-analysis.outputs.score }}
+          SEVERITY: ${{ needs.ai-analysis.outputs.severity }}
+          FAILURE_COUNT: ${{ needs.health-scan.outputs.failure_count }}
+          AI_REPORT_JSON: ${{ needs.ai-analysis.outputs.ai_report }}
         run: |
           mkdir -p ai-reports
-          cat > ai-reports/guardian-report-${{ github.run_number }}.json <<'EOF'
-          {
-            "run": ${{ github.run_number }},
-            "sha": "${{ github.sha }}",
-            "branch": "${{ github.ref_name }}",
-            "score": ${{ needs.ai-analysis.outputs.score }},
-            "severity": "${{ needs.ai-analysis.outputs.severity }}",
-            "failure_count": ${{ needs.health-scan.outputs.failure_count }},
-            "ai_analysis": ${{ needs.ai-analysis.outputs.ai_report }}
-          }
-          EOF
+          node --input-type=module <<'JSEOF'
+          import { writeFileSync } from 'fs';
+          import { env } from 'process';
+
+          let analysis = {};
+          try { analysis = JSON.parse(env.AI_REPORT_JSON || '{}'); } catch (_) {}
+          const report = {
+            run: Number(env.RUN_NUMBER || 0),
+            sha: env.SHA || '',
+            branch: env.BRANCH || '',
+            score: Number(env.SCORE || 0),
+            severity: env.SEVERITY || 'warning',
+            failure_count: Number(env.FAILURE_COUNT || 0),
+            ai_analysis: analysis,
+          };
+          writeFileSync(
+            `ai-reports/guardian-report-${env.RUN_NUMBER}.json`,
+            `${JSON.stringify(report, null, 2)}\n`,
+          );
+          JSEOF
 
       - name: Upload report artifact
         uses: actions/upload-artifact@v4
@@ -650,11 +660,11 @@ jobs:
           JSEOF
 
       - name: Write test-guard Job Summary
+        env:
+          REPORT: ${{ steps.review.outputs.test_guard_report }}
+          HAS_V: ${{ steps.review.outputs.has_violations }}
+          MUST: ${{ steps.review.outputs.must_fix_count }}
         run: |
-          REPORT='${{ steps.review.outputs.test_guard_report }}'
-          HAS_V='${{ steps.review.outputs.has_violations }}'
-          MUST='${{ steps.review.outputs.must_fix_count }}'
-
           BADGE_COLOUR=$([ "$HAS_V" = "true" ] && echo "red" || echo "brightgreen")
           BADGE_TEXT=$([ "$HAS_V" = "true" ] && echo "violations+found" || echo "all+clear")
 
@@ -665,7 +675,7 @@ jobs:
           ![Must Fix](https://img.shields.io/badge/Must%20Fix-${MUST}-$([ "$MUST" = "0" ] && echo brightgreen || echo red))
 
           \`\`\`json
-          ${REPORT}
+          $REPORT
           \`\`\`
 
           ---

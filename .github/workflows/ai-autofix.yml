@@ -58,7 +58,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
+          node-version: '24.x'
           cache: 'npm'
 
       - name: Install dependencies
@@ -103,6 +103,8 @@ jobs:
             i.source === 'test-guard' || i.auto_fixable === false
           );
 
+          const fixableIssues = mechanicalFixes;
+
           appendFileSync(process.env.GITHUB_OUTPUT,
             `has_format_issues=${mechanicalFixes.length > 0 ? 'true' : 'false'}\n`);
           appendFileSync(process.env.GITHUB_OUTPUT,
@@ -132,7 +134,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
+          node-version: '24.x'
           cache: 'npm'
 
       - name: Setup Python

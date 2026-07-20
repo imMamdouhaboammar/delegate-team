@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 const EXPECTED_ENGINE = '>=24';
 const EXPECTED_MAJORS = [24];
@@ -51,6 +51,19 @@ if (!packageJson.scripts?.['release:verify']?.includes('npm run node-support:che
 
 assertMatrix('.github/workflows/ci.yml', 'node-version:');
 assertMatrix('.github/workflows/quality-gate.yml', 'matrix:\n        node:');
+
+const workflowNames = readdirSync(new URL('../.github/workflows/', import.meta.url))
+  .filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'));
+for (const name of workflowNames) {
+  const active = read(`.github/workflows/${name}`)
+    .split(/\r?\n/)
+    .filter((line) => !line.trimStart().startsWith('#'))
+    .join('\n');
+  const unsupported = active.match(/node-version:\s*['"]?(20|22)(?:\.x)?/);
+  if (unsupported) {
+    fail(`${name} uses unsupported Node ${unsupported[1]}`);
+  }
+}
 
 const installation = read('docs/INSTALLATION.md');
 const architecture = read('docs/ARCHITECTURE.md');

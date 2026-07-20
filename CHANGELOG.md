@@ -7,6 +7,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - Hardened AI Guardian workflow report handling by passing generated JSON through environment variables instead of interpolating it into JavaScript source.
+- Fixed remaining AI Guardian summary and artifact JSON interpolation, aligned AI workflows on Node 24, and corrected the undefined `fixableIssues` value in AI Auto-Fix.
 - Fixed Microsoft Defender for DevOps SARIF uploads with explicit least-privilege permissions and fork-safe upload conditions.
 - Removed shell-enabled command execution from MiniMax tools and restricted integration installs to reviewed catalog commands.
 - Marked duplicate-content MD5 hashing as non-security use and disabled Flask debug mode in the example test server.
