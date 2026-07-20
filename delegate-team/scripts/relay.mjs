@@ -54,6 +54,11 @@ import { spawn, execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync, readFileSync, existsSync, appendFileSync } from "node:fs";
 import { join, resolve, basename, dirname } from "node:path";
 import { tmpdir, homedir } from "node:os";
+import { fileURLToPath } from "node:url";
+
+const RELAY_FILE = fileURLToPath(import.meta.url);
+const RELAY_DIR = dirname(RELAY_FILE);
+const WORKSPACE_ROOT = dirname(dirname(RELAY_DIR));
 
 // ---------------------------------------------------------------------------
 // Shared constants
@@ -226,7 +231,7 @@ const codexBackend = {
       return;
     }
 
-    const routerPath = join(dirname(new URL(import.meta.url).pathname), "codex-router.mjs");
+    const routerPath = join(RELAY_DIR, "codex-router.mjs");
     if (!existsSync(routerPath)) {
       opts.resolvedCodexHome = defaultHome;
       return;
@@ -278,7 +283,7 @@ const codexBackend = {
     const currentAccount = currentHome.includes(".codex-delegate-2") ? "secondary" : "main";
 
     // Record credit exhaustion on router (20h TTL)
-    const routerPath = join(dirname(new URL(import.meta.url).pathname), "codex-router.mjs");
+    const routerPath = join(RELAY_DIR, "codex-router.mjs");
     if (existsSync(routerPath)) {
       try {
         execFileSync(process.execPath, [routerPath, "record-rate-limit", currentAccount], {
@@ -379,7 +384,7 @@ const geminiBackend = {
   // Called by dispatch() before buildArgv. Sets opts.model, opts.resolvedAccount,
   // opts.resolvedProject via the smart router. Non-fatal on failure.
   resolveRouting(opts, brief) {
-    const routerPath = join(dirname(new URL(import.meta.url).pathname), "gemini-router.mjs");
+    const routerPath = join(RELAY_DIR, "gemini-router.mjs");
     if (!existsSync(routerPath)) return;
     try {
       const input = opts._accountOverride
@@ -417,7 +422,7 @@ const geminiBackend = {
     const currentAccount = opts.resolvedAccount;
     if (!currentAccount) return null;
 
-    const routerPath = join(dirname(new URL(import.meta.url).pathname), "gemini-router.mjs");
+    const routerPath = join(RELAY_DIR, "gemini-router.mjs");
     if (!existsSync(routerPath)) return null;
 
     // Record exhaustion
@@ -658,7 +663,7 @@ const opencodeBackend = {
   resolveRouting(opts, brief) {
     // opts.model only set here if user passed explicit --model flag (contains "/" from argparse)
     if (opts.model && opts.model !== this.defaultModel) return;
-    const routerPath = join(dirname(new URL(import.meta.url).pathname), "opencode-router.mjs");
+    const routerPath = join(RELAY_DIR, "opencode-router.mjs");
     if (!existsSync(routerPath)) { opts.model = opts.model || this.defaultModel; return; }
     try {
       const raw = execFileSync(process.execPath, [routerPath, "route"], {
@@ -740,7 +745,7 @@ const vertexcoderBackend = {
   name: "vertexcoder",
   get bin() {
     // 1. Try local workspace path
-    const workspaceRoot = dirname(dirname(dirname(new URL(import.meta.url).pathname)));
+    const workspaceRoot = WORKSPACE_ROOT;
     const workspaceVenv = join(workspaceRoot, "vertex-coder", ".venv", "bin", "python3");
     if (existsSync(workspaceVenv)) return workspaceVenv;
 
@@ -782,7 +787,7 @@ const vertexcoderBackend = {
 
   getScriptPath() {
     // 1. Try local workspace path (direct connection in the current project)
-    const workspacePath = join(dirname(dirname(dirname(new URL(import.meta.url).pathname))), "vertex-coder", "vertex_interactive_agent.py");
+    const workspacePath = join(WORKSPACE_ROOT, "vertex-coder", "vertex_interactive_agent.py");
     if (existsSync(workspacePath)) return workspacePath;
 
     // 2. Try global skill path (with direct scripts)
@@ -806,7 +811,7 @@ const vertexcoderBackend = {
   // else → gemini-3.5-flash (fast). Custom-tools is the installed tool-aware model.
   resolveRouting(opts, brief) {
     if (opts.model && opts.model !== this.defaultModel) return;
-    const routerPath = join(dirname(new URL(import.meta.url).pathname), "opencode-router.mjs");
+    const routerPath = join(RELAY_DIR, "opencode-router.mjs");
     if (!existsSync(routerPath)) { opts.model = opts.model || this.defaultModel; return; }
     try {
       const raw = execFileSync(process.execPath, [routerPath, "route"], {

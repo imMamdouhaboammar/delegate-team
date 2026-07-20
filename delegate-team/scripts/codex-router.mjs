@@ -24,8 +24,9 @@
  * Used by relay.mjs via execFileSync — pure Node built-ins, no deps.
  */
 
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync, writeFileSync, existsSync, realpathSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 
 // ─── Account Registry ────────────────────────────────────────────────────────
@@ -260,7 +261,7 @@ export function getRouterStatus() {
 
 // ─── CLI ──────────────────────────────────────────────────────────────────────
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(fileURLToPath(import.meta.url)) === realpathSync(resolve(process.argv[1]))) {
   const [cmd, arg] = process.argv.slice(2);
 
   if (cmd === "status") {

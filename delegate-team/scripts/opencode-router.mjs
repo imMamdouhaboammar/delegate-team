@@ -15,7 +15,9 @@
  * Used by relay.mjs via execFileSync — pure Node built-ins, no deps.
  */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 // ─── Model Tiers ─────────────────────────────────────────────────────────────
 //
@@ -132,7 +134,7 @@ export function routeTask(brief) {
 
 // ─── CLI ──────────────────────────────────────────────────────────────────────
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && realpathSync(fileURLToPath(import.meta.url)) === realpathSync(resolve(process.argv[1]))) {
   const [cmd] = process.argv.slice(2);
 
   if (cmd === "status") {
