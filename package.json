@@ -49,7 +49,8 @@
     "delegate-team/scripts/opencode-router.mjs",
     "mmas/spawn-team.py",
     "mmas/watchdog.sh",
-    "mmas/hash-edit.py"
+    "mmas/hash-edit.py",
+    "templates"
   ],
   "engines": {
     "node": ">=24",

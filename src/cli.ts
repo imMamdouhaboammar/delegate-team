@@ -14,6 +14,7 @@ import { parsePort } from './utils/port.js';
 import { runDelegate, DELEGATE_AGENTS } from './commands/delegate.js';
 import { runMesh } from './commands/mesh.js';
 import { runIntegrations } from './commands/integrations.js';
+import { registerRemoteCommands } from './commands/remote.js';
 import { WORKSPACE_ROOT } from './config/index.js';
 import fs from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -324,9 +325,11 @@ program
     });
   });
 
+registerRemoteCommands(program);
+
 // Check for unknown commands before parsing to prevent dangerous fallbacks
 if (process.argv.length > 2 && !process.argv[2].startsWith('-')) {
-  const isCommand = ['check', 'status', 'doctor', 'link-skill', 'setup', 'init', 'auth', 'gcp-enable', 'vertex-provision', 'vx', 'vertex', 'metagpt', 'mg', 'run', 'dispatch', 'serve', 'proxy', 'route', 'kernel', 'kernel-version', 'delegate', 'mesh', 'help', 'apeiron', 'ship', 'mmas', 'integrations', 'intg'].includes(process.argv[2]);
+  const isCommand = ['check', 'status', 'doctor', 'link-skill', 'setup', 'init', 'auth', 'gcp-enable', 'vertex-provision', 'vx', 'vertex', 'metagpt', 'mg', 'run', 'dispatch', 'serve', 'proxy', 'route', 'kernel', 'kernel-version', 'delegate', 'mesh', 'help', 'apeiron', 'ship', 'mmas', 'integrations', 'intg', 'remote'].includes(process.argv[2]);
   if (!isCommand) {
     console.error(`\n❌ Error: Unknown command '${process.argv[2]}'.`);
     console.error(`Run 'dt --help' to see available commands.\n`);

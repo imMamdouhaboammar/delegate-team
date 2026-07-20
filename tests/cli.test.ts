@@ -1,9 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { runCheck } from '../src/commands/check.js';
+import { registerRemoteCommands } from '../src/commands/remote.js';
 
 describe('CLI Commands', () => {
   it('should have a runCheck command exported', () => {
     expect(typeof runCheck).toBe('function');
+  });
+
+  it('should expose remote command registration', () => {
+    expect(typeof registerRemoteCommands).toBe('function');
   });
 });
 

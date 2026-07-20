@@ -18,6 +18,7 @@ describe('npm package file whitelist', () => {
       'mmas/spawn-team.py',
       'mmas/watchdog.sh',
       'mmas/hash-edit.py',
+      'templates',
     ]));
 
     expect(pkg.bin).toMatchObject({
