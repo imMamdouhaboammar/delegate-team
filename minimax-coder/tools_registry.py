@@ -16,6 +16,7 @@ Persistent memory file: .agent_memory.json (same name as vertex-coder for parity
 import json
 import os
 import re
+import shlex
 import subprocess
 from typing import Any, Dict, List, Optional
 
@@ -177,9 +178,40 @@ def tool_grep_search(pattern: str, path: str = ".", file_pattern: str = None,
 
 
 def tool_run_command(command: str, timeout: int = 60) -> str:
+    """Run a bounded workspace command without invoking a shell by default."""
+    allowlist = [
+        "npm test", "npm run build", "npm run typecheck",
+        "pytest", "python -m pytest", "python3 -m pytest",
+        "git status", "git diff", "node --version",
+        "python --version", "python3 --version",
+    ]
+    command_lower = command.strip().lower()
+    allow_unsafe = os.environ.get("DT_ALLOW_UNSAFE_COMMANDS") == "true"
+    is_allowed = any(
+        command_lower == allowed or command_lower.startswith(allowed + " ")
+        for allowed in allowlist
+    )
+    if not is_allowed and not allow_unsafe:
+        return (
+            f"Security Error: Command '{command}' is not in the allowlist. "
+            "Set DT_ALLOW_UNSAFE_COMMANDS=true only after explicit approval."
+        )
+
+    hard_denylist = [
+        "rm -rf /", "rm -rf .", "git reset --hard", "shutdown",
+        "reboot", "mkfs", "dd ",
+    ]
+    if any(blocked in command_lower for blocked in hard_denylist):
+        return "Security Error: Command rejected by hard denylist."
+
     try:
+        args = ["bash", "-lc", command] if allow_unsafe and not is_allowed else shlex.split(command)
         result = subprocess.run(
-            command, shell=True, capture_output=True, text=True, timeout=timeout,
+            args,
+            shell=False,
+            capture_output=True,
+            text=True,
+            timeout=max(1, min(timeout, 300)),
         )
         output = ""
         if result.stdout:
@@ -188,10 +220,10 @@ def tool_run_command(command: str, timeout: int = 60) -> str:
             output += f"--- stderr ---\n{result.stderr.rstrip()}\n"
         output += f"--- exit code: {result.returncode} ---"
         return output[:5000]
+    except (ValueError, OSError) as e:
+        return f"Error: invalid command: {e}"
     except subprocess.TimeoutExpired:
         return f"Error: command timed out after {timeout}s"
-    except Exception as e:
-        return f"Error: {e}"
 
 
 def tool_list_global_skills() -> str:

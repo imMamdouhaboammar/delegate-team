@@ -685,14 +685,17 @@ jobs:
     steps:
       - name: Trigger AI Issue Reporter
         uses: actions/github-script@v7
+        env:
+          CI_REPORT_JSON: ${{ needs.ai-analysis.outputs.ai_report }}
+          TEST_GUARD_REPORT_JSON: ${{ needs.test-guard-review.outputs.test_guard_report }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             // Merge both reports into one payload
             let ciReport = {};
             let tgReport = {};
-            try { ciReport = JSON.parse(`${{ needs.ai-analysis.outputs.ai_report }}` || '{}'); } catch(_) {}
-            try { tgReport = JSON.parse(`${{ needs.test-guard-review.outputs.test_guard_report }}` || '{}'); } catch(_) {}
+            try { ciReport = JSON.parse(process.env.CI_REPORT_JSON || '{}'); } catch(_) {}
+            try { tgReport = JSON.parse(process.env.TEST_GUARD_REPORT_JSON || '{}'); } catch(_) {}
 
             // Merge test-guard violations as issues into the CI report
             const tgIssues = (tgReport.violations || []).map(v => ({
@@ -729,6 +732,8 @@ jobs:
       - name: Trigger AI Auto-Fix (critical/high only)
         if: needs.ai-analysis.outputs.severity == 'critical'
         uses: actions/github-script@v7
+        env:
+          CI_REPORT_JSON: ${{ needs.ai-analysis.outputs.ai_report }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -738,7 +743,7 @@ jobs:
               workflow_id: 'ai-autofix.yml',
               ref:     context.ref,
               inputs: {
-                ai_report:   `${{ needs.ai-analysis.outputs.ai_report }}`.slice(0, 5000),
+                ai_report:   (process.env.CI_REPORT_JSON || '{}').slice(0, 5000),
                 trigger_run: String(context.runId),
               }
             });

@@ -165,7 +165,7 @@ CI validates code and package integrity, but it is not authorized to publish pac
 
 ## Compatibility
 
-- Node ≥ 20 for the `dt` CLI.
+- Node ≥ 24 for the `dt` CLI.
 - Python ≥ 3.10 for MMAS and backend agents.
 - Bash ≥ 4 for the orchestrator.
 - Tested on macOS, Ubuntu, Windows WSL2.

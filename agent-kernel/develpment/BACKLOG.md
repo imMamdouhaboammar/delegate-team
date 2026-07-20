@@ -295,7 +295,7 @@ response_policy
 ```json
 {
   "project_id": "teolaa",
-  "path": "/Users/mamdouh/Projects/Teolaa",
+  "path": "/Users/example/Projects/sample-app",
   "package_manager": "pnpm",
   "framework": "nextjs",
   "database": "supabase",

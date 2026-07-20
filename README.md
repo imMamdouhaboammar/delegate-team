@@ -243,7 +243,7 @@ See **[docs/INSTALLATION.md](./docs/INSTALLATION.md)** for the full reference.
 
 ```bash
 npm install -g delegate-team
-dt --version          # → 3.1.0
+dt --version          # → 3.1.1
 dt run "<task>"       # dispatch with auto backend selection
 dt run "<task>" --dry-run
 dt doctor             # human health check
@@ -401,7 +401,7 @@ Full threat model + opt-in switches: **[docs/SECURITY-MODEL.md](./docs/SECURITY-
 | [docs/RELEASING.md](./docs/RELEASING.md) | Local verification, npm publish, tag, and GitHub Release procedure |
 | [INSTALL.md](./INSTALL.md) | Granular component-level install detail |
 | [DT.md](./DT.md) | Original `dt` CLI specifics |
-| [CHANGELOG.md](./CHANGELOG.md) | v1.0.0 → v3.1.0 release notes |
+| [CHANGELOG.md](./CHANGELOG.md) | v1.0.0 → v3.1.1 release notes |
 | [SECURITY.md](./SECURITY.md) | Short vulnerability-reporting policy |
 | [AGENTS.md](./AGENTS.md) | Repo conventions for contributors |
 | [docs/audits/REPO-AUDIT-vNEXT.md](./docs/audits/REPO-AUDIT-vNEXT.md) | Historical audit baseline |

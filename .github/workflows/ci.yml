@@ -6,9 +6,12 @@ on:
   pull_request:
     branches: [ main, master ]
 
+permissions:
+  contents: read
+
 jobs:
   # ───────────────────────────────────────────────────────────────────────
-  # dt CLI: Node.js matrix build + typecheck + test
+  # dt CLI: Node.js build + typecheck + test
   # ───────────────────────────────────────────────────────────────────────
   build-and-test:
     name: dt CLI (Node ${{ matrix.node-version }})
@@ -16,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20.x, 22.x, 24.x]
+        node-version: [24.x]
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node-version }}
@@ -26,6 +29,8 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
+      - name: Node support contract
+        run: npm run node-support:check
       - name: Version sync guard
         run: npm run version:check
       - name: Typecheck
@@ -73,8 +78,8 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
-      - name: Install deps (pyyaml)
-        run: pip install pyyaml --quiet
+      - name: Install Python quality tools
+        run: pip install pyyaml bandit --quiet
       - name: Syntax check
         run: |
           set -e
@@ -83,6 +88,8 @@ jobs:
           python -m py_compile mmas/spawn-team.py mmas/hash-edit.py
           python -m py_compile aonios-agent/*.py
           python -m py_compile orchestrator/scripts/*.py
+      - name: Bandit high-severity gate
+        run: python -m bandit -r vertex-coder minimax-coder aonios-agent mmas orchestrator/scripts -lll
 
 
   # ───────────────────────────────────────────────────────────────────────

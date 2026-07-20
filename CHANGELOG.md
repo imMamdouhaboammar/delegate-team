@@ -3,6 +3,21 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.1.1] - 2026-07-20
+
+### Fixed
+- Hardened AI Guardian workflow report handling by passing generated JSON through environment variables instead of interpolating it into JavaScript source.
+- Fixed Microsoft Defender for DevOps SARIF uploads with explicit least-privilege permissions and fork-safe upload conditions.
+- Removed shell-enabled command execution from MiniMax tools and restricted integration installs to reviewed catalog commands.
+- Marked duplicate-content MD5 hashing as non-security use and disabled Flask debug mode in the example test server.
+- Removed a machine-specific absolute path from bundled documentation.
+
+### Changed
+- Standardized the supported runtime contract on Node.js 24 across package metadata, CI, quality gates, release verification, and documentation.
+- Added a Bandit high-severity CI gate and regression tests for workflow and Python security hardening.
+- Removed the stalled Codacy workflow after repeated multi-hour hangs; CodeQL, Defender, DevSkim, Bandit, Gitleaks, and package-integrity checks remain active.
+- Replaced the version-heavy package description with a stable product description.
+
 ## [3.1.0] - 2026-07-20
 
 ### Added

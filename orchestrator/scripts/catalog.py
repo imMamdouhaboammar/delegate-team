@@ -35,6 +35,7 @@ import hashlib
 import os
 import re
 import shutil
+import subprocess
 import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -926,6 +927,30 @@ INTEGRATIONS: List[Integration] = [
 ]
 
 
+def _trusted_install_commands() -> set[str]:
+    """Return the exact static install commands reviewed in this catalog."""
+    commands: set[str] = set()
+    for integration in INTEGRATIONS:
+        command = integration.install_cmd
+        if not command or command.startswith("("):
+            continue
+        commands.add(command)
+        commands.add(command.replace("pip ", "pip3 "))
+    return commands
+
+
+def _run_trusted_install_command(command: str) -> int:
+    """Execute only a command defined by a static catalog entry."""
+    if command not in _trusted_install_commands():
+        raise ValueError("install command is not present in the reviewed catalog")
+    result = subprocess.run(
+        ["bash", "-lc", command],
+        shell=False,
+        check=False,
+    )
+    return result.returncode
+
+
 # ---------------------------------------------------------------------------
 # Detection
 # ---------------------------------------------------------------------------
@@ -1280,7 +1305,7 @@ def find_content_duplicates(min_size: int = 100) -> List[Dict]:
                 continue
             if len(body) < min_size:
                 continue
-            h = hashlib.md5(body).hexdigest()
+            h = hashlib.md5(body, usedforsecurity=False).hexdigest()
             paths_by_hash.setdefault(h, []).append(str(skill_md))
     out: List[Dict] = []
     for h, paths in paths_by_hash.items():
@@ -1625,11 +1650,11 @@ def cli(argv: List[str]) -> int:
                             except:
                                 pass
                                 
-                    # If pip is not found but pip3 is, replace it
-                    if "pip " in cmd_to_run and os.system("which pip >/dev/null 2>&1") != 0 and os.system("which pip3 >/dev/null 2>&1") == 0:
+                    # If pip is not found but pip3 is, use the reviewed pip3 variant.
+                    if "pip " in cmd_to_run and not shutil.which("pip") and shutil.which("pip3"):
                         cmd_to_run = cmd_to_run.replace("pip ", "pip3 ")
-                        
-                    ret = os.system(cmd_to_run)
+
+                    ret = _run_trusted_install_command(cmd_to_run)
                     if ret == 0:
                         print(f"     ✅ Successfully installed {i.id}!")
                     else:
