@@ -11,6 +11,7 @@ import { installBackendRequestTimeout } from './proxy/request-timeout.js';
 import { runRouteExplain } from './commands/route.js';
 import { runKernelStatus, runKernelVersion } from './commands/kernel.js';
 import { parsePort } from './utils/port.js';
+import { ExitCode } from './utils/exit-codes.js';
 import { runDelegate, DELEGATE_AGENTS } from './commands/delegate.js';
 import { runMesh } from './commands/mesh.js';
 import { runIntegrations } from './commands/integrations.js';
@@ -81,7 +82,7 @@ program
   .action((options) => {
     runSetup(options).catch(err => {
       console.error('\n❌ Setup failed:', err);
-      process.exit(1);
+      process.exit(ExitCode.FAILURE);
     });
   });
 
@@ -91,7 +92,7 @@ program
   .action(() => {
     runAuth().catch(err => {
       console.error('\n❌ Auth failed:', err);
-      process.exit(1);
+      process.exit(ExitCode.FAILURE);
     });
   });
 
@@ -101,7 +102,7 @@ program
   .action((projectId) => {
     runGcpEnable(projectId).catch(err => {
       console.error('\n❌ GCP Enable failed:', err);
-      process.exit(1);
+      process.exit(ExitCode.FAILURE);
     });
   });
 
@@ -111,7 +112,7 @@ program
   .action(() => {
     runVertexProvision().catch(err => {
       console.error('\n❌ Vertex provision failed:', err);
-      process.exit(1);
+      process.exit(ExitCode.FAILURE);
     });
   });
 
@@ -196,7 +197,7 @@ program
     });
 
     child.on('close', (code) => {
-      process.exit(code || 0);
+      process.exit(code ?? ExitCode.SUCCESS);
     });
   });
 
@@ -263,7 +264,7 @@ program
       // Convenience: a bare prompt string becomes the brief contents via stdin
       // is not supported here; require --brief for determinism.
       console.error('\n❌ Provide the task via --brief <file> (a self-contained brief).');
-      process.exit(1);
+      process.exit(ExitCode.USAGE);
     }
     runDelegate(agent, {
       brief: options.brief,
@@ -307,7 +308,7 @@ program
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error(`\n❌ ${message}\n`);
-      process.exitCode = 64;
+      process.exitCode = ExitCode.USAGE;
     }
   });
 
@@ -333,7 +334,7 @@ if (process.argv.length > 2 && !process.argv[2].startsWith('-')) {
   if (!isCommand) {
     console.error(`\n❌ Error: Unknown command '${process.argv[2]}'.`);
     console.error(`Run 'dt --help' to see available commands.\n`);
-    process.exit(1);
+    process.exit(ExitCode.USAGE);
   }
 }
 

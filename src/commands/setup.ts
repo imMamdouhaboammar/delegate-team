@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process';
 import readline from 'node:readline';
 import { randomBytes } from 'node:crypto';
 import { C, runCmd } from '../utils/index.js';
+import { ExitCode } from '../utils/exit-codes.js';
 import { DELEGATE_TEAM_PATH, RELAY_SCRIPT, VERTEX_CODER_PATH, VERTEX_DIRECT_SCRIPT, VERTEX_INTERACTIVE_SCRIPT, VERTEX_VENV_PYTHON } from '../config/index.js';
 
 type SetupOptions = {
@@ -163,7 +164,7 @@ export async function runSetup(options: SetupOptions = {}) {
     if (venvProc.status !== 0) {
       console.error(`  ${C.red}❌ Failed to create virtual environment. Please install python3-venv.${C.reset}`);
       rl.close();
-      process.exit(1);
+      process.exit(ExitCode.FAILURE);
     }
     console.log(`  ${C.green}✅ Virtual environment created at: ${venvDir}${C.reset}`);
   } else {
@@ -176,7 +177,7 @@ export async function runSetup(options: SetupOptions = {}) {
   if (pipProc.status !== 0) {
     console.error(`  ${C.red}❌ Failed to install core Python dependencies.${C.reset}`);
     rl.close();
-    process.exit(1);
+    process.exit(ExitCode.FAILURE);
   }
   console.log(`  ${C.green}✅ Core Python dependencies installed successfully!${C.reset}\n`);
 
@@ -197,7 +198,7 @@ export async function runSetup(options: SetupOptions = {}) {
     const proceed = await askOrDefault(`  Do you want to skip gcloud checks and continue setting up other components? (y/N): `, "y");
     if (proceed.trim().toLowerCase() !== "y") {
       rl.close();
-      process.exit(127);
+      process.exit(ExitCode.MISSING_DEPENDENCY);
     }
     console.log(`  ${C.dim}Skipping gcloud verification...${C.reset}\n`);
   } else {
@@ -261,7 +262,7 @@ export async function runSetup(options: SetupOptions = {}) {
     if (!selectedProjectId) {
       console.error(`  ${C.red}❌ No Project ID provided. Setup aborted. Re-run with --project <id> for non-interactive setup.${C.reset}`);
       rl.close();
-      process.exit(1);
+      process.exit(ExitCode.CONFIG);
     }
     console.log(`  ${C.green}🎯 Bound to GCP Project: ${C.bold}${selectedProjectId}${C.reset}\n`);
   } else {
@@ -272,7 +273,7 @@ export async function runSetup(options: SetupOptions = {}) {
     if (!selectedProjectId) {
       console.error(`  ${C.red}❌ No Project ID provided. Setup aborted. Re-run with --project <id>.${C.reset}`);
       rl.close();
-      process.exit(1);
+      process.exit(ExitCode.CONFIG);
     }
   }
 
@@ -389,12 +390,12 @@ export async function runVertexProvision() {
   
   if (!existsSync(pythonPath)) {
     console.error(`  ${C.red}❌ Python virtual environment not found at ${pythonPath}. Please run 'dt setup' first.${C.reset}`);
-    process.exit(1);
+    process.exit(ExitCode.MISSING_DEPENDENCY);
   }
   
   if (!existsSync(provisionScript)) {
     console.error(`  ${C.red}❌ Provision script not found at ${provisionScript}.${C.reset}`);
-    process.exit(1);
+    process.exit(ExitCode.MISSING_DEPENDENCY);
   }
 
   const proc = spawnSync(pythonPath, [provisionScript], { stdio: "inherit" });

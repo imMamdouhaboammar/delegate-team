@@ -25,6 +25,7 @@ function run(command, args, options = {}) {
 const requiredFiles = [
   'package.json',
   'README.md',
+  'DT.md',
   'LICENSE',
   'dist/cli.js',
   'bin/apeiron-uni',

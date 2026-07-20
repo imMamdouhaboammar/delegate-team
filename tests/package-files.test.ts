@@ -13,6 +13,7 @@ describe('npm package file whitelist', () => {
     expect(pkg.files).toEqual(expect.arrayContaining([
       'dist',
       'bin',
+      'DT.md',
       'delegate-team/scripts/relay.mjs',
       'delegate-team/scripts/opencode-router.mjs',
       'mmas/spawn-team.py',

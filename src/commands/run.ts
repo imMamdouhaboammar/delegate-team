@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { C } from '../utils/index.js';
+import { ExitCode } from '../utils/exit-codes.js';
 import { FALLBACK_RING } from '../fallback/ring.js';
 import { NeuralMesh } from '../neural/mesh.js';
 import { emitSynapse } from '../neural/trace-bus.js';
@@ -26,28 +27,28 @@ export function runVertex(mode: string, args: string[]) {
   if (!existsSync(VERTEX_VENV_PYTHON)) {
     console.error(`${C.bold}${C.red}Error: Python virtual environment (.venv) not found at: ${VERTEX_VENV_PYTHON}${C.reset}`);
     console.error(`${C.dim}Please verify your vertex-coder setup or re-run 'dt check' to inspect.${C.reset}`);
-    process.exit(127);
+    process.exit(ExitCode.MISSING_DEPENDENCY);
   }
 
   if (mode === "direct") {
     if (args.length < 2) {
       console.error(`${C.bold}${C.red}Usage: dt vx direct <file_path> "<prompt>" [model]${C.reset}`);
-      process.exit(2);
+      process.exit(ExitCode.USAGE);
     }
     const proc = spawnSync(VERTEX_VENV_PYTHON, [VERTEX_DIRECT_SCRIPT, ...args], { stdio: "inherit" });
-    process.exit(proc.status ?? 1);
+    process.exit(proc.status ?? ExitCode.FAILURE);
   } else if (mode === "interactive") {
     if (args.length < 1) {
       console.error(`${C.bold}${C.red}Usage: dt vx interactive "<complex_prompt>" [model]${C.reset}`);
-      process.exit(2);
+      process.exit(ExitCode.USAGE);
     }
     const proc = spawnSync(VERTEX_VENV_PYTHON, [VERTEX_INTERACTIVE_SCRIPT, ...args], { stdio: "inherit" });
-    process.exit(proc.status ?? 1);
+    process.exit(proc.status ?? ExitCode.FAILURE);
   } else {
     console.error(`${C.bold}${C.red}Error: Unknown mode "${mode}". Supported: direct, interactive${C.reset}`);
     console.error(`  ${C.dim}Example: dt vx direct index.html "Add background transition"`);
     console.error(`  ${C.dim}Example: dt vx interactive "Setup vitest suite"`);
-    process.exit(2);
+    process.exit(ExitCode.USAGE);
   }
 }
 
@@ -90,7 +91,7 @@ ${rawPrompt}
 
   if (!briefFile) {
     console.error(`${C.bold}${C.red}Error: Please specify either a prompt or a brief file using --brief <file_path>${C.reset}`);
-    process.exit(2);
+    process.exit(ExitCode.USAGE);
   }
 
   const briefText = readFileSync(briefFile, "utf8");
@@ -256,6 +257,6 @@ ${rawPrompt}
   if (!success) {
     console.error(`\n${C.bold}${C.red}❌ Failover Ring Exhausted! All available backends have failed to execute this task.${C.reset}`);
     console.error(`  ${C.bold}${C.yellow}Orchestrator Directive: Please finish the task manually using SELF.${C.reset}\n`);
-    process.exit(1);
+    process.exit(ExitCode.FAILURE);
   }
 }

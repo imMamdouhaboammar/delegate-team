@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { WORKSPACE_ROOT } from '../config/index.js';
+import { ExitCode } from '../utils/exit-codes.js';
 
 function resolveOrchestrator(): string {
   return join(WORKSPACE_ROOT, 'orchestrator', 'scripts', 'orchestrate.sh');
@@ -49,20 +50,20 @@ export function runRouteExplain(task: string, options: RouteOptions): number {
       return 0;
     }
     console.error(`No trace files found in ${dir}`);
-    return 1;
+    return ExitCode.FAILURE;
   }
 
   // Require a task for everything else.
   if (!task) {
     console.error('Usage: dt route [--explain] [--check-kernel] [--no-trace-file] "<task>"');
     console.error('       dt route --last                       # print most recent trace');
-    return 64;
+    return ExitCode.USAGE;
   }
 
   if (!existsSync(ORCHESTRATE)) {
     console.error(`orchestrate.sh not found at ${ORCHESTRATE}`);
     console.error('Run ./install.sh --orchestrator to install it, or check that you are in the delegate-team repo.');
-    return 2;
+    return ExitCode.MISSING_DEPENDENCY;
   }
 
   const args: string[] = [ORCHESTRATE];
@@ -85,5 +86,5 @@ export function runRouteExplain(task: string, options: RouteOptions): number {
     env: process.env,
   });
 
-  return result.status ?? 1;
+  return result.status ?? ExitCode.FAILURE;
 }

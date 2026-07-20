@@ -90,6 +90,33 @@ delegation runtime:
 
 The local proxy binds to `127.0.0.1` and requires a proxy token.
 
+## Exit codes
+
+`dt` uses stable process exit codes so shell scripts, CI jobs, ChatGPT sessions, and delegated agents can distinguish failures without parsing human-readable output.
+
+| Code | Name | Meaning |
+|---:|---|---|
+| `0` | `SUCCESS` | Command completed successfully. |
+| `1` | `FAILURE` | Backend, operation, or strict health check failed. |
+| `64` | `USAGE` | Invalid command, missing required argument, unsupported mode, or invalid option value. |
+| `78` | `CONFIG` | Required local configuration is missing or malformed. |
+| `127` | `MISSING_DEPENDENCY` | A required executable, runtime script, virtual environment, or installed component is unavailable. |
+
+Examples:
+
+```bash
+dt route
+# exits 64 because the task is missing
+
+npm run config:check -- --json
+# exits 78 when local config is missing or invalid
+
+dt vx direct file.ts "fix the bug"
+# exits 127 when the configured Vertex Python runtime is unavailable
+```
+
+Backend subprocesses may return their own non-zero status when `dt` forwards execution directly. The stable codes above apply to validation and failures detected by the `dt` control layer itself.
+
 ## Compatibility with supersystem v2
 
 `dt` is the execution engine referenced by:

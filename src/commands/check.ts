@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { C, runCmd } from '../utils/index.js';
+import { ExitCode } from '../utils/exit-codes.js';
 import { spawnSync } from 'node:child_process';
 import { VERTEX_VENV_PYTHON } from '../config/index.js';
 
@@ -212,6 +213,6 @@ export function runCheck(strict: boolean = false, json: boolean = false) {
   }
 
   if (strict && !results.some(r => r.ready)) {
-    process.exit(1);
+    process.exit(ExitCode.FAILURE);
   }
 }

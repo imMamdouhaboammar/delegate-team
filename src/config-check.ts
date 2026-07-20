@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { readUserConfig } from './config/user-config.js';
+import { ExitCode } from './utils/exit-codes.js';
 
 const json = process.argv.includes('--json');
 const result = readUserConfig();
@@ -21,5 +22,5 @@ if (json) {
 }
 
 if (result.state !== 'valid') {
-  process.exitCode = 1;
+  process.exitCode = ExitCode.CONFIG;
 }
