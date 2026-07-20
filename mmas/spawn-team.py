@@ -6,6 +6,8 @@ Spawns a bounded local team of specialist agents, records their process groups,
 starts a watchdog, and provides a process-group aware kill switch.
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import os
