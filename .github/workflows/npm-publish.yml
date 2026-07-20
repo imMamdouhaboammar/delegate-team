@@ -313,7 +313,10 @@ jobs:
             package/bin/autopilot.sh \
             package/bin/agents-health.sh \
             package/delegate-team/scripts/relay.mjs \
-            package/delegate-team/scripts/opencode-router.mjs; do
+            package/delegate-team/scripts/codex-router.mjs \
+            package/delegate-team/scripts/gemini-router.mjs \
+            package/delegate-team/scripts/opencode-router.mjs \
+            package/templates/chatgpt-remote-bootstrap.md; do
             if ! grep -Fxq "$required" /tmp/npm-pack-contents.txt; then
               echo "::error::Missing required npm artifact file: $required"
               exit 1
@@ -325,9 +328,23 @@ jobs:
             exit 1
           fi
 
-          JSON_COUNT=$(grep -c '\.json$' /tmp/npm-pack-contents.txt || true)
-          if [[ "$JSON_COUNT" -ne 1 ]]; then
-            echo "::error::Expected only package.json as a JSON file in the npm package, found $JSON_COUNT"
+          grep '\.json$' /tmp/npm-pack-contents.txt | sort > /tmp/npm-json-files.txt
+          cat > /tmp/npm-json-allowlist.txt <<'EOF'
+          package/agent-kernel/develpment/backlog.json
+          package/agent-kernel/examples/json-memory-rule.json
+          package/agent-kernel/examples/sample-episode.json
+          package/agent-kernel/examples/sample-rule.json
+          package/mmas/examples/boulder.example.json
+          package/package.json
+          EOF
+          comm -23 /tmp/npm-json-files.txt /tmp/npm-json-allowlist.txt > /tmp/npm-json-unexpected.txt
+          comm -13 /tmp/npm-json-files.txt /tmp/npm-json-allowlist.txt > /tmp/npm-json-missing.txt
+          if [[ -s /tmp/npm-json-unexpected.txt || -s /tmp/npm-json-missing.txt ]]; then
+            echo "::error::Packed JSON files do not match the reviewed allowlist"
+            echo "Unexpected JSON files:"
+            cat /tmp/npm-json-unexpected.txt
+            echo "Missing expected JSON files:"
+            cat /tmp/npm-json-missing.txt
             exit 1
           fi
 

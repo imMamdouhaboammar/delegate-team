@@ -30,3 +30,22 @@ describe('npm package file whitelist', () => {
     });
   });
 });
+
+describe('npm publish artifact validation', () => {
+  it('allows only documented JSON files and requires the remote bootstrap template', () => {
+    const workflow = readFileSync(
+      join(ROOT, '.github', 'workflows', 'npm-publish.yml'),
+      'utf8',
+    );
+
+    expect(workflow).toContain('package/templates/chatgpt-remote-bootstrap.md');
+    expect(workflow).toContain('/tmp/npm-json-allowlist.txt');
+    expect(workflow).toContain('comm -23');
+    expect(workflow).toContain('package/agent-kernel/develpment/backlog.json');
+    expect(workflow).toContain('package/agent-kernel/examples/json-memory-rule.json');
+    expect(workflow).toContain('package/agent-kernel/examples/sample-episode.json');
+    expect(workflow).toContain('package/agent-kernel/examples/sample-rule.json');
+    expect(workflow).toContain('package/mmas/examples/boulder.example.json');
+    expect(workflow).not.toContain('Expected only package.json as a JSON file');
+  });
+});
