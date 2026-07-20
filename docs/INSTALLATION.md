@@ -14,6 +14,18 @@ doc is the technical reference.
 
 ---
 
+## ChatGPT Web remote device prerequisite
+
+Before using ChatGPT Web as a local coding agent, start the Remote Desktop Commander device process and keep its Terminal window open:
+
+```bash
+npx @wonderwhy-er/desktop-commander@latest remote
+```
+
+Complete the pairing flow, connect the Remote Desktop Commander app/MCP in ChatGPT, then copy the bootstrap prompt from the README or run `dt remote bootstrap`. Closing the process or pressing `Ctrl+C` disconnects the device; rerun the command to restore the session.
+
+---
+
 ## Runtime requirements
 
 | Runtime | Required | Why |
@@ -282,3 +294,29 @@ without cloud mutations.
 - The agent-kernel memory layer — see [docs/AGENT-KERNEL-INTEGRATION.md](./AGENT-KERNEL-INTEGRATION.md).
 - MMAS multi-agent runtime — see [docs/MMAS.md](./MMAS.md).
 - Security policy — see [docs/SECURITY-MODEL.md](./SECURITY-MODEL.md).
+
+## ChatGPT Web + Remote Desktop Commander
+
+This workflow has one manual prerequisite: connect Remote Desktop Commander to the target computer and enable or connect it in ChatGPT before using delegate-team. The npm package cannot create that ChatGPT-side MCP/app connection.
+
+ChatGPT app availability, write actions, and confirmation behavior may vary by plan, workspace policy, and connector. Review the current ChatGPT Apps guidance and the connector's own setup instructions before granting access.
+
+After the connection works, start a new ChatGPT conversation and copy the bootstrap prompt from the README. The same prompt is available locally after installation:
+
+```bash
+npm install -g delegate-team
+dt remote bootstrap
+```
+
+The prompt tells ChatGPT to test terminal and temporary-file access, disclose the global package installation, verify `dt`, and ask whether it should operate as a Coding Agent, Delegator, or Hybrid agent.
+
+Initialize each approved project separately:
+
+```bash
+dt remote init "/absolute/path/to/project"
+dt remote status "/absolute/path/to/project"
+dt remote doctor "/absolute/path/to/project"
+dt remote agents
+```
+
+All permissions default to denied. Enable only explicit capabilities, for example `--allow-install`, `--allow-commit`, or `--allow-push`. Run `dt remote init --help` for the complete list.

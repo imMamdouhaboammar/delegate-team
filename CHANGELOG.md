@@ -3,6 +3,22 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.1.0] - 2026-07-20
+
+### Added
+- Added `dt remote bootstrap`, `init`, `agents`, `status`, `prompt`, and `doctor` to turn a connected ChatGPT session into a governed local coding agent, delegator, or hybrid agent.
+- Added a copy-ready README bootstrap prompt that tests Remote Desktop Commander terminal/file access, discloses the global delegate-team installation, verifies `dt`, and asks the user to choose an operating mode.
+- Added canonical workspace metadata, deny-by-default policy files, private local session state, generated `CHATGPT_REMOTE_AGENT.md` instructions, local CLI discovery, and machine-readable readiness reports.
+- Added regression tests for paths containing spaces and reserved characters, policy idempotency, fake-agent discovery, README/template synchronization, and packaged runtime files.
+
+### Fixed
+- Fixed relay and router resolution when delegate-team is installed under paths containing spaces, `#`, URL-encoded characters, or symlink aliases such as `/tmp` and `/private/tmp`.
+- Fixed MMAS startup on Python 3.9 by postponing runtime evaluation of modern type annotations.
+
+### Security
+- Remote Agent permissions deny dependency installation, deletion, commits, push, merge, publishing, persistent system changes, and credential-file access until explicitly enabled.
+- Existing workspace policy is preserved unless `--force` is requested; delegated output must be reviewed and independently tested.
+
 ## [3.0.11] - 2026-07-17
 
 ### Fixed

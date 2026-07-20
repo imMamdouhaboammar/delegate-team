@@ -268,3 +268,24 @@ dt mmas stop <task_id>
 npm run version:check
 npm install --package-lock-only
 ```
+
+## ChatGPT Remote Agent boundary
+
+`dt remote` treats Remote Desktop Commander as the transport and ChatGPT as the acting agent. It does not install, register, or trust the MCP/app connection automatically. The user establishes that connection and approves its permissions first.
+
+`dt remote init` creates a canonical workspace boundary and a deny-by-default policy. The following capabilities are disabled unless explicitly enabled:
+
+- Dependency installation
+- File deletion
+- Git commits, push, and merge
+- Package publishing
+- Persistent system changes
+- Secret or credential-file access
+
+The generated `CHATGPT_REMOTE_AGENT.md` instructs ChatGPT to remain inside the approved root, read repository rules, run baseline and final tests, review diffs, and verify delegated work independently.
+
+Local session state and logs are ignored by the nested `.delegate-team/.gitignore`. Metadata and policy files are written atomically with private file permissions. Existing policy is preserved unless the user invokes initialization with `--force`.
+
+Agent discovery reads executable paths and bounded `--version` output only. It does not read auth files, environment-variable values, browser sessions, keychains, tokens, or API keys.
+
+The bootstrap prompt discloses the global `delegate-team` installation before running it. It does not use elevated privileges automatically and does not install additional coding-agent CLIs until the user selects them.

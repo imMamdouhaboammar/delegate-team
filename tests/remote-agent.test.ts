@@ -9,7 +9,8 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { discoverAgents } from '../src/remote/agents.js';
 import { getBootstrapPrompt } from '../src/remote/prompts.js';
 import {
@@ -18,6 +19,8 @@ import {
   readRemoteWorkspace,
 } from '../src/remote/workspace.js';
 
+const here = dirname(fileURLToPath(import.meta.url));
+const ROOT = join(here, '..');
 const tempRoots: string[] = [];
 
 function makeTempRoot(): string {
@@ -45,6 +48,16 @@ afterEach(() => {
   for (const root of tempRoots.splice(0)) {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+describe('README bootstrap synchronization', () => {
+  it('matches the shipped bootstrap template byte-for-byte', () => {
+    const readme = readFileSync(join(ROOT, 'README.md'), 'utf8');
+    const match = readme.match(/<!-- CHATGPT_REMOTE_BOOTSTRAP_PROMPT_START -->\n````text\n([\s\S]*?)\n````\n<!-- CHATGPT_REMOTE_BOOTSTRAP_PROMPT_END -->/);
+    expect(match?.[1].trimEnd()).toBe(getBootstrapPrompt());
+    expect(readme).toContain('npx @wonderwhy-er/desktop-commander@latest remote');
+    expect(readme).toContain('keep it running');
+  });
 });
 
 describe('ChatGPT remote bootstrap prompt', () => {

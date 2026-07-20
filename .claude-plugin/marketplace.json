@@ -6,7 +6,7 @@
     "name": "Mamdouh Aboammar",
     "email": "maintainers@delegate-team.dev"
   },
-  "version": "3.0.11",
+  "version": "3.1.0",
   "homepage": "https://github.com/imMamdouhaboammar/delegate-team",
   "repository": "https://github.com/imMamdouhaboammar/delegate-team",
   "license": "MIT",
@@ -20,18 +20,24 @@
   "plugins": [
     {
       "name": "delegate-team",
-      "version": "3.0.11",
+      "version": "3.1.0",
       "description": "Main Delegate Team plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team",
-      "tags": ["orchestrator", "default", "engineering"],
+      "tags": [
+        "orchestrator",
+        "default",
+        "engineering"
+      ],
       "source": "./",
       "strict": false,
-      "skills": ["./"]
+      "skills": [
+        "./"
+      ]
     },
     {
       "name": "dt",
-      "version": "3.0.11",
+      "version": "3.1.0",
       "description": "dt gateway CLI plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/src",
@@ -41,73 +47,87 @@
     },
     {
       "name": "delegate-team-orchestrator",
-      "version": "3.0.11",
+      "version": "3.1.0",
       "description": "Orchestrator plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/orchestrator",
       "source": "./orchestrator",
       "strict": false,
-      "skills": ["./"]
+      "skills": [
+        "./"
+      ]
     },
     {
       "name": "delegate-team-mmas",
-      "version": "3.0.11",
+      "version": "3.1.0",
       "description": "MMAS plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/mmas",
       "source": "./mmas",
       "strict": false,
-      "skills": ["./"]
+      "skills": [
+        "./"
+      ]
     },
     {
       "name": "delegate-team-scaffolder",
-      "version": "3.0.11",
+      "version": "3.1.0",
       "description": "Skill scaffolder plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/scaffolder",
       "source": "./scaffolder",
       "strict": false,
-      "skills": ["./"]
+      "skills": [
+        "./"
+      ]
     },
     {
       "name": "delegate-team-aonios-agent",
-      "version": "3.0.11",
+      "version": "3.1.0",
       "description": "Backend dispatcher plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/aonios-agent",
       "source": "./aonios-agent",
       "strict": false,
-      "skills": ["./"]
+      "skills": [
+        "./"
+      ]
     },
     {
       "name": "delegate-team-minimax-coder",
-      "version": "3.0.11",
+      "version": "3.1.0",
       "description": "MiniMax coder plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/minimax-coder",
       "source": "./minimax-coder",
       "strict": false,
-      "skills": ["./"]
+      "skills": [
+        "./"
+      ]
     },
     {
       "name": "delegate-team-vertex-coder",
-      "version": "3.0.11",
+      "version": "3.1.0",
       "description": "Vertex coder plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/vertex-coder",
       "source": "./vertex-coder",
       "strict": false,
-      "skills": ["./"]
+      "skills": [
+        "./"
+      ]
     },
     {
       "name": "delegate-team-agent-kernel",
-      "version": "3.0.11",
+      "version": "3.1.0",
       "description": "Agent kernel plugin.",
       "category": "development",
       "homepage": "https://github.com/imMamdouhaboammar/delegate-team/tree/master/agent-kernel",
       "source": "./agent-kernel",
       "strict": false,
-      "skills": ["./"]
+      "skills": [
+        "./"
+      ]
     }
   ]
 }

@@ -189,3 +189,28 @@ is already present.
 | Multi-agent runtime | [MMAS.md](./MMAS.md) |
 | Security model | [SECURITY-MODEL.md](./SECURITY-MODEL.md) |
 | Slash commands + per-workflow examples | [WORKFLOWS.md](./WORKFLOWS.md) |
+
+## ChatGPT Remote Agent control layer
+
+The Remote Agent control layer sits above the normal `dt` CLI and below the human-approved ChatGPT/Remote Desktop Commander connection.
+
+```text
+User connects Remote Desktop Commander to ChatGPT
+                    ↓
+ChatGPT runs the copy-ready bootstrap prompt
+                    ↓
+dt remote init creates workspace metadata + policy
+                    ↓
+ChatGPT works directly or calls dt delegate
+                    ↓
+ChatGPT reviews diffs and reruns verification
+```
+
+The layer has four focused components:
+
+- `src/remote/prompts.ts`: loads the shipped bootstrap prompt and generates project instructions.
+- `src/remote/workspace.ts`: canonicalizes the approved root and owns policy/metadata files.
+- `src/remote/agents.ts`: detects local coding-agent executables without reading credentials.
+- `src/commands/remote.ts`: exposes bootstrap, init, status, prompt, agents, and doctor commands.
+
+No daemon, webhook, listener, or public network port is introduced. Remote Desktop Commander remains the transport; delegate-team supplies orchestration, workspace boundaries, and agent delegation.
