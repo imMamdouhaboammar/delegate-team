@@ -12,12 +12,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Removed shell-enabled command execution from MiniMax tools and restricted integration installs to reviewed catalog commands.
 - Marked duplicate-content MD5 hashing as non-security use and disabled Flask debug mode in the example test server.
 - Removed a machine-specific absolute path from bundled documentation.
+- Added executable security contracts for private config modes (`0700` directories and `0600` files), configurable proxy request limits, loopback binding, and test-only proxy credentials that never touch the maintainer config.
+- Prevented raw router stderr and credential-shaped values from appearing in normal CLI output; opt-in `DT_DEBUG` diagnostics are redacted before printing.
 
 ### Changed
 - Standardized the supported runtime contract on Node.js 24 across package metadata, CI, quality gates, release verification, and documentation.
 - Added a Bandit high-severity CI gate and regression tests for workflow and Python security hardening.
 - Removed the stalled Codacy workflow after repeated multi-hour hangs; CodeQL, Defender, DevSkim, Bandit, Gitleaks, and package-integrity checks remain active.
 - Replaced the version-heavy package description with a stable product description.
+- Standardized public CLI exit codes for success, operational failure, usage errors, invalid configuration, and missing dependencies; documented the contract in packaged `DT.md`.
+- Added implementation plans that decompose the remaining P2/P3 architecture, coverage, documentation, and product roadmap into independently testable milestones.
 
 ## [3.1.0] - 2026-07-20
 
