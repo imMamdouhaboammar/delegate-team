@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, parse, resolve } from 'node:path';
+import { debugLog } from '../utils/debug.js';
 
 export interface RuntimePaths {
   workspaceRoot: string;
@@ -39,22 +40,30 @@ export function resolveRuntimeRoot({
 }: ResolveRuntimeRootOptions): string {
   if (override) {
     const resolvedOverride = resolve(override);
-    if (isDelegateTeamRoot(resolvedOverride)) return resolvedOverride;
+    if (isDelegateTeamRoot(resolvedOverride)) {
+      debugLog('runtime-paths', 'using DT_RUNTIME_ROOT override', { root: resolvedOverride });
+      return resolvedOverride;
+    }
 
     warn(
       `[dt] Ignoring DT_RUNTIME_ROOT because it does not point to a delegate-team package root: ${resolvedOverride}`,
     );
+    debugLog('runtime-paths', 'ignored invalid DT_RUNTIME_ROOT override', { root: resolvedOverride });
   }
 
   let current = resolve(startDir);
   const filesystemRoot = parse(current).root;
 
   while (true) {
-    if (isDelegateTeamRoot(current)) return current;
+    if (isDelegateTeamRoot(current)) {
+      debugLog('runtime-paths', 'resolved runtime root', { startDir, root: current });
+      return current;
+    }
     if (current === filesystemRoot) break;
     current = dirname(current);
   }
 
+  debugLog('runtime-paths', 'failed to resolve runtime root', { startDir: resolve(startDir) });
   throw new Error(
     `Unable to locate the delegate-team runtime root from ${resolve(startDir)}. ` +
       'Set DT_RUNTIME_ROOT to the installed delegate-team package root or reinstall delegate-team.',

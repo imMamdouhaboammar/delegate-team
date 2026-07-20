@@ -273,7 +273,19 @@ without cloud mutations.
 | Permission denied on `~/.local/bin` | bindir mode | use `mkdir -p ~/.local/bin && chmod 700 ~/.local/bin` |
 | `dt setup --yes` aborts with no project | non-interactive setup needs a project | add `--project <id>` |
 | `dt run` cannot find `relay.mjs` or `opencode-router.mjs` | broken npm artifact or old install | upgrade with `npm install -g delegate-team@latest` and run `dt run --dry-run "test"` |
+| Routing or runtime failure lacks enough detail | normal output intentionally hides raw diagnostics | rerun once with `DT_DEBUG=1 dt run --dry-run "test"`; review the redacted stderr before sharing it |
 | npm publish warning says lockfile drift | package version changed but lockfile was not regenerated | `npm install --package-lock-only` |
+
+### Safe debug mode
+
+Use debug mode only for a focused reproduction:
+
+```bash
+DT_DEBUG=1 dt run --dry-run "describe the failing task"
+DT_DEBUG=1 dt doctor --json
+```
+
+Diagnostics are written to stderr and redact common credential fields and token formats. Do not treat this as permission to paste complete logs publicly; inspect paths and project metadata first, then disable the variable after diagnosis.
 
 ---
 

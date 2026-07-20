@@ -8,6 +8,7 @@ const { fs, cp } = setupFsChildMocks();
 describe('Router Routing', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    delete process.env.DT_DEBUG;
     vi.spyOn(process, 'exit').mockImplementation((() => {}) as any);
     (fs.readFileSync as any).mockReturnValue('dummy brief content');
     (fs.existsSync as any).mockReturnValue(true);
@@ -86,7 +87,7 @@ describe('Router Routing', () => {
     const spawnSyncMock = cp.spawnSync as any;
     spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
       if (args.some((a: string) => a.includes('opencode-router.mjs'))) {
-        return { status: 1, stderr: 'error' };
+        return { status: 1, stderr: 'Authorization: Bearer router-secret-value' };
       }
       return { status: 0 };
     });
@@ -95,6 +96,25 @@ describe('Router Routing', () => {
 
     expect(output.logs.some((line) => line.includes('Router returned non-zero status') && line.includes('vertexcoder'))).toBe(true);
     expect(output.logs.some((line) => line.includes('Task completed successfully by [VERTEXCODER]'))).toBe(true);
-    expect(output.errors).toHaveLength(0);
+    expect(output.logs.join('\n')).not.toContain('router-secret-value');
+    expect(output.errors.join('\n')).not.toContain('router-secret-value');
+  });
+
+  it('emits redacted router diagnostics only when DT_DEBUG is enabled', () => {
+    process.env.DT_DEBUG = '1';
+    const output = captureConsole();
+    const spawnSyncMock = cp.spawnSync as any;
+    spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
+      if (args.some((a: string) => a.includes('opencode-router.mjs'))) {
+        return { status: 1, stderr: 'Authorization: Bearer router-secret-value' };
+      }
+      return { status: 0 };
+    });
+
+    runDispatch('task', {});
+
+    expect(output.errors.some((line) => line.includes('[DT_DEBUG][router]'))).toBe(true);
+    expect(output.errors.join('\n')).toContain('[REDACTED]');
+    expect(output.errors.join('\n')).not.toContain('router-secret-value');
   });
 });

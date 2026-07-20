@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { debugLog } from '../utils/debug.js';
 
 export type UserConfig = {
   project_id: string;
@@ -67,6 +68,7 @@ export type ReadUserConfigResult =
 
 export function readUserConfig(path: string = getUserConfigPath()): ReadUserConfigResult {
   if (!existsSync(path)) {
+    debugLog('config', 'user config is missing', { path });
     return { state: 'missing', path, issues: [] };
   }
 
@@ -75,11 +77,13 @@ export function readUserConfig(path: string = getUserConfigPath()): ReadUserConf
     parsed = JSON.parse(readFileSync(path, 'utf8'));
   } catch {
     const issues = [{ field: 'config', message: 'contains invalid JSON' }];
+    debugLog('config', 'user config contains invalid JSON', { path, issues });
     return { state: 'invalid', path, issues, error: formatUserConfigIssues(issues) };
   }
 
   const validation = validateUserConfig(parsed);
   if (!validation.ok) {
+    debugLog('config', 'user config failed validation', { path, issues: validation.issues });
     return {
       state: 'invalid',
       path,
@@ -88,5 +92,6 @@ export function readUserConfig(path: string = getUserConfigPath()): ReadUserConf
     };
   }
 
+  debugLog('config', 'user config is valid', { path });
   return { state: 'valid', path, config: validation.config, issues: [] };
 }

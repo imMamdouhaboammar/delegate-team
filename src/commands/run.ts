@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { C } from '../utils/index.js';
 import { ExitCode } from '../utils/exit-codes.js';
+import { debugLog } from '../utils/debug.js';
 import { FALLBACK_RING } from '../fallback/ring.js';
 import { NeuralMesh } from '../neural/mesh.js';
 import { emitSynapse } from '../neural/trace-bus.js';
@@ -133,12 +134,20 @@ ${rawPrompt}
         routeReason = `router status ${routerProc.status ?? 'unknown'}`;
         const stderr = routerProc.stderr?.trim();
         console.log(`Router returned non-zero status, defaulting to: ${C.bold}${C.green}vertexcoder${C.reset}`);
-        if (stderr) console.log(`${C.dim}Router stderr: ${stderr}${C.reset}`);
+        debugLog('router', 'router returned non-zero status', {
+          status: routerProc.status ?? 'unknown',
+          stderr,
+          selectedBackend: backend,
+        });
       }
     } catch (err: any) {
       backend = "vertexcoder";
       routeReason = `router exception: ${err?.message || String(err)}`;
       console.log(`Router evaluation failed, defaulting to: ${C.bold}${C.green}vertexcoder${C.reset}`);
+      debugLog('router', 'router evaluation failed', {
+        error: err,
+        selectedBackend: backend,
+      });
     }
     
     if (!backend) {
@@ -156,6 +165,13 @@ ${rawPrompt}
   }
 
   const plannedChain = forceMmas ? ["mmas"] : (forceMetagpt ? ["metagpt"] : [backend as string, ...resolveFallbackChain(backend as string)]);
+
+  debugLog('dispatch', 'resolved route', {
+    backend,
+    routeReason,
+    plannedChain,
+    briefFile,
+  });
 
   // Fire a ROUTES_TO synapse from the dispatcher so the neural trace records
   // the primary routing decision in one connected bus.

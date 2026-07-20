@@ -106,7 +106,13 @@ To opt in:
 export DT_ENABLE_MCP=true
 ```
 
-### 7. Dynamic authentication
+### 7. Safe debug diagnostics
+
+Runtime diagnostics are disabled by default. Set `DT_DEBUG=1` or `DT_DEBUG=true` to emit path, routing, fallback, and config-state details to stderr with a stable `[DT_DEBUG][scope]` prefix.
+
+Debug output redacts Bearer tokens, authorization values, API keys, proxy tokens, passwords, secrets, and nested credential fields. Raw router stderr is debug-only and never appears in normal CLI output. Review debug logs before sharing them because project paths and non-secret environment context may still be operationally sensitive.
+
+### 8. Dynamic authentication
 
 `dt` avoids hardcoded keys in committed files. It uses dynamic CLI auth and
 caches local config at `~/.config/dt/config.json` with `0600` permissions.
