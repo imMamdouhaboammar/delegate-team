@@ -11,6 +11,34 @@
 
 </div>
 
+<!-- project-story:start -->
+<details open>
+  <summary><strong>Why I built Delegate Team</strong></summary>
+  <br />
+  <table>
+    <tr>
+      <td width="118" align="center" valign="top">
+        <img src="./assets/readme/project-mark.svg" width="88" alt="Delegate Team repository mark" />
+      </td>
+      <td valign="top">
+        <p><strong>What is Delegate Team?</strong> A CLI that routes coding tasks through selected local agent workflows and optional governance checks.</p>
+        <p><strong>Built from a recurring problem:</strong> One chat or one coding agent is often treated as the entire team, even when research, implementation, review, and verification need different workflows.</p>
+        <p><strong>Practical goal:</strong> Route bounded tasks to the right local coding agents while keeping permissions, evidence, and final judgment explicit.</p>
+        <p><strong>Who it is for:</strong> Developers coordinating ChatGPT Web, Codex, Claude Code, Gemini CLI, OpenCode, and other local coding CLIs.</p>
+        <p><strong>Topics:</strong> multi-agent coding orchestration · coding task delegation · local AI agent CLI · agent workflow routing</p>
+      </td>
+    </tr>
+  </table>
+  <p><strong>Daily development summary</strong></p>
+  <ul>
+      <li>1 commit landed: Add Semgrep CI.</li>
+      <li>Daily summary covers 1 public activity item from the last 1 day.</li>
+      <li>Documentation and project status remain aligned with the repository’s current public state.</li>
+  </ul>
+  <p><sub>Updated 2026-07-26T06:35:03.623Z · Deterministic public-activity summary</sub></p>
+</details>
+<!-- project-story:end -->
+
 > **One CLI. One orchestrator. One optional memory + governance layer.**
 > Pick what you need, skip the rest.
 

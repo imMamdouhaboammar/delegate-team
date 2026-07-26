@@ -1,0 +1,17 @@
+name: Daily README story card
+
+on:
+  schedule:
+    - cron: "15 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: read
+  pull-requests: read
+
+jobs:
+  update:
+    uses: imMamdouhaboammar/imMamdouhaboammar/.github/workflows/update-project-story-card.yml@main
+    secrets:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
