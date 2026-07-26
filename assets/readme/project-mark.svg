@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-labelledby="title desc">
+  <title id="title">delegate-team repository mark</title>
+  <desc id="desc">Rounded dark repository mark with DT initials.</desc>
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#111827"/><stop offset="1" stop-color="#020617"/></linearGradient></defs>
+  <rect x="4" y="4" width="112" height="112" rx="28" fill="url(#g)" stroke="#7C3AED" stroke-width="5"/>
+  <circle cx="91" cy="29" r="9" fill="#7C3AED" opacity=".9"/>
+  <text x="60" y="72" text-anchor="middle" fill="#F8FAFC" font-family="ui-sans-serif,system-ui,-apple-system,sans-serif" font-size="38" font-weight="800" letter-spacing="-2">DT</text>
+</svg>
