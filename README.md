@@ -13,29 +13,31 @@
 
 <!-- project-story:start -->
 <details open>
-  <summary><strong>Why I built Delegate Team</strong></summary>
+  <summary><strong>Problem to project: Why I built Delegate Team</strong></summary>
   <br />
+  <p align="center"><img src="https://raw.githubusercontent.com/imMamdouhaboammar/imMamdouhaboammar/main/assets/profile/project-badges.svg" width="488" alt="Real friction, building in public, daily pulse" /></p>
   <table>
     <tr>
-      <td width="118" align="center" valign="top">
-        <img src="./assets/readme/project-mark.svg" width="88" alt="Delegate Team repository mark" />
-      </td>
-      <td valign="top">
-        <p><strong>What is Delegate Team?</strong> A CLI that routes coding tasks through selected local agent workflows and optional governance checks.</p>
-        <p><strong>Built from a recurring problem:</strong> One chat or one coding agent is often treated as the entire team, even when research, implementation, review, and verification need different workflows.</p>
-        <p><strong>Practical goal:</strong> Route bounded tasks to the right local coding agents while keeping permissions, evidence, and final judgment explicit.</p>
-        <p><strong>Who it is for:</strong> Developers coordinating ChatGPT Web, Codex, Claude Code, Gemini CLI, OpenCode, and other local coding CLIs.</p>
-        <p><strong>Topics:</strong> multi-agent coding orchestration · coding task delegation · local AI agent CLI · agent workflow routing</p>
-      </td>
+      <td width="104" align="center" valign="middle"><img src="./assets/readme/project-mark.svg" width="76" alt="Delegate Team repository mark" /></td>
+      <td valign="middle"><strong>Delegate Team</strong><br />A CLI that routes coding tasks through selected local agent workflows and optional governance checks.</td>
     </tr>
   </table>
-  <p><strong>Daily development summary</strong></p>
+  <table>
+    <tr>
+      <td width="50%" valign="top"><strong>Recurring problem</strong><br />One chat or one coding agent is often treated as the entire team, even when research, implementation, review, and verification need different workflows.</td>
+      <td width="50%" valign="top"><strong>Practical goal</strong><br />Route bounded tasks to the right local coding agents while keeping permissions, evidence, and final judgment explicit.</td>
+    </tr>
+    <tr>
+      <td width="50%" valign="top"><strong>Built for</strong><br />Developers coordinating ChatGPT Web, Codex, Claude Code, Gemini CLI, OpenCode, and other local coding CLIs.</td>
+      <td width="50%" valign="top"><strong>Search terms</strong><br />multi-agent coding orchestration · coding task delegation · local AI agent CLI · agent workflow routing</td>
+    </tr>
+  </table>
+  <p><strong>Daily build pulse</strong></p>
   <ul>
-      <li>1 commit landed: Add Semgrep CI.</li>
-      <li>Daily summary covers 1 public activity item from the last 1 day.</li>
-      <li>Documentation and project status remain aligned with the repository’s current public state.</li>
+      <li>3 commits landed: ci: refresh minimal story card after workflow changes; docs: add dynamic project story card.</li>
+      <li>1 pull request updated, led by #21: docs: add dynamic project story card.</li>
+      <li>Daily summary covers 4 public activity items from the last 1 day.</li>
   </ul>
-  <p><sub>Updated 2026-07-26T06:35:03.623Z · Deterministic public-activity summary</sub></p>
 </details>
 <!-- project-story:end -->
 
