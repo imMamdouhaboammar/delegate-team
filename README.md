@@ -34,10 +34,10 @@
   </table>
   <p><strong>Daily build pulse</strong></p>
   <ul>
-      <li>4 commits landed: ci: refresh minimal story card after workflow changes; docs: add dynamic project story card.</li>
-      <li>2 pull requests updated, led by #21: docs: add dynamic project story card.</li>
+      <li>3 commits landed: ci: refresh minimal story card after workflow changes; docs: add dynamic project story card.</li>
+      <li>1 pull request updated, led by #21: docs: add dynamic project story card.</li>
       <li>1 issue changed, including #22: 📅 Weekly AI Health Report — 2026-07-26.</li>
-      <li>Daily summary covers 7 public activity items from the last 7 days.</li>
+      <li>Daily summary covers 5 public activity items from the last 7 days.</li>
   </ul>
 </details>
 <!-- project-story:end -->
