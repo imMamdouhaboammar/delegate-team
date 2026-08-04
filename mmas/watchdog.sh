@@ -1,26 +1,11 @@
 #!/usr/bin/env bash
 # watchdog.sh — MMAS boss loop
-#
-# Polls each running agent every $INTERVAL seconds. Determines state from:
-#   1. PID alive check (kill -0)
-#   2. Log file activity (mtime vs now)
-#   3. Process exit code (if PID is dead)
-#
-# Sends aggregated status report to the boss (Apeiron) via apeiron communication send.
-# Detects idle agents (>5 min no log activity) and injects "continue" prompt.
-# When all agents complete, sends final report and exits.
-#
-# Usage:
-#   bash watchdog.sh <task_id> <boss_session_id> [--interval N]
-#
-# Example:
-#   bash watchdog.sh task-20260630-abc123 mvs_5d01... --interval 30
 
 set -euo pipefail
 
-# ---------------------------------------------------------------------------
-# Args
-# ---------------------------------------------------------------------------
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=watchdog-status.sh
+source "$SCRIPT_DIR/watchdog-status.sh"
 
 TASK_ID="${1:-}"
 BOSS_SESSION="${2:-}"
@@ -42,20 +27,11 @@ fi
 TASK_DIR="$HOME/.apeiron/multi-agent/tasks/$TASK_ID"
 BOULDER="$TASK_DIR/boulder.json"
 WATCHDOG_LOG="$TASK_DIR/watchdog.log"
-IDLE_THRESHOLD_SEC=300   # 5 min idle = stuck
-LOG_ACTIVITY_THRESHOLD_SEC=120  # 2 min no log write = suspicious
-
-# ---------------------------------------------------------------------------
-# Logging helper
-# ---------------------------------------------------------------------------
+IDLE_THRESHOLD_SEC=300
 
 log() {
   echo "[$(date -u +%H:%M:%S)] $*" | tee -a "$WATCHDOG_LOG" >&2
 }
-
-# ---------------------------------------------------------------------------
-# State detection helpers
-# ---------------------------------------------------------------------------
 
 is_pid_alive() {
   local pid="$1"
@@ -65,10 +41,9 @@ is_pid_alive() {
 log_last_modified_seconds_ago() {
   local log_file="$1"
   if [[ ! -f "$log_file" ]]; then
-    echo "999999"  # no log = treat as infinitely stale
+    echo "999999"
     return
   fi
-
   local now mtime
   now=$(date +%s)
 
@@ -90,14 +65,8 @@ log_last_modified_seconds_ago() {
   echo "$age"
 }
 
-# ---------------------------------------------------------------------------
-# Send report to boss
-# ---------------------------------------------------------------------------
-
 send_to_boss() {
   local content="$1"
-  # Note: --from arg requires valid session format (ses_* or mvs_*).
-  # Watchdog runs detached so we use boss_session as both from/to (acting on behalf of boss).
   apeiron communication send \
     --from "$BOSS_SESSION" \
     --to "$BOSS_SESSION" \
@@ -106,101 +75,11 @@ send_to_boss() {
     2>>"$WATCHDOG_LOG" || log "WARNING: failed to send to boss $BOSS_SESSION"
 }
 
-# ---------------------------------------------------------------------------
-# Status rendering
-# ---------------------------------------------------------------------------
-
-render_status() {
-  local icon status_line all_done=true any_stuck=false
-
-  status_line="🐕 [MMAS watchdog $TASK_ID @ $(date -u +%H:%M:%S)]"
-
-  for agent in $(jq -r '.agents[].name' "$BOULDER"); do
-    local pid log_file status
-    pid=$(jq -r ".agents[] | select(.name == \"$agent\") | .pid" "$BOULDER")
-    log_file=$(jq -r ".agents[] | select(.name == \"$agent\") | .log_file" "$BOULDER")
-    status=$(jq -r ".agents[] | select(.name == \"$agent\") | .status" "$BOULDER")
-
-    local icon="🔧"
-    case "$status" in
-      done) icon="✅" ;;
-      error) icon="❌" ;;
-      stuck|idle) icon="🟡" ;;
-      spawn_failed) icon="💥" ;;
-    esac
-
-    if [[ "$status" != "done" ]]; then
-      all_done=false
-    fi
-    if [[ "$status" == "stuck" || "$status" == "error" ]]; then
-      any_stuck=true
-    fi
-
-    status_line="$status_line $icon $agent"
-  done
-
-  echo "$status_line"
-  echo "$all_done"
-  echo "$any_stuck"
-}
-
-# ---------------------------------------------------------------------------
-# Update single agent state
-# ---------------------------------------------------------------------------
-
-update_agent_state() {
-  local agent_name="$1"
-  local pid log_file status
-  pid=$(jq -r ".agents[] | select(.name == \"$agent_name\") | .pid" "$BOULDER")
-  log_file=$(jq -r ".agents[] | select(.name == \"$agent_name\") | .log_file" "$BOULDER")
-  status=$(jq -r ".agents[] | select(.name == \"$agent_name\") | .status" "$BOULDER")
-
-  # Skip if already done or errored
-  if [[ "$status" == "done" || "$status" == "error" || "$status" == "spawn_failed" ]]; then
-    return
-  fi
-
-  # Check if process is alive
-  if ! is_pid_alive "$pid"; then
-    # Process died — mark done (or error if log indicates failure)
-    local write_mode
-    write_mode=$(jq -r '.guardrails.writeMode // "workspace"' "$BOULDER")
-    if [[ "$write_mode" == "none" ]]; then
-      set_agent_status "$agent_name" "done"
-    elif [[ -f "${log_file%.log}.summary" ]]; then
-      set_agent_status "$agent_name" "done"
-    else
-      set_agent_status "$agent_name" "error"
-    fi
-    return
-  fi
-
-  # Check log activity
-  local last_mod
-  last_mod=$(log_last_modified_seconds_ago "$log_file")
-  if [[ $last_mod -gt $IDLE_THRESHOLD_SEC ]]; then
-    # Idle > 5 min — mark stuck (Todo Enforcer pattern)
-    set_agent_status "$agent_name" "stuck"
-    # Inject continue prompt
-    local summary_file="${log_file%.log}.summary"
-    if [[ -f "$summary_file" ]]; then
-      log "Agent $agent_name is stuck but has summary — marking done"
-      set_agent_status "$agent_name" "done"
-    else
-      log "Agent $agent_name stuck for ${last_mod}s — needs nudge"
-    fi
-  else
-    # Active recently
-    set_agent_status "$agent_name" "running"
-  fi
-}
-
 set_agent_status() {
   local agent_name="$1"
   local new_status="$2"
-  local now
+  local now tmp
   now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-  local tmp
   tmp=$(mktemp)
   jq --arg name "$agent_name" --arg status "$new_status" --arg now "$now" \
     '(.agents[] | select(.name == $name)) |= (.status = $status | .last_activity = $now)' \
@@ -214,62 +93,83 @@ set_agent_status() {
   fi
 }
 
-# ---------------------------------------------------------------------------
-# Main loop
-# ---------------------------------------------------------------------------
+update_agent_state() {
+  local agent_name="$1"
+  local pid log_file status
+  pid=$(jq -r --arg name "$agent_name" '.agents[] | select(.name == $name) | .pid' "$BOULDER")
+  log_file=$(jq -r --arg name "$agent_name" '.agents[] | select(.name == $name) | .log_file' "$BOULDER")
+  status=$(jq -r --arg name "$agent_name" '.agents[] | select(.name == $name) | .status' "$BOULDER")
+
+  if [[ "$status" == "done" || "$status" == "error" || "$status" == "spawn_failed" ]]; then
+    return
+  fi
+
+  if ! is_pid_alive "$pid"; then
+    local write_mode
+    write_mode=$(jq -r '.guardrails.writeMode // "workspace"' "$BOULDER")
+    if [[ "$write_mode" == "none" || -f "${log_file%.log}.summary" ]]; then
+      set_agent_status "$agent_name" "done"
+    else
+      set_agent_status "$agent_name" "error"
+    fi
+    return
+  fi
+
+  local last_mod
+  last_mod=$(log_last_modified_seconds_ago "$log_file")
+  if [[ $last_mod -gt $IDLE_THRESHOLD_SEC ]]; then
+    set_agent_status "$agent_name" "stuck"
+    local summary_file="${log_file%.log}.summary"
+    if [[ -f "$summary_file" ]]; then
+      log "Agent $agent_name is stuck but has summary — marking done"
+      set_agent_status "$agent_name" "done"
+    else
+      log "Agent $agent_name stuck for ${last_mod}s — needs nudge"
+    fi
+  else
+    set_agent_status "$agent_name" "running"
+  fi
+}
 
 log "Watchdog started for task $TASK_ID, interval=${INTERVAL}s, boss=$BOSS_SESSION"
-
 send_to_boss "🐕 [MMAS watchdog started for task $TASK_ID — monitoring every ${INTERVAL}s]"
 
 TICK=0
 while true; do
   TICK=$((TICK + 1))
   sleep "$INTERVAL"
-
   log "Tick $TICK"
 
-  # Update each agent's state
-  for agent in $(jq -r '.agents[].name' "$BOULDER"); do
+  while IFS= read -r agent; do
     update_agent_state "$agent"
-  done
+  done < <(jq -r '.agents[].name' "$BOULDER")
 
-  # Render status
-  read -r status_line all_done any_stuck <<< "$(render_status)"
+  IFS=$'\t' read -r status_line all_done any_stuck <<< "$(render_watchdog_status "$BOULDER" "$TASK_ID")"
   log "$status_line"
-
-  # Send status to boss every tick (or first 3 ticks only to avoid spam — let's send every tick)
   send_to_boss "$status_line"
 
-  # If all done, send final report and exit
   if [[ "$all_done" == "true" ]]; then
     log "All agents done. Sending final report."
-
-    # Compose final summary from each agent's summary file
     FINAL_REPORT="✅ [MMAS task $TASK_ID COMPLETE]\n\n"
     FINAL_REPORT+="Original task: $(jq -r '.task' "$BOULDER")\n\n"
     FINAL_REPORT+="Agent summaries:\n"
 
-    for agent in $(jq -r '.agents[].name' "$BOULDER"); do
-      summary_file=$(jq -r ".agents[] | select(.name == \"$agent\") | .summary_file" "$BOULDER")
+    while IFS=$'\t' read -r agent summary_file; do
       FINAL_REPORT+="\n--- $agent ---\n"
       if [[ -f "$summary_file" ]]; then
         FINAL_REPORT+="$(cat "$summary_file")\n"
       else
         FINAL_REPORT+="(no summary file)\n"
       fi
-    done
+    done < <(jq -r '.agents[] | [.name, .summary_file] | @tsv' "$BOULDER")
 
     send_to_boss "$FINAL_REPORT"
-
-    # Update boulder status
     tmp=$(mktemp)
     jq '.status = "complete"' "$BOULDER" > "$tmp" && mv "$tmp" "$BOULDER"
     log "Watchdog exiting. Task complete."
     exit 0
   fi
 
-  # Safety: exit if watchdog has been running too long (2 hours)
   if [[ $TICK -gt $(( 7200 / INTERVAL )) ]]; then
     log "Watchdog timeout (2h). Sending timeout report."
     send_to_boss "⏰ [MMAS task $TASK_ID TIMED OUT after 2h of monitoring]"
