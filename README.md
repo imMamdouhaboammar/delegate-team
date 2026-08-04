@@ -35,7 +35,7 @@
   <p><strong>Daily build pulse</strong></p>
   <ul>
       <li>1 issue changed, including #23: 📅 Weekly AI Health Report — 2026-08-02.</li>
-      <li>Daily summary covers 1 public activity item from the last 1 day.</li>
+      <li>Daily summary covers 1 public activity item from the last 7 days.</li>
       <li>Documentation and project status remain aligned with the repository’s current public state.</li>
   </ul>
 </details>
