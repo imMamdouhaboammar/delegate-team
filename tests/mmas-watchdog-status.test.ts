@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, test } from 'vitest';
@@ -9,23 +9,31 @@ interface AgentFixture {
   status: string;
 }
 
-function renderStatus(agents: AgentFixture[]): [string, string, string] {
+function runRenderer(payload: unknown): string {
   const directory = mkdtempSync(join(tmpdir(), 'delegate-team-watchdog-'));
   const boulder = join(directory, 'boulder.json');
-  writeFileSync(boulder, JSON.stringify({ agents }));
 
-  const script = [
-    'set -euo pipefail',
-    'source mmas/watchdog-status.sh',
-    `render_watchdog_status ${JSON.stringify(boulder)} task-test`,
-  ].join('\n');
+  try {
+    writeFileSync(boulder, JSON.stringify(payload));
 
-  const output = execFileSync('bash', ['-c', script], {
-    cwd: process.cwd(),
-    encoding: 'utf8',
-  }).trimEnd();
+    const script = [
+      'set -euo pipefail',
+      'source mmas/watchdog-status.sh',
+      `render_watchdog_status ${JSON.stringify(boulder)} task-test`,
+    ].join('\n');
 
-  const fields = output.split('\t');
+    return execFileSync('bash', ['-c', script], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trimEnd();
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+}
+
+function renderStatus(agents: AgentFixture[]): [string, string, string] {
+  const fields = runRenderer({ agents }).split('\t');
   expect(fields).toHaveLength(3);
   return fields as [string, string, string];
 }
@@ -66,5 +74,13 @@ describe('MMAS watchdog status rendering', () => {
     expect(statusLine).toContain('test agent');
     expect(renderedAllDone).toBe(allDone);
     expect(renderedAnyStuck).toBe(anyStuck);
+  });
+
+  test.each([
+    ['missing agents', {}],
+    ['empty agents', { agents: [] }],
+    ['non-string agent status', { agents: [{ name: 'test agent', status: null }] }],
+  ])('fails closed for %s', (_name, payload) => {
+    expect(() => runRenderer(payload)).toThrow();
   });
 });
