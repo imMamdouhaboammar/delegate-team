@@ -35,8 +35,8 @@
   <p><strong>Daily build pulse</strong></p>
   <ul>
       <li>1 pull request updated, led by #31: fix(mmas): parse watchdog completion state reliably.</li>
-      <li>7 issues changed, including #30: test: add a WSL compatibility smoke check for path and shell assumptions.</li>
-      <li>Daily summary covers 8 public activity items from the last 1 day.</li>
+      <li>Daily summary covers 1 public activity item from the last 1 day.</li>
+      <li>Documentation and project status remain aligned with the repository’s current public state.</li>
   </ul>
 </details>
 <!-- project-story:end -->
