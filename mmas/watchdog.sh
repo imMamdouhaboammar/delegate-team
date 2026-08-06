@@ -95,9 +95,10 @@ set_agent_status() {
 
 update_agent_state() {
   local agent_name="$1"
-  local pid log_file status
+  local pid log_file summary_file status
   pid=$(jq -r --arg name "$agent_name" '.agents[] | select(.name == $name) | .pid' "$BOULDER")
   log_file=$(jq -r --arg name "$agent_name" '.agents[] | select(.name == $name) | .log_file' "$BOULDER")
+  summary_file=$(jq -r --arg name "$agent_name" '.agents[] | select(.name == $name) | (.summary_file // empty)' "$BOULDER")
   status=$(jq -r --arg name "$agent_name" '.agents[] | select(.name == $name) | .status' "$BOULDER")
 
   if [[ "$status" == "done" || "$status" == "error" || "$status" == "spawn_failed" ]]; then
@@ -107,7 +108,7 @@ update_agent_state() {
   if ! is_pid_alive "$pid"; then
     local write_mode
     write_mode=$(jq -r '.guardrails.writeMode // "workspace"' "$BOULDER")
-    if [[ "$write_mode" == "none" || -f "${log_file%.log}.summary" ]]; then
+    if [[ "$write_mode" == "none" || ( -n "$summary_file" && -f "$summary_file" ) ]]; then
       set_agent_status "$agent_name" "done"
     else
       set_agent_status "$agent_name" "error"
@@ -119,8 +120,7 @@ update_agent_state() {
   last_mod=$(log_last_modified_seconds_ago "$log_file")
   if [[ $last_mod -gt $IDLE_THRESHOLD_SEC ]]; then
     set_agent_status "$agent_name" "stuck"
-    local summary_file="${log_file%.log}.summary"
-    if [[ -f "$summary_file" ]]; then
+    if [[ -n "$summary_file" && -f "$summary_file" ]]; then
       log "Agent $agent_name is stuck but has summary — marking done"
       set_agent_status "$agent_name" "done"
     else
