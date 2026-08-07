@@ -17,15 +17,13 @@ function checkoutCredentialSettings(source: string): boolean[] {
     const line = lines[index];
     if (!line.includes('uses: actions/checkout@')) continue;
 
-    const checkoutIndent = line.search(/\S/);
     let persistCredentialsDisabled = false;
 
     for (let cursor = index + 1; cursor < lines.length; cursor += 1) {
       const nextLine = lines[cursor];
       if (!nextLine.trim()) continue;
 
-      const nextIndent = nextLine.search(/\S/);
-      if (nextIndent <= checkoutIndent) break;
+      if (/^\s*-\s+(?:name|uses|run):/.test(nextLine)) break;
 
       if (nextLine.trim() === 'persist-credentials: false') {
         persistCredentialsDisabled = true;
