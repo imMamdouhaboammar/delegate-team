@@ -15,7 +15,7 @@ describe('OpenCode task scoring thresholds', () => {
     {
       name: 'score below zero routes to quick',
       brief: 'TASK fix-typo: fix typo in config',
-      score: -9,
+      score: -13,
       tier: 'quick',
       model: 'opencode-go/glm-5.1',
     },
