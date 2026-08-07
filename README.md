@@ -34,9 +34,9 @@
   </table>
   <p><strong>Daily build pulse</strong></p>
   <ul>
-      <li>1 pull request updated, led by #31: fix(mmas): parse watchdog completion state reliably.</li>
-      <li>Daily summary covers 1 public activity item from the last 1 day.</li>
-      <li>Documentation and project status remain aligned with the repository’s current public state.</li>
+      <li>4 pull requests updated, led by #36: docs: add contributor onboarding guide.</li>
+      <li>4 issues changed, including #35: test(proxy): isolate security tests from live provider network calls.</li>
+      <li>Daily summary covers 8 public activity items from the last 1 day.</li>
   </ul>
 </details>
 <!-- project-story:end -->
