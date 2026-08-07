@@ -9,6 +9,35 @@ const workflow = (name: string) => readFileSync(
   'utf8',
 );
 
+function checkoutCredentialSettings(source: string): boolean[] {
+  const lines = source.split('\n');
+  const settings: boolean[] = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (!line.includes('uses: actions/checkout@')) continue;
+
+    const checkoutIndent = line.search(/\S/);
+    let persistCredentialsDisabled = false;
+
+    for (let cursor = index + 1; cursor < lines.length; cursor += 1) {
+      const nextLine = lines[cursor];
+      if (!nextLine.trim()) continue;
+
+      const nextIndent = nextLine.search(/\S/);
+      if (nextIndent <= checkoutIndent) break;
+
+      if (nextLine.trim() === 'persist-credentials: false') {
+        persistCredentialsDisabled = true;
+      }
+    }
+
+    settings.push(persistCredentialsDisabled);
+  }
+
+  return settings;
+}
+
 describe('GitHub workflow hardening', () => {
   it('keeps every workflow valid UTF-8 without a BOM', () => {
     for (const name of [
@@ -41,6 +70,25 @@ describe('GitHub workflow hardening', () => {
     expect(workflow('devskim.yml')).toContain(
       'permissions:\n  contents: read\n\njobs:',
     );
+  });
+
+  it('does not persist checkout credentials in read-only PR validation workflows', () => {
+    for (const name of [
+      'ci.yml',
+      'codeql.yml',
+      'defender-for-devops.yml',
+      'dependency-review.yml',
+      'devskim.yml',
+      'npm-pack-integrity.yml',
+      'quality-gate.yml',
+      'secret-scan.yml',
+      'semgrep.yml',
+      'snyk-security.yml',
+    ]) {
+      const settings = checkoutCredentialSettings(workflow(name));
+      expect(settings.length, `${name} must contain a checkout step`).toBeGreaterThan(0);
+      expect(settings, `${name} must disable persisted checkout credentials`).not.toContain(false);
+    }
   });
 
   it('does not upload SARIF from untrusted fork pull requests', () => {
