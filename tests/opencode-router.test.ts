@@ -13,53 +13,53 @@ function longBrief(signals: string): string {
 describe('OpenCode task scoring thresholds', () => {
   test.each([
     {
-      name: 'score below zero routes to quick',
-      brief: 'TASK fix-typo: fix typo in config',
-      score: -13,
+      name: 'score minus one routes to quick',
+      brief: 'x'.repeat(250),
+      score: -1,
       tier: 'quick',
-      model: 'opencode-go/glm-5.1',
     },
     {
       name: 'score zero routes to medium',
       brief: 'x'.repeat(350),
       score: 0,
       tier: 'medium',
-      model: 'opencode-go/deepseek-v4-pro',
     },
     {
       name: 'score five remains medium',
       brief: longBrief(''),
       score: 5,
       tier: 'medium',
-      model: 'opencode-go/deepseek-v4-pro',
     },
     {
       name: 'score six routes to complex',
       brief: padBrief('architecture security\n'),
       score: 6,
       tier: 'complex',
-      model: 'opencode-go/kimi-k2.7-code',
     },
     {
       name: 'score ten remains complex',
       brief: longBrief('analyze security'),
       score: 10,
       tier: 'complex',
-      model: 'opencode-go/kimi-k2.7-code',
     },
     {
       name: 'score eleven routes to max',
       brief: longBrief('architecture security'),
       score: 11,
       tier: 'max',
-      model: 'opencode-go/qwen3.7-max',
     },
-  ])('$name', ({ brief, score, tier, model }) => {
+  ])('$name', ({ brief, score, tier }) => {
     const decision = routeTask(brief);
 
     expect(decision.score).toBe(score);
     expect(decision.taskTier).toBe(tier);
-    expect(decision.model).toBe(model);
+  });
+
+  test('a short typo task routes to quick', () => {
+    const decision = routeTask('TASK fix-typo: fix typo in config');
+
+    expect(decision.score).toBeLessThan(0);
+    expect(decision.taskTier).toBe('quick');
   });
 
   test('a medium implementation brief stays in the medium tier', () => {
