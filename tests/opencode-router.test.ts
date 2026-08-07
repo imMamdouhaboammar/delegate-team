@@ -64,7 +64,7 @@ describe('OpenCode task scoring thresholds', () => {
 
   test('a medium implementation brief stays in the medium tier', () => {
     const brief = padBrief([
-      'TASK implement-health: Implement health endpoint',
+      'TASK add-health: Add health endpoint',
       'FILES:',
       '  src/health.ts',
       '  src/server.ts',
