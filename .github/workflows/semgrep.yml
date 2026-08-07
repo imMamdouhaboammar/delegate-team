@@ -23,4 +23,6 @@ jobs:
       image: semgrep/semgrep
     steps:
     - uses: actions/checkout@v6
+      with:
+        persist-credentials: false
     - run: semgrep ci
