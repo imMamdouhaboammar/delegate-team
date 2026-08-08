@@ -34,9 +34,9 @@
   </table>
   <p><strong>Daily build pulse</strong></p>
   <ul>
-      <li>4 pull requests updated, led by #36: docs: add contributor onboarding guide.</li>
+      <li>5 pull requests updated, led by #34: security(ci): disable persisted checkout credentials.</li>
       <li>4 issues changed, including #35: test(proxy): isolate security tests from live provider network calls.</li>
-      <li>Daily summary covers 8 public activity items from the last 1 day.</li>
+      <li>Daily summary covers 9 public activity items from the last 1 day.</li>
   </ul>
 </details>
 <!-- project-story:end -->
