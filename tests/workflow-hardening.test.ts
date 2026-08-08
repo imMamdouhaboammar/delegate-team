@@ -33,6 +33,7 @@ function checkoutCredentialSettings(source: string): boolean[] {
       if (!nextLine.trim()) continue;
 
       const nextIndent = indentation(nextLine);
+      if (nextIndent < stepIndent) break;
       if (nextIndent === stepIndent && /^\s*-\s+/.test(nextLine)) break;
 
       if (nextIndent === propertyIndent && nextLine.trim() === 'with:') {
@@ -46,7 +47,7 @@ function checkoutCredentialSettings(source: string): boolean[] {
 
       if (
         withIndent !== null
-        && nextIndent > withIndent
+        && nextIndent === withIndent + 2
         && nextLine.trim() === 'persist-credentials: false'
       ) {
         persistCredentialsDisabled = true;
@@ -93,12 +94,29 @@ describe('GitHub workflow hardening', () => {
     );
   });
 
-  it('only accepts persist-credentials under the checkout with mapping', () => {
+  it('only accepts the direct checkout persist-credentials input', () => {
     expect(checkoutCredentialSettings([
       'steps:',
       '  - uses: actions/checkout@v4',
       '    env:',
       '      persist-credentials: false',
+    ].join('\n'))).toEqual([false]);
+
+    expect(checkoutCredentialSettings([
+      'steps:',
+      '  - uses: actions/checkout@v4',
+      '    with:',
+      '      token:',
+      '        persist-credentials: false',
+    ].join('\n'))).toEqual([false]);
+
+    expect(checkoutCredentialSettings([
+      'jobs:',
+      '  build:',
+      '    steps:',
+      '      - uses: actions/checkout@v4',
+      '  later:',
+      '    persist-credentials: false',
     ].join('\n'))).toEqual([false]);
 
     expect(checkoutCredentialSettings([
