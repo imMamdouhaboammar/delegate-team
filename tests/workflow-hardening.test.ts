@@ -9,6 +9,10 @@ const workflow = (name: string) => readFileSync(
   'utf8',
 );
 
+function indentation(line: string): number {
+  return line.match(/^\s*/)?.[0].length ?? 0;
+}
+
 function checkoutCredentialSettings(source: string): boolean[] {
   const lines = source.split('\n');
   const settings: boolean[] = [];
@@ -17,15 +21,34 @@ function checkoutCredentialSettings(source: string): boolean[] {
     const line = lines[index];
     if (!line.includes('uses: actions/checkout@')) continue;
 
+    const usesIndent = indentation(line);
+    const directListItem = /^\s*-\s*uses:/.test(line);
+    const stepIndent = directListItem ? usesIndent : Math.max(0, usesIndent - 2);
+    const propertyIndent = stepIndent + 2;
+    let withIndent: number | null = null;
     let persistCredentialsDisabled = false;
 
     for (let cursor = index + 1; cursor < lines.length; cursor += 1) {
       const nextLine = lines[cursor];
       if (!nextLine.trim()) continue;
 
-      if (/^\s*-\s+(?:name|uses|run):/.test(nextLine)) break;
+      const nextIndent = indentation(nextLine);
+      if (nextIndent === stepIndent && /^\s*-\s+/.test(nextLine)) break;
 
-      if (nextLine.trim() === 'persist-credentials: false') {
+      if (nextIndent === propertyIndent && nextLine.trim() === 'with:') {
+        withIndent = nextIndent;
+        continue;
+      }
+
+      if (withIndent !== null && nextIndent <= withIndent) {
+        withIndent = null;
+      }
+
+      if (
+        withIndent !== null
+        && nextIndent > withIndent
+        && nextLine.trim() === 'persist-credentials: false'
+      ) {
         persistCredentialsDisabled = true;
       }
     }
@@ -68,6 +91,23 @@ describe('GitHub workflow hardening', () => {
     expect(workflow('devskim.yml')).toContain(
       'permissions:\n  contents: read\n\njobs:',
     );
+  });
+
+  it('only accepts persist-credentials under the checkout with mapping', () => {
+    expect(checkoutCredentialSettings([
+      'steps:',
+      '  - uses: actions/checkout@v4',
+      '    env:',
+      '      persist-credentials: false',
+    ].join('\n'))).toEqual([false]);
+
+    expect(checkoutCredentialSettings([
+      'steps:',
+      '  - name: Checkout',
+      '    uses: actions/checkout@v4',
+      '    with:',
+      '      persist-credentials: false',
+    ].join('\n'))).toEqual([true]);
   });
 
   it('does not persist checkout credentials in read-only PR validation workflows', () => {
