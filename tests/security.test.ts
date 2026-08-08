@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import http from 'node:http';
+import https from 'node:https';
 import { once } from 'node:events';
 import { runServe } from '../src/proxy/server';
 import { execSync } from 'node:child_process';
@@ -43,21 +44,35 @@ describe('Delegate Team Security Behaviors', () => {
       expect(response.status).toBe(401);
     });
 
-    it('should apply CORS restrictively to valid tokens', async () => {
-      const response = await fetch(proxyUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer test-security-token',
-          'Origin': 'http://malicious-site.com'
-        },
-        body: JSON.stringify({ message: 'hello' })
-      });
-      // The proxy shouldn't echo back the malicious origin
-      const corsHeader = response.headers.get('access-control-allow-origin');
-      expect(corsHeader).not.toBe('http://malicious-site.com');
-      // Origin is invalid, but standard fetches from node might just get 400 Bad Request since it doesn't match standard payload
-    }, 15000);
+    it('should apply CORS restrictively to valid tokens without provider egress', async () => {
+      const originalHttpsRequest = https.request;
+      let providerNetworkAttempts = 0;
+      (https as typeof https & { request: typeof https.request }).request = ((..._args: Parameters<typeof https.request>) => {
+        providerNetworkAttempts += 1;
+        throw new Error('Unexpected provider network request from proxy security test');
+      }) as typeof https.request;
+
+      try {
+        const response = await fetch(proxyUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer test-security-token',
+            'Origin': 'http://malicious-site.com'
+          },
+          // Deliberately malformed JSON exercises CORS + auth + request error handling
+          // while returning before backend selection or provider HTTP requests.
+          body: '{'
+        });
+        expect(response.status).toBe(400);
+        // The proxy shouldn't echo back the malicious origin.
+        const corsHeader = response.headers.get('access-control-allow-origin');
+        expect(corsHeader).not.toBe('http://malicious-site.com');
+        expect(providerNetworkAttempts).toBe(0);
+      } finally {
+        (https as typeof https & { request: typeof https.request }).request = originalHttpsRequest;
+      }
+    });
 
     it('should reject payloads larger than 2MB', async () => {
       // Create a 3MB string
