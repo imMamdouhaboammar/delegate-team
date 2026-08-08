@@ -59,11 +59,14 @@ Run one Vitest file with:
 npx vitest run tests/<test-file>.test.ts
 ```
 
-For changed shell scripts, also run:
+For changed shell scripts, run both syntax checking and ShellCheck:
 
 ```bash
 bash -n path/to/script.sh
+shellcheck path/to/script.sh
 ```
+
+GitHub Actions runs ShellCheck for repository shell scripts, so a shell change can fail CI even when `bash -n` succeeds. If ShellCheck is not installed locally, document that and rely on the CI shell-check job for that result rather than claiming it passed.
 
 For changed Python files, also run:
 
@@ -74,24 +77,29 @@ python3 -m py_compile path/to/file.py
 ### Required checks
 
 ```bash
+npm run node-support:check
+npm run version:check
 npm run typecheck
 npm run lint
 npm test
 npm run build
 ```
 
-These commands correspond to repository scripts in `package.json`. Fix failures introduced by your branch; do not weaken assertions or suppress errors just to make checks pass.
+The Node support and version-sync guards run in the normal PR CI path alongside typecheck, build, and tests. `npm run lint` is also part of the contributor preflight even when it is not exposed as a standalone GitHub Actions step. Fix failures introduced by your branch; do not weaken assertions or suppress errors just to make checks pass.
 
-### Optional checks when relevant
-
-Use these only when your change affects the corresponding surface:
+The dedicated npm package-integrity workflow runs on pull requests. If your change affects package contents, runtime entry points, manifests, or release integrity, also run:
 
 ```bash
-npm run node-support:check
-npm run version:check
+npm run pack:verify
+```
+
+### Additional checks when relevant
+
+Use these when your change affects the corresponding surface:
+
+```bash
 npm run config:check
 npm run selftest
-npm run pack:verify
 ```
 
 Installer work should also follow the safe preview and verification guidance in [docs/INSTALLATION.md](./docs/INSTALLATION.md).
@@ -129,10 +137,14 @@ Before opening a pull request, confirm:
 - [ ] The branch is based on a current `master` commit.
 - [ ] The diff contains no unrelated changes, generated noise, or secrets.
 - [ ] Relevant regression tests were added or updated.
+- [ ] `npm run node-support:check` passes.
+- [ ] `npm run version:check` passes.
 - [ ] `npm run typecheck` passes.
 - [ ] `npm run lint` passes.
 - [ ] `npm test` passes.
 - [ ] `npm run build` passes.
+- [ ] ShellCheck was run for changed shell scripts, or its CI-only status is documented.
+- [ ] Package-affecting changes passed `npm run pack:verify`.
 - [ ] Any additional component-specific checks were run and documented.
 - [ ] Documentation and skills describe shipped behavior only.
 - [ ] The PR body lists commands actually executed and any checks that were not run.
