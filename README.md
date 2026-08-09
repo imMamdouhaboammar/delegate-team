@@ -34,9 +34,9 @@
   </table>
   <p><strong>Daily build pulse</strong></p>
   <ul>
-      <li>5 pull requests updated, led by #34: security(ci): disable persisted checkout credentials.</li>
-      <li>4 issues changed, including #35: test(proxy): isolate security tests from live provider network calls.</li>
-      <li>Daily summary covers 9 public activity items from the last 1 day.</li>
+      <li>3 pull requests updated, led by #37: test(proxy): keep security suite offline.</li>
+      <li>Daily summary covers 3 public activity items from the last 1 day.</li>
+      <li>Documentation and project status remain aligned with the repository’s current public state.</li>
   </ul>
 </details>
 <!-- project-story:end -->
