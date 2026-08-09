@@ -58,7 +58,7 @@ describe('Delegate Team Security Behaviors', () => {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer test-security-token',
-            'Origin': 'http://malicious-site.com'
+            'Origin': 'https://malicious-site.example'
           },
           // Deliberately malformed JSON exercises CORS + auth + request error handling
           // while returning before backend selection or provider HTTP requests.
@@ -67,7 +67,7 @@ describe('Delegate Team Security Behaviors', () => {
         expect(response.status).toBe(400);
         // The proxy shouldn't echo back the malicious origin.
         const corsHeader = response.headers.get('access-control-allow-origin');
-        expect(corsHeader).not.toBe('http://malicious-site.com');
+        expect(corsHeader).not.toBe('https://malicious-site.example');
         expect(providerNetworkAttempts).toBe(0);
       } finally {
         (https as typeof https & { request: typeof https.request }).request = originalHttpsRequest;
