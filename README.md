@@ -34,9 +34,9 @@
   </table>
   <p><strong>Daily build pulse</strong></p>
   <ul>
-      <li>1 issue changed, including #38: 📅 Weekly AI Health Report — 2026-08-09.</li>
-      <li>Daily summary covers 1 public activity item from the last 1 day.</li>
-      <li>Documentation and project status remain aligned with the repository’s current public state.</li>
+      <li>5 pull requests updated, led by #37: test(proxy): keep security suite offline.</li>
+      <li>12 issues changed, including #38: 📅 Weekly AI Health Report — 2026-08-09.</li>
+      <li>Daily summary covers 17 public activity items from the last 7 days.</li>
   </ul>
 </details>
 <!-- project-story:end -->
