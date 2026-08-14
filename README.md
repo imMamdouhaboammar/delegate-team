@@ -35,8 +35,8 @@
   <p><strong>Daily build pulse</strong></p>
   <ul>
       <li>6 pull requests updated, led by #39: chore(deps-dev): bump js-yaml from 4.3.0 to 4.3.1 in the npm_and_yarn group across 1 direct….</li>
-      <li>5 issues changed, including #38: 📅 Weekly AI Health Report — 2026-08-09.</li>
-      <li>Daily summary covers 11 public activity items from the last 7 days.</li>
+      <li>1 issue changed, including #38: 📅 Weekly AI Health Report — 2026-08-09.</li>
+      <li>Daily summary covers 7 public activity items from the last 7 days.</li>
   </ul>
 </details>
 <!-- project-story:end -->
