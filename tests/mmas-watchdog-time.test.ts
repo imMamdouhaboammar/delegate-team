@@ -100,4 +100,15 @@ exit 1`);
     const age = runAge('exit 1', false);
     expect(age).toBe(999999);
   });
+
+  it('clamps a future modification timestamp to zero age', () => {
+    const age = runAge(`
+if [[ "${'$'}{1:-}" == "-c" && "${'$'}{2:-}" == "%Y" ]]; then
+  echo 1100
+  exit 0
+fi
+exit 1`);
+
+    expect(age).toBe(0);
+  });
 });
