@@ -68,10 +68,20 @@ log_last_modified_seconds_ago() {
     echo "999999"  # no log = treat as infinitely stale
     return
   fi
-  # macOS uses -f %m for mtime, but it's not always reliable across filesystems.
-  # Use stat -f %m (BSD/macOS) for modification epoch.
-  local now=$(date +%s)
-  local mtime=$(stat -f %m "$log_file" 2>/dev/null || echo "$now")
+
+  local now mtime
+  now=$(date +%s)
+
+  # GNU stat uses -c while BSD/macOS stat uses -f for file format output.
+  if mtime=$(stat -c %Y "$log_file" 2>/dev/null); then
+    :
+  elif mtime=$(stat -f %m "$log_file" 2>/dev/null); then
+    :
+  else
+    echo "999999"  # unreadable timestamp = fail closed as stale
+    return
+  fi
+
   echo $(( now - mtime ))
 }
 
