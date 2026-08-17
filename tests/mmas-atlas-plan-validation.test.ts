@@ -216,7 +216,9 @@ print(json.dumps({
 }))
 `);
 
-    expect(JSON.parse(output)).toEqual({
+    const resultLine = output.split('\n').at(-1);
+    expect(resultLine).toBeDefined();
+    expect(JSON.parse(resultLine!)).toEqual({
       code: 1,
       status: 'failed',
       stop_reason: 'invalid_team_plan',
