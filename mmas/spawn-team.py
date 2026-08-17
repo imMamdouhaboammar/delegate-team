@@ -341,13 +341,13 @@ def validate_team_plan(team_plan: object, available_agents: set[str]) -> tuple[l
         if not isinstance(raw_name, str) or not raw_name.strip():
             raise ValueError("team entries must be non-empty agent names")
         name = raw_name.strip()
-        if name == "atlas":
-            continue
         if name in seen:
             raise ValueError(f"duplicate agent in team: {name}")
+        seen.add(name)
+        if name == "atlas":
+            continue
         if name not in available_agents:
             raise ValueError(f"unknown agent in team: {name}")
-        seen.add(name)
         team.append(name)
 
     tasks: dict[str, str] = {}
@@ -831,9 +831,15 @@ def cmd_spawn_atlas(args):
     boulder["write_policy"]["policy_rejection_reason"] = compat_err if not compatible else ""
     
     if not compatible:
-        boulder["status"] = "failed"
-        append_event(boulder, "policy_rejection", compat_err)
+        # Persist the policy evidence before the terminal recorder reloads boulder.json.
         write_boulder(boulder_path, boulder)
+        record_atlas_plan_failure(
+            boulder_path,
+            atlas_pid,
+            args.kill_grace,
+            "policy_rejection",
+            compat_err,
+        )
         print(f"Policy Rejection: {compat_err}", file=sys.stderr)
         return 3
 
