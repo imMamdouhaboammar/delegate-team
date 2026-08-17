@@ -150,4 +150,78 @@ spawn_team.record_atlas_plan_failure(
     expect(boulder.agents[0].completed_at).toMatch(/Z$/);
     expect(boulder.events.at(-1)?.type).toBe('team_plan_rejected');
   });
+
+  it('fails closed in cmd_spawn_atlas before spawning children when Atlas writes a malformed plan', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'delegate-team-atlas-command-'));
+    tempRoots.push(root);
+
+    const output = runPython(`${pythonImportPrelude()}
+from types import SimpleNamespace
+
+root = Path(r"${root}")
+spawn_team.MMAS_TASKS_ROOT = root
+atlas_agent = {
+    "name": "atlas",
+    "backend": "mock-backend",
+    "model": "AtlasModel",
+    "power": "planner",
+    "description": "deterministic planner",
+}
+reviewer_agent = {
+    "name": "reviewer",
+    "backend": "mock-backend",
+    "model": "ReviewModel",
+    "power": "reviewer",
+    "description": "deterministic reviewer",
+}
+
+spawn_team.load_agent = lambda name: atlas_agent if name == "atlas" else reviewer_agent
+spawn_team.list_available_agents = lambda: ["atlas", "reviewer"]
+spawn_team.time.sleep = lambda _seconds: None
+
+def fake_spawn_one_agent(agent, prompt, task_dir, log_dir, boulder_path, write_mode="workspace"):
+    if agent["name"] == "atlas":
+        (task_dir / "team_plan.json").write_text('{"team":"reviewer","tasks":{}}', encoding="utf-8")
+    else:
+        raise AssertionError("child worker must not be spawned for malformed Atlas output")
+
+spawn_team.spawn_one_agent = fake_spawn_one_agent
+spawn_team.start_watchdog = lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("watchdog must not start"))
+
+args = SimpleNamespace(
+    task="test malformed atlas plan",
+    no_write=False,
+    write_mode="workspace",
+    max_agents=4,
+    timeout=900,
+    kill_grace=0,
+    plan_only=False,
+    boss_session=None,
+    logs_enabled=True,
+    atlas_timeout=2,
+    interval=30,
+)
+
+code = spawn_team.cmd_spawn_atlas(args)
+task_dirs = sorted(root.glob("task-*"))
+if len(task_dirs) != 1:
+    raise AssertionError(f"expected one task directory, got {len(task_dirs)}")
+boulder = json.loads((task_dirs[0] / "boulder.json").read_text(encoding="utf-8"))
+print(json.dumps({
+    "code": code,
+    "status": boulder.get("status"),
+    "stop_reason": boulder.get("stop_reason"),
+    "watchdog_pid": boulder.get("watchdog_pid"),
+    "agent_names": [agent.get("name") for agent in boulder.get("agents", [])],
+}))
+`);
+
+    expect(JSON.parse(output)).toEqual({
+      code: 1,
+      status: 'failed',
+      stop_reason: 'invalid_team_plan',
+      watchdog_pid: null,
+      agent_names: ['atlas'],
+    });
+  });
 });
