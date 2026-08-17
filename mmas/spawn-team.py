@@ -319,6 +319,52 @@ def append_event(boulder: dict, event_type: str, detail: str) -> None:
     boulder.setdefault("events", []).append({"at": utc_now(), "type": event_type, "detail": detail})
 
 
+def validate_team_plan(team_plan: object, available_agents: set[str]) -> tuple[list[str], dict[str, str], str]:
+    if not isinstance(team_plan, dict):
+        raise ValueError("team_plan must be a JSON object")
+
+    raw_team = team_plan.get("team", [])
+    if not isinstance(raw_team, list):
+        raise ValueError("team must be an array of agent names")
+
+    raw_tasks = team_plan.get("tasks", {})
+    if not isinstance(raw_tasks, dict):
+        raise ValueError("tasks must be an object keyed by selected agent name")
+
+    rationale = team_plan.get("rationale", "(no rationale)")
+    if not isinstance(rationale, str):
+        raise ValueError("rationale must be a string")
+
+    team: list[str] = []
+    seen: set[str] = set()
+    for raw_name in raw_team:
+        if not isinstance(raw_name, str) or not raw_name.strip():
+            raise ValueError("team entries must be non-empty agent names")
+        name = raw_name.strip()
+        if name in seen:
+            raise ValueError(f"duplicate agent in team: {name}")
+        seen.add(name)
+        if name == "atlas":
+            continue
+        if name not in available_agents:
+            raise ValueError(f"unknown agent in team: {name}")
+        team.append(name)
+
+    tasks: dict[str, str] = {}
+    selected = set(team)
+    for raw_name, raw_task in raw_tasks.items():
+        if not isinstance(raw_name, str) or not raw_name.strip():
+            raise ValueError("task keys must be non-empty agent names")
+        name = raw_name.strip()
+        if name not in selected:
+            raise ValueError(f"task assigned to unselected agent: {name}")
+        if not isinstance(raw_task, str):
+            raise ValueError(f"task for agent '{name}' must be a string")
+        tasks[name] = raw_task
+
+    return team, tasks, rationale
+
+
 def process_alive(pid: int) -> bool:
     try:
         os.kill(pid, 0)
@@ -374,6 +420,33 @@ def terminate_process_group(pid: int | None, grace: int, label: str) -> tuple[bo
         return killed, f"{label}: exited before SIGKILL"
     except PermissionError as exc:
         return killed, f"{label}: permission denied during SIGKILL: {exc}"
+
+
+def record_atlas_plan_failure(
+    boulder_path: Path,
+    atlas_pid: int | None,
+    kill_grace: int,
+    failure_type: str,
+    detail: str,
+) -> None:
+    _, cleanup_detail = terminate_process_group(atlas_pid, kill_grace, "atlas")
+    boulder = read_boulder(boulder_path)
+    now = utc_now()
+    boulder["status"] = "failed"
+    boulder["stop_reason"] = failure_type
+    boulder["completed_at"] = now
+    boulder["failure"] = {"type": failure_type, "detail": detail}
+    for entry in boulder.get("agents", []):
+        if entry.get("name") == "atlas":
+            entry["status"] = "error"
+            entry["completed_at"] = now
+            break
+    append_event(
+        boulder,
+        "team_plan_rejected",
+        f"{failure_type}: {detail}. Cleanup: {cleanup_detail}",
+    )
+    write_boulder(boulder_path, boulder)
 
 
 def guardrails_from_args(args) -> dict:
@@ -668,7 +741,15 @@ def cmd_spawn_atlas(args):
             print(f"Atlas wrote team_plan.json after {waited}s")
             break
         if atlas_pid and not process_alive(atlas_pid):
-            print("Atlas exited without writing team_plan.json", file=sys.stderr)
+            detail = "Atlas exited before team_plan.json was created"
+            record_atlas_plan_failure(
+                boulder_path,
+                atlas_pid,
+                args.kill_grace,
+                "atlas_exited_without_plan",
+                detail,
+            )
+            print(detail, file=sys.stderr)
             print(f"Check log: {atlas_log}", file=sys.stderr)
             return 1
         if waited % 10 == 0:
@@ -690,23 +771,55 @@ def cmd_spawn_atlas(args):
     try:
         with open(team_plan_path, "r", encoding="utf-8") as f:
             team_plan = json.load(f)
-    except Exception as exc:
-        print(f"Failed to parse team_plan.json: {exc}", file=sys.stderr)
+        team, tasks, rationale = validate_team_plan(team_plan, set(list_available_agents()))
+    except (json.JSONDecodeError, ValueError) as exc:
+        detail = f"Invalid team_plan.json: {exc}"
+        record_atlas_plan_failure(
+            boulder_path,
+            atlas_pid,
+            args.kill_grace,
+            "invalid_team_plan",
+            detail,
+        )
+        print(detail, file=sys.stderr)
         return 1
-
-    team = [name for name in team_plan.get("team", []) if name != "atlas"]
-    tasks = team_plan.get("tasks", {})
-    rationale = team_plan.get("rationale", "(no rationale)")
+    except OSError as exc:
+        detail = f"Unable to read team_plan.json: {exc}"
+        record_atlas_plan_failure(
+            boulder_path,
+            atlas_pid,
+            args.kill_grace,
+            "team_plan_read_failure",
+            detail,
+        )
+        print(detail, file=sys.stderr)
+        return 1
 
     selected_agents = []
     for name in team:
         try:
             selected_agents.append(load_agent(name))
         except FileNotFoundError as exc:
-            print(f"Skipping unknown agent: {name} ({exc})", file=sys.stderr)
+            detail = f"Selected agent became unavailable: {name}: {exc}"
+            record_atlas_plan_failure(
+                boulder_path,
+                atlas_pid,
+                args.kill_grace,
+                "atlas_selected_unavailable_agent",
+                detail,
+            )
+            print(detail, file=sys.stderr)
+            return 1
 
     ok, err = enforce_guardrails(args, 1 + len(selected_agents))
     if not ok:
+        record_atlas_plan_failure(
+            boulder_path,
+            atlas_pid,
+            args.kill_grace,
+            "guardrail_violation",
+            err,
+        )
         print(f"Guardrail violation after Atlas plan: {err}", file=sys.stderr)
         return 2
 
@@ -718,9 +831,15 @@ def cmd_spawn_atlas(args):
     boulder["write_policy"]["policy_rejection_reason"] = compat_err if not compatible else ""
     
     if not compatible:
-        boulder["status"] = "failed"
-        append_event(boulder, "policy_rejection", compat_err)
+        # Persist the policy evidence before the terminal recorder reloads boulder.json.
         write_boulder(boulder_path, boulder)
+        record_atlas_plan_failure(
+            boulder_path,
+            atlas_pid,
+            args.kill_grace,
+            "policy_rejection",
+            compat_err,
+        )
         print(f"Policy Rejection: {compat_err}", file=sys.stderr)
         return 3
 
