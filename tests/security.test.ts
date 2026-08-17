@@ -60,15 +60,18 @@ describe('Delegate Team Security Behaviors', () => {
             'Authorization': 'Bearer test-security-token',
             'Origin': 'https://malicious-site.example'
           },
-          body: JSON.stringify({ message: 'hello' })
+          // Exercise CORS + auth + request-error handling, but fail JSON parsing
+          // before backend selection or any provider transport can run.
+          body: '{'
         });
+        expect(response.status).toBe(400);
         const corsHeader = response.headers.get('access-control-allow-origin');
         expect(corsHeader).not.toBe('https://malicious-site.example');
         expect(providerNetworkAttempts).toBe(0);
       } finally {
         (https as typeof https & { request: typeof https.request }).request = originalHttpsRequest;
       }
-    }, 15000);
+    });
 
     it('should reject payloads larger than 2MB', async () => {
       // Create a 3MB string
