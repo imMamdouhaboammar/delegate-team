@@ -82,7 +82,12 @@ log_last_modified_seconds_ago() {
     return
   fi
 
-  echo $(( now - mtime ))
+  local age
+  age=$(( now - mtime ))
+  if (( age < 0 )); then
+    age=0
+  fi
+  echo "$age"
 }
 
 # ---------------------------------------------------------------------------
