@@ -65,12 +65,13 @@ print(json.dumps(errors))
 cases = [
     {"team": ["reviewer", "ghost"], "tasks": {}},
     {"team": ["reviewer", "reviewer"], "tasks": {}},
+    {"team": ["atlas", "atlas", "reviewer"], "tasks": {}},
     {"team": ["reviewer"], "tasks": {"tester": "verify it"}},
 ]
 errors = []
 for case in cases:
     try:
-        spawn_team.validate_team_plan(case, {"reviewer", "tester"})
+        spawn_team.validate_team_plan(case, {"atlas", "reviewer", "tester"})
         errors.append("accepted")
     except ValueError as exc:
         errors.append(str(exc))
@@ -80,7 +81,8 @@ print(json.dumps(errors))
     const errors = JSON.parse(output) as string[];
     expect(errors[0]).toContain('unknown agent');
     expect(errors[1]).toContain('duplicate');
-    expect(errors[2]).toContain('unselected agent');
+    expect(errors[2]).toContain('duplicate');
+    expect(errors[3]).toContain('unselected agent');
   });
 
   it('normalizes a valid bounded Atlas plan without trusting Atlas itself as a child', () => {
@@ -225,5 +227,95 @@ print(json.dumps({
       watchdog_pid: null,
       agent_names: ['atlas'],
     });
+  });
+
+  it('records post-plan write-policy rejection as terminal Atlas failure without spawning children', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'delegate-team-atlas-policy-'));
+    tempRoots.push(root);
+
+    const output = runPython(`${pythonImportPrelude()}
+from types import SimpleNamespace
+
+root = Path(r"${root}")
+spawn_team.MMAS_TASKS_ROOT = root
+atlas_agent = {
+    "name": "atlas",
+    "backend": "mock-backend",
+    "model": "AtlasModel",
+    "power": "planner",
+    "description": "deterministic planner",
+}
+reviewer_agent = {
+    "name": "reviewer",
+    "backend": "minimax-coder",
+    "model": "ReviewModel",
+    "power": "reviewer",
+    "description": "deterministic reviewer",
+}
+
+spawn_team.load_agent = lambda name: atlas_agent if name == "atlas" else reviewer_agent
+spawn_team.list_available_agents = lambda: ["atlas", "reviewer"]
+spawn_team.time.sleep = lambda _seconds: None
+
+def fake_spawn_one_agent(agent, prompt, task_dir, log_dir, boulder_path, write_mode="workspace"):
+    if agent["name"] == "atlas":
+        (task_dir / "team_plan.json").write_text('{"team":["reviewer"],"tasks":{"reviewer":"review"}}', encoding="utf-8")
+    else:
+        raise AssertionError("child worker must not be spawned after policy rejection")
+
+spawn_team.spawn_one_agent = fake_spawn_one_agent
+spawn_team.start_watchdog = lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("watchdog must not start"))
+
+args = SimpleNamespace(
+    task="test post-plan policy rejection",
+    no_write=True,
+    write_mode="workspace",
+    max_agents=4,
+    timeout=900,
+    kill_grace=0,
+    plan_only=False,
+    boss_session=None,
+    logs_enabled=True,
+    atlas_timeout=2,
+    interval=30,
+)
+
+code = spawn_team.cmd_spawn_atlas(args)
+task_dirs = sorted(root.glob("task-*"))
+if len(task_dirs) != 1:
+    raise AssertionError(f"expected one task directory, got {len(task_dirs)}")
+boulder = json.loads((task_dirs[0] / "boulder.json").read_text(encoding="utf-8"))
+atlas = next(agent for agent in boulder.get("agents", []) if agent.get("name") == "atlas")
+print(json.dumps({
+    "code": code,
+    "status": boulder.get("status"),
+    "stop_reason": boulder.get("stop_reason"),
+    "failure_type": boulder.get("failure", {}).get("type"),
+    "atlas_status": atlas.get("status"),
+    "atlas_completed": bool(atlas.get("completed_at")),
+    "policy_decision": boulder.get("write_policy", {}).get("backend_compatibility_decision"),
+    "policy_reason": boulder.get("write_policy", {}).get("policy_rejection_reason", ""),
+    "last_event": boulder.get("events", [{}])[-1].get("type"),
+    "watchdog_pid": boulder.get("watchdog_pid"),
+    "agent_names": [agent.get("name") for agent in boulder.get("agents", [])],
+}))
+`);
+
+    const resultLine = output.split('\n').at(-1);
+    expect(resultLine).toBeDefined();
+    const result = JSON.parse(resultLine!);
+    expect(result).toMatchObject({
+      code: 3,
+      status: 'failed',
+      stop_reason: 'policy_rejection',
+      failure_type: 'policy_rejection',
+      atlas_status: 'error',
+      atlas_completed: true,
+      policy_decision: 'rejected',
+      last_event: 'team_plan_rejected',
+      watchdog_pid: null,
+      agent_names: ['atlas'],
+    });
+    expect(result.policy_reason).toContain('does not support write mode');
   });
 });
