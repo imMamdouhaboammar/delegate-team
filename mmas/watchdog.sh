@@ -65,6 +65,10 @@ log_last_modified_seconds_ago() {
   echo "$age"
 }
 
+# ---------------------------------------------------------------------------
+# Send report to boss
+# ---------------------------------------------------------------------------
+
 send_to_boss() {
   local content="$1"
   apeiron communication send \

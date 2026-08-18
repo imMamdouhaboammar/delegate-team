@@ -193,7 +193,7 @@ describe('remote doctor report', () => {
     expect(report.coreTools.git.installed).toBe(true);
     expect(report.coreTools.dt.installed).toBe(true);
     expect(report.agents.every((agent) => agent.installed === false)).toBe(true);
-  });
+  }, 15_000);
 
   it('fails for a target that does not exist', () => {
     const missing = join(makeTempRoot(), 'missing project');

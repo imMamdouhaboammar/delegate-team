@@ -80,6 +80,7 @@ describe('MMAS watchdog status rendering', () => {
     ['missing agents', {}],
     ['empty agents', { agents: [] }],
     ['non-string agent status', { agents: [{ name: 'test agent', status: null }] }],
+    ['non-string agent name', { agents: [{ name: null, status: 'done' }] }],
   ])('fails closed for %s', (_name, payload) => {
     expect(() => runRenderer(payload)).toThrow();
   });
