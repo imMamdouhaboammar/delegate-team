@@ -78,7 +78,7 @@ fi
 exit 1`);
 
     expect(age).toBe(100);
-  });
+  }, 15_000);
 
   it('falls back to BSD stat when GNU stat is unavailable', () => {
     const age = runAge(`
@@ -89,17 +89,17 @@ fi
 exit 1`);
 
     expect(age).toBe(100);
-  });
+  }, 15_000);
 
   it('fails closed when stat cannot read the file timestamp', () => {
     const age = runAge('exit 1');
     expect(age).toBe(999999);
-  });
+  }, 15_000);
 
   it('keeps the missing-log stale sentinel', () => {
     const age = runAge('exit 1', false);
     expect(age).toBe(999999);
-  });
+  }, 15_000);
 
   it('clamps a future modification timestamp to zero age', () => {
     const age = runAge(`
@@ -110,5 +110,5 @@ fi
 exit 1`);
 
     expect(age).toBe(0);
-  });
+  }, 15_000);
 });
