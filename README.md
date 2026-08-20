@@ -34,10 +34,9 @@
   </table>
   <p><strong>Daily build pulse</strong></p>
   <ul>
-      <li>4 commits landed: chore(packaging): ignore local virtual environments in vertex-coder and minimax-coder; fix(mmas): parse watchdog completion state reliably (#31).</li>
-      <li>6 pull requests updated, led by #46: fix(mmas): treat spawn failures as terminal watchdog failures.</li>
-      <li>10 issues changed, including #40: 📅 Weekly AI Health Report — 2026-08-16.</li>
-      <li>Daily summary covers 20 public activity items from the last 1 day.</li>
+      <li>2 pull requests updated, led by #47: fix(mmas): treat spawn failures as terminal watchdog failures.</li>
+      <li>Daily summary covers 2 public activity items from the last 1 day.</li>
+      <li>Documentation and project status remain aligned with the repository’s current public state.</li>
   </ul>
 </details>
 <!-- project-story:end -->
