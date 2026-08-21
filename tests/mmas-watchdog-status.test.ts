@@ -67,6 +67,24 @@ describe('MMAS watchdog status rendering', () => {
       allDone: 'false',
       anyStuck: 'true',
     },
+    {
+      name: 'one errored agent',
+      agents: [
+        { name: 'review agent', status: 'done' },
+        { name: 'test agent', status: 'error' },
+      ],
+      allDone: 'false',
+      anyStuck: 'true',
+    },
+    {
+      name: 'one spawn-failed agent',
+      agents: [
+        { name: 'review agent', status: 'done' },
+        { name: 'test agent', status: 'spawn_failed' },
+      ],
+      allDone: 'false',
+      anyStuck: 'true',
+    },
   ])('$name', ({ agents, allDone, anyStuck }) => {
     const [statusLine, renderedAllDone, renderedAnyStuck] = renderStatus(agents);
 
