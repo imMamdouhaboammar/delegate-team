@@ -75,6 +75,16 @@ BACKEND_COMPATIBILITY = {
     "relay-fallback": ["workspace"],
 }
 
+BASE_ENV_KEYS = {
+    "PATH", "HOME", "USER", "SHELL", "LOGNAME", "TMPDIR", "LANG", "LC_ALL", "TERM",
+    "DELEGATE_TEAM_ROOT", "APEIRON_SESSION_ID", "DT_ALLOW_UNSAFE_COMMANDS", "DT_ALLOW_DEP_INSTALL",
+}
+
+BACKEND_ENV_PREFIXES = {
+    "minimax-coder": ("MINIMAX_",),
+    "vertex-coder": ("GOOGLE_", "GEMINI_"),
+}
+
 
 def load_agent(agent_name: str) -> dict:
     agents_dir = Path(os.environ.get("MMAS_AGENTS_DIR", str(AGENTS_DIR)))
@@ -139,16 +149,11 @@ def verify_path_in_task_dir(path: Path, task_dir: Path) -> None:
         current = current.parent
 
 
-def get_clean_env(write_mode: str, task_dir: Path) -> dict:
-    allowed_keys = {
-        "PATH", "HOME", "USER", "SHELL", "LOGNAME", "TMPDIR", "LANG", "LC_ALL", "TERM",
-        "DELEGATE_TEAM_ROOT", "APEIRON_SESSION_ID",
-        "MINIMAX_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
-        "PROXY_TOKEN", "DT_ALLOW_UNSAFE_COMMANDS", "DT_ALLOW_DEP_INSTALL"
-    }
+def get_clean_env(write_mode: str, task_dir: Path, backend: str | None = None) -> dict:
+    backend_prefixes = BACKEND_ENV_PREFIXES.get(backend, ())
     clean_env = {}
     for k, v in os.environ.items():
-        if k in allowed_keys or k.startswith("DT_") or k.startswith("MINIMAX_") or k.startswith("GOOGLE_") or k.startswith("GEMINI_"):
+        if k in BASE_ENV_KEYS or k.startswith("DT_") or any(k.startswith(prefix) for prefix in backend_prefixes):
             clean_env[k] = v
             
     if write_mode in ("logs-only", "none"):
@@ -499,7 +504,7 @@ def spawn_one_agent(agent: dict, prompt: str, task_dir: Path, log_dir: Path, bou
     print(f"   log: {log_file}")
 
     try:
-        clean_env = get_clean_env(write_mode, task_dir)
+        clean_env = get_clean_env(write_mode, task_dir, agent.get("backend", "minimax-coder"))
         with open(log_file, "w", encoding="utf-8") as f:
             proc = subprocess.Popen(
                 cmd,
@@ -532,7 +537,7 @@ def start_watchdog(task_id: str, task_dir: Path, boulder_path: Path, args) -> No
     watchdog_pgid = None
     try:
         write_mode = resolve_write_mode(args)
-        clean_env = get_clean_env(write_mode, task_dir)
+        clean_env = get_clean_env(write_mode, task_dir, None)
         with open(watchdog_log, "w", encoding="utf-8") as f:
             proc = subprocess.Popen(
                 watchdog_cmd,
