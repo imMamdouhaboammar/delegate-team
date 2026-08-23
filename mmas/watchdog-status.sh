@@ -37,7 +37,7 @@ render_watchdog_status() {
     if [[ "$status" != "done" ]]; then
       all_done=false
     fi
-    if [[ "$status" == "stuck" || "$status" == "error" ]]; then
+    if [[ "$status" == "stuck" || "$status" == "error" || "$status" == "spawn_failed" ]]; then
       any_stuck=true
     fi
 
