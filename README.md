@@ -34,7 +34,7 @@
   </table>
   <p><strong>Daily build pulse</strong></p>
   <ul>
-      <li>1 pull request updated, led by #48: fix(mmas): treat spawn failures as terminal watchdog failures.</li>
+      <li>1 pull request updated, led by #49: fix(mmas): scope provider credentials per backend.</li>
       <li>Daily summary covers 1 public activity item from the last 1 day.</li>
       <li>Documentation and project status remain aligned with the repository’s current public state.</li>
   </ul>
