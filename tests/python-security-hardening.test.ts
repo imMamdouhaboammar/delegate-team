@@ -80,6 +80,59 @@ else:
     expect(result.status, result.stderr).toBe(0);
   });
 
+  it('scopes MMAS provider credentials to the selected backend', () => {
+    const modulePath = join(ROOT, 'mmas', 'spawn-team.py');
+    const script = `
+import importlib.util, os, tempfile
+from pathlib import Path
+spec = importlib.util.spec_from_file_location('spawn_team', ${JSON.stringify(modulePath)})
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+keys = {
+    'MINIMAX_API_KEY': 'minimax-secret',
+    'GEMINI_API_KEY': 'gemini-secret',
+    'GOOGLE_API_KEY': 'google-secret',
+    'OPENAI_API_KEY': 'openai-secret',
+    'ANTHROPIC_API_KEY': 'anthropic-secret',
+    'PROXY_TOKEN': 'proxy-secret',
+}
+old = {key: os.environ.get(key) for key in keys}
+try:
+    os.environ.update(keys)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        minimax_env = module.get_clean_env('workspace', root, 'minimax-coder')
+        vertex_env = module.get_clean_env('workspace', root, 'vertex-coder')
+        relay_env = module.get_clean_env('workspace', root, 'codex')
+        watchdog_env = module.get_clean_env('workspace', root, None)
+
+    assert minimax_env.get('MINIMAX_API_KEY') == 'minimax-secret'
+    assert 'GEMINI_API_KEY' not in minimax_env
+    assert 'GOOGLE_API_KEY' not in minimax_env
+    assert 'OPENAI_API_KEY' not in minimax_env
+    assert 'ANTHROPIC_API_KEY' not in minimax_env
+    assert 'PROXY_TOKEN' not in minimax_env
+
+    assert vertex_env.get('GEMINI_API_KEY') == 'gemini-secret'
+    assert vertex_env.get('GOOGLE_API_KEY') == 'google-secret'
+    assert 'MINIMAX_API_KEY' not in vertex_env
+    assert 'OPENAI_API_KEY' not in vertex_env
+    assert 'ANTHROPIC_API_KEY' not in vertex_env
+    assert 'PROXY_TOKEN' not in vertex_env
+
+    assert all(key not in relay_env for key in keys)
+    assert all(key not in watchdog_env for key in keys)
+finally:
+    for key, value in old.items():
+        if value is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = value
+`;
+    const result = runPython(script);
+    expect(result.status, result.stderr).toBe(0);
+  });
+
   it('marks non-security hashes and disables Flask debug mode', () => {
     const catalog = readFileSync(
       join(ROOT, 'orchestrator', 'scripts', 'catalog.py'),
