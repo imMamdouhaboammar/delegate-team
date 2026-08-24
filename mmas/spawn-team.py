@@ -87,11 +87,19 @@ BACKEND_ENV_PREFIXES = {
 
 
 def load_agent(agent_name: str) -> dict:
-    agents_dir = Path(os.environ.get("MMAS_AGENTS_DIR", str(AGENTS_DIR)))
+    if not agent_name or Path(agent_name).name != agent_name:
+        raise ValueError(f"Invalid agent config name: {agent_name!r}")
+
+    agents_dir = Path(os.environ.get("MMAS_AGENTS_DIR", str(AGENTS_DIR))).resolve()
     yaml_path = agents_dir / f"{agent_name}.yaml"
     if not yaml_path.exists():
         raise FileNotFoundError(f"Agent '{agent_name}' not found at {yaml_path}")
-    with open(yaml_path, "r", encoding="utf-8") as f:
+
+    resolved_yaml_path = yaml_path.resolve()
+    if resolved_yaml_path.parent != agents_dir:
+        raise ValueError(f"Agent config '{agent_name}' escapes configured agent directory")
+
+    with open(resolved_yaml_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
@@ -374,211 +382,142 @@ def process_alive(pid: int) -> bool:
     try:
         os.kill(pid, 0)
         return True
-    except ProcessLookupError:
+    except OSError:
         return False
-    except PermissionError:
-        return True
 
 
-def process_group_for(pid: int) -> int | None:
+def resolve_pgid(pid: int) -> int | None:
     try:
         return os.getpgid(pid)
-    except ProcessLookupError:
-        return None
-    except PermissionError:
+    except OSError:
         return None
 
 
-def terminate_process_group(pid: int | None, grace: int, label: str) -> tuple[bool, str]:
-    if not pid:
-        return False, f"{label}: no pid"
-
-    pgid = process_group_for(pid)
-    target = pgid if pgid is not None else pid
-    killed = False
-
+def terminate_process_group(pgid: int | None, pid: int | None, grace_seconds: int) -> None:
+    if pgid is None and pid is None:
+        return
     try:
         if pgid is not None:
-            os.killpg(target, signal.SIGTERM)
-            killed = True
-        else:
-            os.kill(target, signal.SIGTERM)
-            killed = True
+            os.killpg(pgid, signal.SIGTERM)
+        elif pid is not None:
+            os.kill(pid, signal.SIGTERM)
     except ProcessLookupError:
-        return False, f"{label}: already exited"
-    except PermissionError as exc:
-        return False, f"{label}: permission denied during SIGTERM: {exc}"
+        return
+    except OSError:
+        return
 
-    deadline = time.time() + max(0, grace)
-    while time.time() < deadline:
-        if not process_alive(pid):
-            return killed, f"{label}: terminated"
-        time.sleep(0.2)
+    deadline = time.time() + grace_seconds
+    while pid is not None and process_alive(pid) and time.time() < deadline:
+        time.sleep(0.1)
 
+    if pid is not None and process_alive(pid):
+        try:
+            if pgid is not None:
+                os.killpg(pgid, signal.SIGKILL)
+            else:
+                os.kill(pid, signal.SIGKILL)
+        except (ProcessLookupError, OSError):
+            pass
+
+
+def run_atlas(task: str, task_dir: Path, write_mode: str, atlas_timeout: int) -> dict:
+    atlas = load_agent("atlas")
+    available = list_available_agents()
+    available_desc = []
+    for name in available:
+        if name == "atlas":
+            continue
+        try:
+            a = load_agent(name)
+            available_desc.append(f"- {name}: {a.get('description', '')} [{a.get('category', '')}]")
+        except Exception:
+            pass
+
+    prompt = f"""You are Atlas, the MMAS orchestrator. Analyze this task and select the smallest effective team.
+
+TASK:
+{task}
+
+AVAILABLE AGENTS:
+{chr(10).join(available_desc)}
+
+Return ONLY valid JSON with this exact shape:
+{{
+  "team": ["agent1", "agent2"],
+  "tasks": {{"agent1": "specific subtask", "agent2": "specific subtask"}},
+  "rationale": "one sentence"
+}}
+
+Rules:
+- Select 1-4 agents. Prefer fewer.
+- Never select yourself (atlas).
+- Only use agent names from the list above.
+- Tasks must be specific and non-overlapping.
+"""
+
+    log_file = task_dir / "atlas.log"
+    cmd = build_agent_command(atlas, prompt, log_file, write_mode)
+    with open(log_file, "w", encoding="utf-8") as log:
+        proc = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT, text=True, env=get_clean_env(write_mode, task_dir, atlas.get("backend")), start_new_session=True)
+        try:
+            proc.wait(timeout=atlas_timeout)
+        except subprocess.TimeoutExpired:
+            terminate_process_group(resolve_pgid(proc.pid), proc.pid, MMAS_DEFAULTS["killGracePeriod"])
+            raise RuntimeError(f"Atlas timed out after {atlas_timeout}s")
+
+    if proc.returncode != 0:
+        raise RuntimeError(f"Atlas failed with exit code {proc.returncode}")
+
+    summary_path = log_file.with_suffix(".summary")
+    content = summary_path.read_text(encoding="utf-8") if summary_path.exists() else log_file.read_text(encoding="utf-8")
+
+    start = content.find("{")
+    end = content.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        raise RuntimeError("Atlas did not return valid JSON")
     try:
-        if pgid is not None:
-            os.killpg(target, signal.SIGKILL)
-        else:
-            os.kill(target, signal.SIGKILL)
-        return True, f"{label}: killed after grace period"
-    except ProcessLookupError:
-        return killed, f"{label}: exited before SIGKILL"
-    except PermissionError as exc:
-        return killed, f"{label}: permission denied during SIGKILL: {exc}"
+        return json.loads(content[start : end + 1])
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"Atlas returned malformed JSON: {exc}") from exc
 
 
-def record_atlas_plan_failure(
-    boulder_path: Path,
-    atlas_pid: int | None,
-    kill_grace: int,
-    failure_type: str,
-    detail: str,
-) -> None:
-    _, cleanup_detail = terminate_process_group(atlas_pid, kill_grace, "atlas")
-    boulder = read_boulder(boulder_path)
-    now = utc_now()
-    boulder["status"] = "failed"
-    boulder["stop_reason"] = failure_type
-    boulder["completed_at"] = now
-    boulder["failure"] = {"type": failure_type, "detail": detail}
-    for entry in boulder.get("agents", []):
-        if entry.get("name") == "atlas":
-            entry["status"] = "error"
-            entry["completed_at"] = now
-            break
-    append_event(
-        boulder,
-        "team_plan_rejected",
-        f"{failure_type}: {detail}. Cleanup: {cleanup_detail}",
-    )
-    write_boulder(boulder_path, boulder)
-
-
-def guardrails_from_args(args) -> dict:
-    return {
-        "maxAgents": args.max_agents,
-        "timeoutSeconds": args.timeout,
-        "writeMode": resolve_write_mode(args),
-        "logsEnabled": args.logs_enabled,
-        "killGracePeriod": args.kill_grace,
-        "hardCaps": dict(MMAS_HARD_CAPS),
-    }
-
-
-def new_task_paths() -> tuple[str, Path, Path, Path]:
-    task_id = f"task-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:6]}"
+def spawn_team(args) -> int:
+    write_mode = resolve_write_mode(args)
+    task_id = "task-" + uuid.uuid4().hex[:12]
     task_dir = MMAS_TASKS_ROOT / task_id
-    log_dir = task_dir / "logs"
-    task_dir.mkdir(parents=True, exist_ok=True)
-    log_dir.mkdir(exist_ok=True)
-    return task_id, task_dir, log_dir, task_dir / "boulder.json"
+    task_dir.mkdir(parents=True, exist_ok=False)
+    boulder_path = task_dir / "boulder.json"
 
+    team_names = [x.strip() for x in args.team.split(",") if x.strip()] if args.team else []
+    subtasks: dict[str, str] = {}
+    atlas_rationale = None
 
-def update_agent_entry(boulder_path: Path, agent_name: str, proc: subprocess.Popen | None, log_file: Path, summary_file: Path, status: str) -> None:
-    boulder = read_boulder(boulder_path)
-    for entry in boulder["agents"]:
-        if entry["name"] == agent_name:
-            entry["pid"] = proc.pid if proc else None
-            entry["pgid"] = process_group_for(proc.pid) if proc else None
-            entry["status"] = status
-            entry["started_at"] = utc_now() if proc else None
-            entry["log_file"] = str(log_file)
-            entry["summary_file"] = str(summary_file)
-            break
-    write_boulder(boulder_path, boulder)
+    if args.atlas:
+        print("🗺️  Atlas is selecting the team...")
+        try:
+            team_plan = run_atlas(args.task, task_dir, write_mode, args.atlas_timeout)
+            team_names, subtasks, atlas_rationale = validate_team_plan(team_plan, set(list_available_agents()))
+        except Exception as exc:
+            print(f"Atlas planning failed: {exc}", file=sys.stderr)
+            boulder = make_boulder(task_id, args.task, [], args.boss_session)
+            boulder["status"] = "failed"
+            boulder["failure_reason"] = str(exc)
+            append_event(boulder, "atlas_failed", str(exc))
+            write_boulder(boulder_path, boulder)
+            return 2
 
-
-def spawn_one_agent(agent: dict, prompt: str, task_dir: Path, log_dir: Path, boulder_path: Path, write_mode: str = "workspace") -> None:
-    agent_name = agent["name"]
-    log_file = log_dir / f"{agent_name}.log"
-    summary_file = log_dir / f"{agent_name}.summary"
-    
-    # Path resolution and containment verification (enforce logs-only constraint)
-    if write_mode in ("logs-only", "none"):
-        verify_path_in_task_dir(log_file, task_dir)
-        verify_path_in_task_dir(summary_file, task_dir)
-
-    cmd = build_agent_command(agent, prompt, log_file, write_mode)
-
-    print(f"Spawning {agent_name} ({agent.get('model')} via {agent.get('backend')})")
-    print(f"   log: {log_file}")
-
-    try:
-        clean_env = get_clean_env(write_mode, task_dir, agent.get("backend", "minimax-coder"))
-        with open(log_file, "w", encoding="utf-8") as f:
-            proc = subprocess.Popen(
-                cmd,
-                stdout=f,
-                stderr=subprocess.STDOUT,
-                cwd=str(task_dir),
-                env=clean_env,
-                start_new_session=True,
-            )
-        update_agent_entry(boulder_path, agent_name, proc, log_file, summary_file, "running")
-        print(f"   pid: {proc.pid} pgid: {process_group_for(proc.pid) or 'unknown'}")
-    except Exception as exc:
-        print(f"   spawn failed: {exc}", file=sys.stderr)
-        update_agent_entry(boulder_path, agent_name, None, log_file, summary_file, "spawn_failed")
-
-
-def start_watchdog(task_id: str, task_dir: Path, boulder_path: Path, args) -> None:
-    watchdog_log = task_dir / "watchdog.log"
-    watchdog_cmd = [
-        "bash",
-        str(MMAS_ROOT / "watchdog.sh"),
-        task_id,
-        str(args.boss_session or os.environ.get("APEIRON_SESSION_ID", "unknown")),
-        "--interval",
-        str(args.interval),
-    ]
-
-    print(f"Starting watchdog (interval={args.interval}s)")
-    watchdog_pid = None
-    watchdog_pgid = None
-    try:
-        write_mode = resolve_write_mode(args)
-        clean_env = get_clean_env(write_mode, task_dir, None)
-        with open(watchdog_log, "w", encoding="utf-8") as f:
-            proc = subprocess.Popen(
-                watchdog_cmd,
-                stdout=f,
-                stderr=subprocess.STDOUT,
-                cwd=str(task_dir),
-                env=clean_env,
-                start_new_session=True,
-            )
-        watchdog_pid = proc.pid
-        watchdog_pgid = process_group_for(proc.pid)
-        print(f"   pid: {watchdog_pid} pgid: {watchdog_pgid or 'unknown'}")
-    except Exception as exc:
-        print(f"   watchdog failed to start: {exc}", file=sys.stderr)
-
-    boulder = read_boulder(boulder_path)
-    boulder["watchdog_pid"] = watchdog_pid
-    boulder["watchdog_pgid"] = watchdog_pgid
-    append_event(boulder, "watchdog_started", f"Watchdog PID {watchdog_pid}, PGID {watchdog_pgid}, interval {args.interval}s")
-    write_boulder(boulder_path, boulder)
-
-
-def parse_team(args) -> tuple[list[str] | None, int]:
-    if not args.team:
-        print("Either --team or --atlas is required", file=sys.stderr)
-        print(f"Available: {', '.join(list_available_agents())}", file=sys.stderr)
-        return None, 1
-    team_names = [t.strip() for t in args.team.split(",") if t.strip()]
     if not team_names:
-        print("--team is required (comma-separated agent names)", file=sys.stderr)
-        return None, 1
-    return team_names, 0
+        print("No team specified. Use --team or --atlas.", file=sys.stderr)
+        return 2
 
+    if len(set(team_names)) != len(team_names):
+        print("Duplicate agent names are not allowed in --team.", file=sys.stderr)
+        return 2
 
-def cmd_spawn(args):
-    if getattr(args, "atlas", False):
-        return cmd_spawn_atlas(args)
-
-    team_names, code = parse_team(args)
-    if code:
-        return code
+    ok, msg = enforce_guardrails(args, len(team_names))
+    if not ok:
+        print(f"Guardrail rejection: {msg}", file=sys.stderr)
+        return 2
 
     agents = []
     for name in team_names:
@@ -586,506 +525,222 @@ def cmd_spawn(args):
             agents.append(load_agent(name))
         except FileNotFoundError as exc:
             print(str(exc), file=sys.stderr)
-            return 1
+            return 2
 
-    ok, err = enforce_guardrails(args, len(agents))
-    if not ok:
-        print(f"Guardrail violation: {err}", file=sys.stderr)
-        return 2
-
-    # Resolve write mode
-    write_mode = resolve_write_mode(args)
-    
-    # Check write policy compatibility
-    compatible, compat_err = check_write_policy_compatibility(agents, write_mode)
-
-    if getattr(args, "plan_only", False):
-        print("plan-only mode - not spawning agents.")
-        print(f"   Team (planned): {', '.join([a['name'] for a in agents])}")
-        print(f"   Tasks: {len(agents)}")
-        print(f"   Timeout per agent: {args.timeout}s")
-        print(f"   Write mode: {write_mode}")
-        print(f"   Write policy compatibility: {'approved' if compatible else 'rejected'}")
-        if not compatible:
-            print(f"   Rejection reason: {compat_err}")
-        print()
-        print("Re-run without --plan-only to actually spawn.")
-        return 0 if compatible else 3
-
-    # Generate task paths
-    task_id, task_dir, log_dir, boulder_path = new_task_paths()
-    print(f"Task ID: {task_id}")
-    print(f"Boulder: {boulder_path}")
-    
-    # Setup write policy metadata
-    approved_writable_roots = []
-    if write_mode == "logs-only":
-        approved_writable_roots = [str(task_dir)]
-    elif write_mode == "workspace":
-        approved_writable_roots = [str(DELEGATE_TEAM_ROOT)]
-        
-    write_policy_meta = {
-        "requested_mode": getattr(args, "write_mode", "workspace") if not getattr(args, "no_write", False) else "none",
-        "resolved_mode": write_mode,
-        "enforcement_mechanism": "fail_closed_backend_check" if write_mode == "none" else ("isolated_task_directory_enforcement" if write_mode == "logs-only" else "none"),
-        "approved_writable_roots": approved_writable_roots,
-        "backend_compatibility_decision": "approved" if compatible else "rejected",
-        "policy_rejection_reason": compat_err if not compatible else ""
-    }
-
-    boulder = make_boulder(task_id, args.task, agents, args.boss_session, guardrails_from_args(args))
-    boulder["write_policy"] = write_policy_meta
-    
+    compatible, reason = check_write_policy_compatibility(agents, write_mode)
     if not compatible:
+        print(f"Policy Rejection: {reason}", file=sys.stderr)
+        boulder = make_boulder(task_id, args.task, agents, args.boss_session)
         boulder["status"] = "failed"
-        append_event(boulder, "policy_rejection", compat_err)
+        boulder["write_policy"] = {
+            "requested_mode": args.write_mode,
+            "resolved_mode": write_mode,
+            "approved_writable_roots": [str(task_dir)] if write_mode in ("logs-only", "none") else [str(DELEGATE_TEAM_ROOT)],
+            "enforcement_mechanism": "isolated_task_directory_enforcement" if write_mode in ("logs-only", "none") else "workspace",
+            "backend_compatibility_decision": "rejected",
+            "reason": reason,
+        }
         write_boulder(boulder_path, boulder)
-        print(f"Policy Rejection: {compat_err}", file=sys.stderr)
-        return 3
-
-    write_boulder(boulder_path, boulder)
-
-    print(f"Team: {len(agents)} agents - {', '.join([a['name'] for a in agents])}")
-    print()
-
-    for agent in agents:
-        spawn_one_agent(agent, args.task, task_dir, log_dir, boulder_path, write_mode)
-        print()
-
-    start_watchdog(task_id, task_dir, boulder_path, args)
-
-    print()
-    print("Team spawned. Monitoring active.")
-    print(f"   Monitor: python3 {MMAS_ROOT}/spawn-team.py status {task_id}")
-    print(f"   Stop:    python3 {MMAS_ROOT}/spawn-team.py stop {task_id}")
-    print(f"   Boulder: {boulder_path}")
-    return 0
-
-
-def cmd_spawn_atlas(args):
-    # Resolve write mode
-    write_mode = resolve_write_mode(args)
-
-    try:
-        atlas_agent = load_agent("atlas")
-    except FileNotFoundError as exc:
-        print(str(exc), file=sys.stderr)
-        return 1
-
-    ok, err = enforce_guardrails(args, 1)
-    if not ok:
-        print(f"Guardrail violation: {err}", file=sys.stderr)
+        print(f"Task ID: {task_id}")
         return 2
 
-    # Check write policy compatibility for Atlas
-    compatible, compat_err = check_write_policy_compatibility([atlas_agent], write_mode)
-
-    if getattr(args, "plan_only", False):
-        print("plan-only mode - Atlas would pick the team, but no subprocess is spawned.")
-        print(f"   Write mode: {write_mode}")
-        print(f"   Atlas compatibility: {'approved' if compatible else 'rejected'}")
-        if not compatible:
-            print(f"   Rejection reason: {compat_err}")
-        print("Re-run without --plan-only to actually spawn.")
-        return 0 if compatible else 3
-
-    # Generate task paths
-    task_id, task_dir, log_dir, boulder_path = new_task_paths()
-    print(f"Task ID: {task_id}")
-    print(f"Boulder: {boulder_path}")
-    
-    # Setup write policy metadata
-    approved_writable_roots = []
-    if write_mode == "logs-only":
-        approved_writable_roots = [str(task_dir)]
-    elif write_mode == "workspace":
-        approved_writable_roots = [str(DELEGATE_TEAM_ROOT)]
-        
-    write_policy_meta = {
-        "requested_mode": getattr(args, "write_mode", "workspace") if not getattr(args, "no_write", False) else "none",
+    boulder = make_boulder(task_id, args.task, agents, args.boss_session)
+    boulder["write_policy"] = {
+        "requested_mode": args.write_mode,
         "resolved_mode": write_mode,
-        "enforcement_mechanism": "fail_closed_backend_check" if write_mode == "none" else ("isolated_task_directory_enforcement" if write_mode == "logs-only" else "none"),
-        "approved_writable_roots": approved_writable_roots,
-        "backend_compatibility_decision": "approved" if compatible else "rejected",
-        "policy_rejection_reason": compat_err if not compatible else ""
+        "approved_writable_roots": [str(task_dir)] if write_mode in ("logs-only", "none") else [str(DELEGATE_TEAM_ROOT)],
+        "enforcement_mechanism": "isolated_task_directory_enforcement" if write_mode in ("logs-only", "none") else "workspace",
+        "backend_compatibility_decision": "approved",
     }
-
-    boulder = make_boulder(task_id, args.task, [atlas_agent], args.boss_session, guardrails_from_args(args))
-    boulder["write_policy"] = write_policy_meta
-
-    if not compatible:
-        boulder["status"] = "failed"
-        append_event(boulder, "policy_rejection", compat_err)
-        write_boulder(boulder_path, boulder)
-        print(f"Policy Rejection: {compat_err}", file=sys.stderr)
-        return 3
-
-    boulder["mode"] = "atlas-picker"
-    boulder["status"] = "awaiting_team_plan"
+    if atlas_rationale:
+        boulder["atlas_rationale"] = atlas_rationale
     write_boulder(boulder_path, boulder)
 
-    atlas_prompt = (
-        f"You are Atlas in TEAM-PICKER MODE.\n\n"
-        f"USER TASK:\n{args.task}\n\n"
-        f"Write a JSON plan to {task_dir}/team_plan.json with keys: team, rationale, tasks.\n"
-        f"Available agents: {', '.join(list_available_agents())}"
-    )
-
-    spawn_one_agent(atlas_agent, atlas_prompt, task_dir, log_dir, boulder_path, write_mode)
-    atlas_pid = read_boulder(boulder_path)["agents"][0].get("pid")
-    atlas_log = log_dir / "atlas.log"
-    team_plan_path = task_dir / "team_plan.json"
-
-    print(f"Waiting for Atlas to write team_plan.json (max {args.atlas_timeout}s)")
-    waited = 0
-    poll_interval = 2
-    while waited < args.atlas_timeout:
-        time.sleep(poll_interval)
-        waited += poll_interval
-        if team_plan_path.exists():
-            print(f"Atlas wrote team_plan.json after {waited}s")
-            break
-        if atlas_pid and not process_alive(atlas_pid):
-            detail = "Atlas exited before team_plan.json was created"
-            record_atlas_plan_failure(
-                boulder_path,
-                atlas_pid,
-                args.kill_grace,
-                "atlas_exited_without_plan",
-                detail,
-            )
-            print(detail, file=sys.stderr)
-            print(f"Check log: {atlas_log}", file=sys.stderr)
-            return 1
-        if waited % 10 == 0:
-            print(f"   still waiting ({waited}s)")
-    else:
-        killed, detail = terminate_process_group(atlas_pid, args.kill_grace, "atlas")
-        boulder = read_boulder(boulder_path)
-        boulder["status"] = "timeout"
-        boulder["stop_reason"] = "atlas_timeout"
-        for entry in boulder["agents"]:
-            if entry["name"] == "atlas":
-                entry["status"] = "timeout"
-                entry["completed_at"] = utc_now()
-        append_event(boulder, "atlas_timeout_cleanup", detail)
+    print(f"🪨 MMAS Boulder created: {task_id}")
+    print(f"   Task: {args.task}")
+    print(f"   Team: {', '.join(team_names)}")
+    print(f"   Write mode: {write_mode}")
+    print(f"   Timeout: {args.timeout}s | Max agents: {args.max_agents}")
+    if args.plan_only:
+        boulder["status"] = "planned"
+        append_event(boulder, "plan_only", "Plan generated without spawning workers")
         write_boulder(boulder_path, boulder)
-        print(f"Timeout waiting for team_plan.json. {detail}", file=sys.stderr)
-        return 1
+        print(f"   Plan-only: {boulder_path}")
+        return 0
 
-    try:
-        with open(team_plan_path, "r", encoding="utf-8") as f:
-            team_plan = json.load(f)
-        team, tasks, rationale = validate_team_plan(team_plan, set(list_available_agents()))
-    except (json.JSONDecodeError, ValueError) as exc:
-        detail = f"Invalid team_plan.json: {exc}"
-        record_atlas_plan_failure(
-            boulder_path,
-            atlas_pid,
-            args.kill_grace,
-            "invalid_team_plan",
-            detail,
-        )
-        print(detail, file=sys.stderr)
-        return 1
-    except OSError as exc:
-        detail = f"Unable to read team_plan.json: {exc}"
-        record_atlas_plan_failure(
-            boulder_path,
-            atlas_pid,
-            args.kill_grace,
-            "team_plan_read_failure",
-            detail,
-        )
-        print(detail, file=sys.stderr)
-        return 1
-
-    selected_agents = []
-    for name in team:
+    spawned_indices: list[int] = []
+    spawn_failed = False
+    for i, agent in enumerate(agents):
+        name = agent["name"]
+        agent_task = subtasks.get(name, args.task)
+        log_file = task_dir / f"agent-{name}.log"
+        cmd = build_agent_command(agent, agent_task, log_file, write_mode)
+        print(f"   Spawning {name} ({agent.get('model')})...")
         try:
-            selected_agents.append(load_agent(name))
-        except FileNotFoundError as exc:
-            detail = f"Selected agent became unavailable: {name}: {exc}"
-            record_atlas_plan_failure(
-                boulder_path,
-                atlas_pid,
-                args.kill_grace,
-                "atlas_selected_unavailable_agent",
-                detail,
-            )
-            print(detail, file=sys.stderr)
-            return 1
-
-    ok, err = enforce_guardrails(args, 1 + len(selected_agents))
-    if not ok:
-        record_atlas_plan_failure(
-            boulder_path,
-            atlas_pid,
-            args.kill_grace,
-            "guardrail_violation",
-            err,
-        )
-        print(f"Guardrail violation after Atlas plan: {err}", file=sys.stderr)
-        return 2
-
-    # Check compatibility of selected agents
-    compatible, compat_err = check_write_policy_compatibility(selected_agents, write_mode)
-    boulder = read_boulder(boulder_path)
-    
-    boulder["write_policy"]["backend_compatibility_decision"] = "approved" if compatible else "rejected"
-    boulder["write_policy"]["policy_rejection_reason"] = compat_err if not compatible else ""
-    
-    if not compatible:
-        # Persist the policy evidence before the terminal recorder reloads boulder.json.
-        write_boulder(boulder_path, boulder)
-        record_atlas_plan_failure(
-            boulder_path,
-            atlas_pid,
-            args.kill_grace,
-            "policy_rejection",
-            compat_err,
-        )
-        print(f"Policy Rejection: {compat_err}", file=sys.stderr)
-        return 3
-
-    for entry in boulder["agents"]:
-        if entry["name"] == "atlas":
-            entry["status"] = "done"
-            entry["completed_at"] = utc_now()
-    for agent in selected_agents:
-        boulder["agents"].append({
-            "name": agent["name"],
-            "model": agent.get("model"),
-            "backend": agent.get("backend"),
-            "pid": None,
-            "pgid": None,
-            "status": "pending",
-            "started_at": None,
-            "last_activity": None,
-            "completed_at": None,
-            "exit_code": None,
-            "summary_file": None,
-            "log_file": None,
-            "task": tasks.get(agent["name"], args.task),
-        })
-    boulder["status"] = "running"
-    append_event(boulder, "team_plan_received", f"Atlas chose {team}. Rationale: {rationale}")
-    write_boulder(boulder_path, boulder)
-
-    print(f"Atlas plan: {rationale}")
-    print(f"Team: Atlas + {', '.join(team)}")
-    print()
-
-    for agent in selected_agents:
-        spawn_one_agent(agent, tasks.get(agent["name"], args.task), task_dir, log_dir, boulder_path, write_mode)
-        print()
-
-    start_watchdog(task_id, task_dir, boulder_path, args)
-    print("Team spawned. Monitoring active.")
-    print(f"   Monitor: python3 {MMAS_ROOT}/spawn-team.py status {task_id}")
-    return 0
-
-
-def cmd_status(args):
-    boulder_path = MMAS_TASKS_ROOT / args.task_id / "boulder.json"
-    if not boulder_path.exists():
-        print(f"Task not found: {args.task_id}", file=sys.stderr)
-        return 1
-
-    boulder = read_boulder(boulder_path)
-    print(f"\n{boulder['task_id']}")
-    print(f"Task: {boulder['task'][:80]}")
-    print(f"Status: {boulder.get('status')}")
-    print(f"Created: {boulder.get('created_at')}")
-    
-    # Read write policy with fallback for backward compatibility
-    write_policy = boulder.get("write_policy", {})
-    req_mode = write_policy.get("requested_mode", boulder.get("guardrails", {}).get("writeMode", "workspace"))
-    res_mode = write_policy.get("resolved_mode", boulder.get("guardrails", {}).get("writeMode", "workspace"))
-    mechanism = write_policy.get("enforcement_mechanism", "none")
-    roots = write_policy.get("approved_writable_roots", [])
-    
-    print(f"Write Mode (requested/resolved): {req_mode} / {res_mode}")
-    print(f"Enforcement Mechanism: {mechanism}")
-    if roots:
-        print(f"Approved Writable Roots: {', '.join(roots)}")
-        
-    print(f"Watchdog PID: {boulder.get('watchdog_pid')} PGID: {boulder.get('watchdog_pgid')}")
-    print(f"\n{'NAME':<12} {'STATUS':<12} {'PID':<8} {'PGID':<8} {'MODEL':<28}")
-    print(f"{'-'*12} {'-'*12} {'-'*8} {'-'*8} {'-'*28}")
-    for agent in boulder.get("agents", []):
-        print(
-            f"{agent['name']:<12} {agent.get('status','?'):<12} "
-            f"{str(agent.get('pid') or '—'):<8} {str(agent.get('pgid') or '—'):<8} "
-            f"{agent.get('model','?'):<28}"
-        )
-    return 0
-
-
-def cmd_list(args):
-    agents = list_available_agents()
-    print(f"\nAvailable MMAS agents ({len(agents)}):")
-    for name in agents:
-        try:
-            agent = load_agent(name)
-            print(f"  - {name:<14} {agent.get('model','?'):<28} [{agent.get('category','?')}]")
+            log_handle = open(log_file, "w", encoding="utf-8")
+            try:
+                proc = subprocess.Popen(cmd, stdout=log_handle, stderr=subprocess.STDOUT, text=True, env=get_clean_env(write_mode, task_dir, agent.get("backend")), start_new_session=True)
+            finally:
+                log_handle.close()
         except Exception as exc:
-            print(f"  - {name:<14} ERROR: {exc}")
-    return 0
+            spawn_failed = True
+            boulder["agents"][i]["status"] = "spawn_failed"
+            boulder["agents"][i]["completed_at"] = utc_now()
+            boulder["agents"][i]["exit_code"] = -1
+            append_event(boulder, "agent_spawn_failed", f"{name}: {exc}")
+            print(f"   ❌ Failed to spawn {name}: {exc}", file=sys.stderr)
+            break
 
+        pgid = resolve_pgid(proc.pid)
+        boulder["agents"][i].update(
+            {
+                "pid": proc.pid,
+                "pgid": pgid,
+                "status": "running",
+                "started_at": utc_now(),
+                "last_activity": utc_now(),
+                "log_file": str(log_file),
+                "summary_file": str(log_file.with_suffix(".summary")),
+            }
+        )
+        spawned_indices.append(i)
+        append_event(boulder, "agent_spawned", f"{name} pid={proc.pid} pgid={pgid}")
+        write_boulder(boulder_path, boulder)
 
-def cmd_stop(args):
-    boulder_path = MMAS_TASKS_ROOT / args.task_id / "boulder.json"
-    if not boulder_path.exists():
-        print(f"Task not found: {args.task_id}", file=sys.stderr)
-        return 1
+    if spawn_failed:
+        for i in spawned_indices:
+            agent_state = boulder["agents"][i]
+            terminate_process_group(agent_state.get("pgid"), agent_state.get("pid"), args.kill_grace)
+            agent_state["status"] = "killed"
+            agent_state["completed_at"] = utc_now()
+            append_event(boulder, "agent_killed", f"{agent_state['name']} terminated after spawn failure")
+        for i, agent_state in enumerate(boulder["agents"]):
+            if i not in spawned_indices and agent_state["status"] == "pending":
+                agent_state["status"] = "cancelled"
+                agent_state["completed_at"] = utc_now()
+        boulder["status"] = "failed"
+        boulder["failure_reason"] = "agent spawn failed"
+        write_boulder(boulder_path, boulder)
+        print(f"Task ID: {task_id}")
+        return 2
 
-    boulder = read_boulder(boulder_path)
-    details = []
-    killed = 0
-
-    did_kill, detail = terminate_process_group(boulder.get("watchdog_pid"), args.grace, "watchdog")
-    if did_kill:
-        killed += 1
-    details.append(detail)
-
-    for agent in boulder.get("agents", []):
-        did_kill, detail = terminate_process_group(agent.get("pid"), args.grace, agent.get("name", "agent"))
-        if did_kill:
-            killed += 1
-            agent["status"] = "stopped"
-            agent["completed_at"] = utc_now()
-        details.append(detail)
-
-    boulder["status"] = "stopped"
-    boulder["stop_reason"] = "user_stop"
-    append_event(boulder, "stopped", f"User stopped task. Process groups signaled: {killed}. Details: {'; '.join(details)}")
+    watchdog_log = task_dir / "watchdog.log"
+    watchdog_handle = open(watchdog_log, "w", encoding="utf-8")
+    try:
+        watchdog_proc = subprocess.Popen(
+            [str(MMAS_ROOT / "watchdog.sh"), str(boulder_path), str(args.interval), str(args.timeout), str(args.kill_grace)],
+            stdout=watchdog_handle,
+            stderr=subprocess.STDOUT,
+            text=True,
+            env=get_clean_env(write_mode, task_dir),
+            start_new_session=True,
+        )
+    finally:
+        watchdog_handle.close()
+    boulder["watchdog_pid"] = watchdog_proc.pid
+    boulder["watchdog_pgid"] = resolve_pgid(watchdog_proc.pid)
+    append_event(boulder, "watchdog_spawned", f"pid={watchdog_proc.pid} pgid={boulder['watchdog_pgid']}")
     write_boulder(boulder_path, boulder)
 
-    print(f"Stopped {killed} process groups for task {args.task_id}")
-    for detail in details:
-        print(f"  - {detail}")
+    print(f"   Watchdog: pid={watchdog_proc.pid}")
+    print(f"   Boulder: {boulder_path}")
+    print(f"   Logs: {task_dir}/agent-*.log")
+    print(f"\nTask ID: {task_id}")
     return 0
 
 
-def cmd_report(args):
-    boulder_path = MMAS_TASKS_ROOT / args.task_id / "boulder.json"
+def status_task(task_id: str) -> int:
+    task_dir = MMAS_TASKS_ROOT / task_id
+    boulder_path = task_dir / "boulder.json"
     if not boulder_path.exists():
-        print(f"Task not found: {args.task_id}", file=sys.stderr)
-        return 1
-
+        print(f"Task not found: {task_id}", file=sys.stderr)
+        return 2
     boulder = read_boulder(boulder_path)
-    agents = boulder.get("agents", [])
-    report = {
-        "task_id": boulder["task_id"],
-        "task": boulder["task"],
-        "started_at": boulder.get("created_at"),
-        "completed_at": boulder.get("completed_at"),
-        "status": boulder.get("status"),
-        "stop_reason": boulder.get("stop_reason"),
-        "guardrails": boulder.get("guardrails", {}),
-        "write_policy": boulder.get("write_policy", {
-            "requested_mode": boulder.get("guardrails", {}).get("writeMode", "workspace"),
-            "resolved_mode": boulder.get("guardrails", {}).get("writeMode", "workspace"),
-            "enforcement_mechanism": "none",
-            "approved_writable_roots": [],
-            "backend_compatibility_decision": "approved",
-            "policy_rejection_reason": ""
-        }),
-        "agents": [
-            {
-                "name": agent["name"],
-                "status": agent.get("status"),
-                "exit_code": agent.get("exit_code"),
-                "summary_file": agent.get("summary_file"),
-                "log_file": agent.get("log_file"),
-                "pid": agent.get("pid"),
-                "pgid": agent.get("pgid"),
-            }
-            for agent in agents
-        ],
-        "events": boulder.get("events", []),
-    }
-
-    report_path = boulder_path.parent / "report.json"
-    with open(report_path, "w", encoding="utf-8") as f:
-        json.dump(report, f, indent=2, ensure_ascii=False)
-
-    print()
-    print(f"MMAS Report - {boulder['task_id']}")
-    print(f"   Task: {boulder['task'][:80]}")
-    print(f"   Status: {boulder.get('status', 'unknown')}")
-    print(f"   Stop reason: {boulder.get('stop_reason', 'n/a')}")
-    
-    write_policy = report["write_policy"]
-    print(f"   Write Mode (requested/resolved): {write_policy['requested_mode']} / {write_policy['resolved_mode']}")
-    print(f"   Enforcement: {write_policy['enforcement_mechanism']}")
-    if write_policy["approved_writable_roots"]:
-        print(f"   Writable Roots: {', '.join(write_policy['approved_writable_roots'])}")
-        
-    print()
-    print(f"   {'AGENT':<14} {'STATUS':<12} {'PID':<8} {'PGID':<8}")
-    print(f"   {'-'*14} {'-'*12} {'-'*8} {'-'*8}")
-    for agent in agents:
-        print(
-            f"   {agent['name']:<14} {agent.get('status','?'):<12} "
-            f"{str(agent.get('pid') or '—'):<8} {str(agent.get('pgid') or '—'):<8}"
-        )
-    print()
-    print(f"Full report: {report_path}")
+    print(json.dumps(boulder, indent=2, ensure_ascii=False))
     return 0
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="MMAS Team Spawner - orchestrator for multi-agent teams",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__,
-    )
-    sub = parser.add_subparsers(dest="cmd")
-    sub.required = False
-
-    if len(sys.argv) > 1 and sys.argv[1] not in ("spawn", "status", "list", "stop", "report", "-h", "--help"):
-        sys.argv.insert(1, "spawn")
-
-    p_spawn = sub.add_parser("spawn", help="Spawn a team for a task")
-    p_spawn.add_argument("task", help="The task prompt for the team")
-    p_spawn.add_argument("--team", help="Comma-separated agent names. Mutually exclusive with --atlas.")
-    p_spawn.add_argument("--atlas", action="store_true", help="Spawn Atlas alone; Atlas picks the team via team_plan.json.")
-    p_spawn.add_argument("--atlas-timeout", type=int, default=MMAS_DEFAULTS["atlasTimeout"], help="Max seconds to wait for Atlas to write team_plan.json")
-    p_spawn.add_argument("--boss-session", help="Boss session ID, defaults to APEIRON_SESSION_ID")
-    p_spawn.add_argument("--interval", type=int, default=MMAS_DEFAULTS["watchdogInterval"], help="Watchdog polling interval in seconds")
-    p_spawn.add_argument("--max-agents", type=int, default=MMAS_DEFAULTS["maxAgents"], help=f"Maximum agents to spawn, hard cap {MMAS_HARD_CAPS['maxAgents']}")
-    p_spawn.add_argument("--timeout", type=int, default=MMAS_DEFAULTS["timeoutSeconds"], help="Per-agent timeout in seconds")
-    p_spawn.add_argument("--plan-only", action="store_true", help="Print planned team and exit before spawning")
-    p_spawn.add_argument("--no-write", action="store_true", help="Alias for --write-mode none")
-    p_spawn.add_argument("--write-mode", choices=["workspace", "logs-only", "none"], default=MMAS_DEFAULTS["writeMode"], help="Write mode")
-    p_spawn.add_argument("--kill-grace", type=int, default=MMAS_DEFAULTS["killGracePeriod"], help="Seconds between SIGTERM and SIGKILL")
-    p_spawn.add_argument("--logs-enabled", action="store_true", default=MMAS_DEFAULTS["logsEnabled"], help="Enable per-agent log files")
-    p_spawn.set_defaults(func=cmd_spawn)
-
-    p_status = sub.add_parser("status", help="Show task status")
-    p_status.add_argument("task_id")
-    p_status.set_defaults(func=cmd_status)
-
-    p_list = sub.add_parser("list", help="List available agents")
-    p_list.set_defaults(func=cmd_list)
-
-    p_stop = sub.add_parser("stop", help="Stop a running task with process-group cleanup")
-    p_stop.add_argument("task_id")
-    p_stop.add_argument("--grace", type=int, default=MMAS_DEFAULTS["killGracePeriod"], help="Seconds between SIGTERM and SIGKILL")
-    p_stop.set_defaults(func=cmd_stop)
-
-    p_report = sub.add_parser("report", help="Print the post-hoc summary report for a task")
-    p_report.add_argument("task_id")
-    p_report.set_defaults(func=cmd_report)
-
-    args = parser.parse_args()
-    if not hasattr(args, "func"):
-        parser.print_help()
+def kill_task(task_id: str, grace_seconds: int) -> int:
+    task_dir = MMAS_TASKS_ROOT / task_id
+    boulder_path = task_dir / "boulder.json"
+    if not boulder_path.exists():
+        print(f"Task not found: {task_id}", file=sys.stderr)
         return 2
-    return args.func(args)
+    boulder = read_boulder(boulder_path)
+    for agent in boulder.get("agents", []):
+        terminate_process_group(agent.get("pgid"), agent.get("pid"), grace_seconds)
+        if agent.get("status") in {"running", "pending"}:
+            agent["status"] = "killed"
+            agent["completed_at"] = utc_now()
+    terminate_process_group(boulder.get("watchdog_pgid"), boulder.get("watchdog_pid"), grace_seconds)
+    boulder["status"] = "killed"
+    append_event(boulder, "task_killed", "Task terminated by kill command")
+    write_boulder(boulder_path, boulder)
+    print(f"Killed task {task_id}")
+    return 0
+
+
+def list_tasks() -> int:
+    if not MMAS_TASKS_ROOT.exists():
+        print("No MMAS tasks found.")
+        return 0
+    rows = []
+    for p in sorted(MMAS_TASKS_ROOT.glob("task-*/boulder.json"), reverse=True):
+        try:
+            b = read_boulder(p)
+            rows.append((b.get("task_id"), b.get("status"), b.get("task", "")[:60]))
+        except Exception:
+            continue
+    if not rows:
+        print("No MMAS tasks found.")
+        return 0
+    for task_id, status, task in rows:
+        print(f"{task_id}\t{status}\t{task}")
+    return 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="MMAS local multi-agent orchestrator")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    spawn = sub.add_parser("spawn", help="Spawn a bounded agent team")
+    spawn.add_argument("task", help="Task for the team")
+    spawn.add_argument("--team", help="Comma-separated agent names")
+    spawn.add_argument("--atlas", action="store_true", help="Let Atlas select the team")
+    spawn.add_argument("--plan-only", action="store_true", help="Plan but do not spawn workers")
+    spawn.add_argument("--max-agents", type=int, default=MMAS_DEFAULTS["maxAgents"])
+    spawn.add_argument("--timeout", type=int, default=MMAS_DEFAULTS["timeoutSeconds"])
+    spawn.add_argument("--interval", type=int, default=MMAS_DEFAULTS["watchdogInterval"])
+    spawn.add_argument("--atlas-timeout", type=int, default=MMAS_DEFAULTS["atlasTimeout"])
+    spawn.add_argument("--kill-grace", type=int, default=MMAS_DEFAULTS["killGracePeriod"])
+    spawn.add_argument("--write-mode", choices=["workspace", "logs-only", "none"], default=MMAS_DEFAULTS["writeMode"])
+    spawn.add_argument("--no-write", action="store_true", help="Alias for --write-mode none")
+    spawn.add_argument("--boss-session")
+
+    status = sub.add_parser("status", help="Show task status")
+    status.add_argument("task_id")
+
+    kill = sub.add_parser("kill", help="Kill task workers and watchdog")
+    kill.add_argument("task_id")
+    kill.add_argument("--kill-grace", type=int, default=MMAS_DEFAULTS["killGracePeriod"])
+
+    sub.add_parser("list", help="List tasks")
+    return parser
+
+
+def main() -> int:
+    parser = build_parser()
+    args = parser.parse_args()
+    if args.command == "spawn":
+        return spawn_team(args)
+    if args.command == "status":
+        return status_task(args.task_id)
+    if args.command == "kill":
+        return kill_task(args.task_id, args.kill_grace)
+    if args.command == "list":
+        return list_tasks()
+    return 2
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())
