@@ -87,11 +87,23 @@ BACKEND_ENV_PREFIXES = {
 
 
 def load_agent(agent_name: str) -> dict:
-    agents_dir = Path(os.environ.get("MMAS_AGENTS_DIR", str(AGENTS_DIR)))
+    if not agent_name or agent_name in {".", ".."} or "/" in agent_name or "\\" in agent_name:
+        raise FileNotFoundError(f"Invalid agent config identifier: {agent_name!r}")
+
+    agents_dir = Path(os.environ.get("MMAS_AGENTS_DIR", str(AGENTS_DIR))).resolve()
     yaml_path = agents_dir / f"{agent_name}.yaml"
-    if not yaml_path.exists():
-        raise FileNotFoundError(f"Agent '{agent_name}' not found at {yaml_path}")
-    with open(yaml_path, "r", encoding="utf-8") as f:
+    if yaml_path.is_symlink():
+        raise FileNotFoundError(f"Invalid agent config: symlinks are not allowed for '{agent_name}'")
+
+    try:
+        resolved_yaml_path = yaml_path.resolve(strict=True)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Agent '{agent_name}' not found at {yaml_path}") from None
+
+    if resolved_yaml_path.parent != agents_dir:
+        raise FileNotFoundError(f"Invalid agent config path for '{agent_name}'")
+
+    with open(resolved_yaml_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
