@@ -34,10 +34,9 @@
   </table>
   <p><strong>Daily build pulse</strong></p>
   <ul>
-      <li>2 commits landed: Merge pull request #48 from imMamdouhaboammar/daily/2026-08-22-spawn-failed-watchdog; Merge pull request #49 from imMamdouhaboammar/daily/2026-08-23-mmas-credential-scope.</li>
-      <li>4 pull requests updated, led by #47: fix(mmas): treat spawn failures as terminal watchdog failures.</li>
-      <li>1 issue changed, including #50: 📅 Weekly AI Health Report — 2026-08-23.</li>
-      <li>Daily summary covers 7 public activity items from the last 1 day.</li>
+      <li>1 pull request updated, led by #51: security(mmas): contain agent config loading.</li>
+      <li>Daily summary covers 1 public activity item from the last 1 day.</li>
+      <li>Documentation and project status remain aligned with the repository’s current public state.</li>
   </ul>
 </details>
 <!-- project-story:end -->
