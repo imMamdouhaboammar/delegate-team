@@ -47,13 +47,12 @@ log_last_modified_seconds_ago() {
   local now mtime
   now=$(date +%s)
 
-  # GNU stat uses -c while BSD/macOS stat uses -f for file format output.
   if mtime=$(stat -c %Y "$log_file" 2>/dev/null); then
     :
   elif mtime=$(stat -f %m "$log_file" 2>/dev/null); then
     :
   else
-    echo "999999"  # unreadable timestamp = fail closed as stale
+    echo "999999"
     return
   fi
 
@@ -64,10 +63,6 @@ log_last_modified_seconds_ago() {
   fi
   echo "$age"
 }
-
-# ---------------------------------------------------------------------------
-# Send report to boss
-# ---------------------------------------------------------------------------
 
 send_to_boss() {
   local content="$1"
@@ -135,6 +130,35 @@ update_agent_state() {
   fi
 }
 
+terminate_remaining_agents() {
+  local grace pid pgid status
+  grace=$(jq -r '.guardrails.killGracePeriod // 5' "$BOULDER")
+
+  while IFS=$'\t' read -r pid pgid status; do
+    [[ "$status" == "done" || "$status" == "error" || "$status" == "spawn_failed" ]] && continue
+    [[ -z "$pid" || "$pid" == "null" ]] && continue
+    if [[ -n "$pgid" && "$pgid" != "null" ]]; then
+      kill -TERM -- "-$pgid" 2>/dev/null || true
+    else
+      kill -TERM "$pid" 2>/dev/null || true
+    fi
+  done < <(jq -r '.agents[] | [(.pid // ""), (.pgid // ""), .status] | @tsv' "$BOULDER")
+
+  sleep "$grace"
+
+  while IFS=$'\t' read -r pid pgid status; do
+    [[ "$status" == "done" || "$status" == "error" || "$status" == "spawn_failed" ]] && continue
+    [[ -z "$pid" || "$pid" == "null" ]] && continue
+    if is_pid_alive "$pid"; then
+      if [[ -n "$pgid" && "$pgid" != "null" ]]; then
+        kill -KILL -- "-$pgid" 2>/dev/null || true
+      else
+        kill -KILL "$pid" 2>/dev/null || true
+      fi
+    fi
+  done < <(jq -r '.agents[] | [(.pid // ""), (.pgid // ""), .status] | @tsv' "$BOULDER")
+}
+
 log "Watchdog started for task $TASK_ID, interval=${INTERVAL}s, boss=$BOSS_SESSION"
 send_to_boss "🐕 [MMAS watchdog started for task $TASK_ID — monitoring every ${INTERVAL}s]"
 
@@ -174,9 +198,11 @@ while true; do
     exit 0
   fi
 
-  if [[ $TICK -gt $(( 7200 / INTERVAL )) ]]; then
-    log "Watchdog timeout (2h). Sending timeout report."
-    send_to_boss "⏰ [MMAS task $TASK_ID TIMED OUT after 2h of monitoring]"
+  timeout_seconds=$(jq -r '.guardrails.timeoutSeconds // 7200' "$BOULDER")
+  if (( TICK * INTERVAL >= timeout_seconds )); then
+    log "Watchdog timeout (${timeout_seconds}s). Terminating remaining agents."
+    terminate_remaining_agents
+    send_to_boss "⏰ [MMAS task $TASK_ID TIMED OUT after ${timeout_seconds}s]"
     tmp=$(mktemp)
     jq '.status = "timeout"' "$BOULDER" > "$tmp" && mv "$tmp" "$BOULDER"
     exit 1
