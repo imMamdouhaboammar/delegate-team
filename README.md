@@ -34,9 +34,9 @@
   </table>
   <p><strong>Daily build pulse</strong></p>
   <ul>
-      <li>3 commits landed: Merge pull request #52 from imMamdouhaboammar/daily/2026-08-26-agent-config-containment; fix(mmas): contain agent config loading.</li>
-      <li>2 pull requests updated, led by #52: security(mmas): contain agent config loading.</li>
-      <li>Daily summary covers 5 public activity items from the last 1 day.</li>
+      <li>1 pull request updated, led by #53: fix(mmas): enforce configured watchdog timeout.</li>
+      <li>Daily summary covers 1 public activity item from the last 1 day.</li>
+      <li>Documentation and project status remain aligned with the repository’s current public state.</li>
   </ul>
 </details>
 <!-- project-story:end -->
