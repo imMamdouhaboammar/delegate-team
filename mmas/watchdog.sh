@@ -38,6 +38,11 @@ is_pid_alive() {
   [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null
 }
 
+is_process_group_alive() {
+  local pgid="$1"
+  [[ -n "$pgid" && "$pgid" != "null" ]] && kill -0 -- "-$pgid" 2>/dev/null
+}
+
 log_last_modified_seconds_ago() {
   local log_file="$1"
   if [[ ! -f "$log_file" ]]; then
@@ -154,12 +159,12 @@ terminate_remaining_agents() {
   while IFS=$'\t' read -r pid pgid status; do
     [[ "$status" == "done" || "$status" == "error" || "$status" == "spawn_failed" ]] && continue
     [[ -z "$pid" || "$pid" == "null" ]] && continue
-    if is_pid_alive "$pid"; then
-      if [[ -n "$pgid" && "$pgid" != "null" ]]; then
+    if [[ -n "$pgid" && "$pgid" != "null" ]]; then
+      if is_process_group_alive "$pgid"; then
         kill -KILL -- "-$pgid" 2>/dev/null || true
-      else
-        kill -KILL "$pid" 2>/dev/null || true
       fi
+    elif is_pid_alive "$pid"; then
+      kill -KILL "$pid" 2>/dev/null || true
     fi
   done < <(jq -r '.agents[] | [(.pid // ""), (.pgid // ""), .status] | @tsv' "$BOULDER")
 }
