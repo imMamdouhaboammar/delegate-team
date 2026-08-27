@@ -14,4 +14,9 @@ describe('MMAS watchdog timeout contract', () => {
     expect(watchdog).toContain('kill -TERM -- "-$pgid"');
     expect(watchdog).toContain('.guardrails.killGracePeriod');
   });
+
+  it('checks process-group liveness after grace so descendants cannot survive a dead leader', () => {
+    expect(watchdog).toContain('is_process_group_alive');
+    expect(watchdog).toContain('kill -0 -- "-$pgid"');
+  });
 });
