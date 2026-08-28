@@ -34,9 +34,9 @@
   </table>
   <p><strong>Daily build pulse</strong></p>
   <ul>
-      <li>1 pull request updated, led by #53: fix(mmas): enforce configured watchdog timeout.</li>
-      <li>Daily summary covers 1 public activity item from the last 1 day.</li>
-      <li>Documentation and project status remain aligned with the repository’s current public state.</li>
+      <li>4 commits landed: Merge pull request #54 from imMamdouhaboammar/daily/2026-08-28-watchdog-timeout-enforce…; fix(mmas): kill surviving timeout process groups.</li>
+      <li>2 pull requests updated, led by #54: fix(mmas): enforce configured watchdog timeout.</li>
+      <li>Daily summary covers 6 public activity items from the last 1 day.</li>
   </ul>
 </details>
 <!-- project-story:end -->
