@@ -17,7 +17,17 @@ function waitForFile(path: string, timeoutMs = 3000): void {
   throw new Error(`timed out waiting for ${path}`);
 }
 
-function pidAlive(pid: number): boolean {
+function processExecuting(pid: number): boolean {
+  if (process.platform === 'linux') {
+    try {
+      const stat = readFileSync(`/proc/${pid}/stat`, 'utf8');
+      const state = stat.slice(stat.lastIndexOf(')') + 2).split(' ', 1)[0];
+      return state !== 'Z';
+    } catch {
+      return false;
+    }
+  }
+
   try {
     process.kill(pid, 0);
     return true;
@@ -94,8 +104,8 @@ describe('MMAS watchdog timeout runtime cleanup', () => {
       expect(boulder.status).toBe('timeout');
 
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
-      expect(pidAlive(workerPid)).toBe(false);
-      expect(pidAlive(childPid)).toBe(false);
+      expect(processExecuting(workerPid)).toBe(false);
+      expect(processExecuting(childPid)).toBe(false);
     } finally {
       try {
         process.kill(-workerPid, 'SIGKILL');
