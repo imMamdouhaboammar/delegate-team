@@ -34,9 +34,9 @@
   </table>
   <p><strong>Daily build pulse</strong></p>
   <ul>
-      <li>4 commits landed: Merge pull request #54 from imMamdouhaboammar/daily/2026-08-28-watchdog-timeout-enforce…; fix(mmas): kill surviving timeout process groups.</li>
-      <li>2 pull requests updated, led by #54: fix(mmas): enforce configured watchdog timeout.</li>
-      <li>Daily summary covers 6 public activity items from the last 1 day.</li>
+      <li>3 commits landed: Merge pull request #55 from imMamdouhaboammar/daily/2026-08-29-watchdog-timeout-integra…; test(mmas): treat zombies as terminated execution.</li>
+      <li>1 pull request updated, led by #55: test(mmas): prove watchdog timeout cleanup at runtime.</li>
+      <li>Daily summary covers 4 public activity items from the last 1 day.</li>
   </ul>
 </details>
 <!-- project-story:end -->
