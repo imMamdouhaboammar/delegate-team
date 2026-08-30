@@ -98,7 +98,7 @@ describe('MMAS watchdog completion authority', () => {
     }
   });
 
-  it('does not act on a reused PID whose process-start identity no longer matches', () => {
+  it('does not act on a reused PID whose recorded worker start time no longer matches', () => {
     if (process.platform === 'win32') return;
 
     const root = mkdtempSync(join(tmpdir(), 'delegate-team-pid-reuse-'));
@@ -138,7 +138,7 @@ describe('MMAS watchdog completion authority', () => {
               status: 'running',
               pid: reusedPid,
               pgid: reusedPid,
-              process_start_id: 'definitely-not-the-current-process',
+              started_at: '2000-01-01T00:00:00Z',
               log_file: workerLog,
               summary_file: summaryFile,
             },
