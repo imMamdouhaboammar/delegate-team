@@ -129,12 +129,7 @@ update_agent_state() {
   last_mod=$(log_last_modified_seconds_ago "$log_file")
   if [[ $last_mod -gt $IDLE_THRESHOLD_SEC ]]; then
     set_agent_status "$agent_name" "stuck"
-    if [[ -n "$summary_file" && -f "$summary_file" ]]; then
-      log "Agent $agent_name is stuck but has summary — marking done"
-      set_agent_status "$agent_name" "done"
-    else
-      log "Agent $agent_name stuck for ${last_mod}s — needs nudge"
-    fi
+    log "Agent $agent_name stuck for ${last_mod}s — needs nudge"
   else
     set_agent_status "$agent_name" "running"
   fi
