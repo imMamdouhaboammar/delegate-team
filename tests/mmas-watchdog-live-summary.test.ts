@@ -22,7 +22,7 @@ describe('MMAS watchdog completion authority', () => {
   });
 
   it('requires process exit before summary presence can authorize done', () => {
-    expect(watchdogSource).toMatch(/if ! is_pid_alive "\$pid"; then[\s\S]*-f "\$summary_file"[\s\S]*set_agent_status "\$agent_name" "done"/m);
+    expect(watchdogSource).toMatch(/if ! is_pid_alive "\$pid"(?: "\$started_at")?; then[\s\S]*-f "\$summary_file"[\s\S]*set_agent_status "\$agent_name" "done"/m);
   });
 
   it('times out a live stale worker even when it has already written a summary', () => {
