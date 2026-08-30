@@ -6,6 +6,15 @@ import { describe, expect, it } from 'vitest';
 
 const watchdogSource = readFileSync(join(process.cwd(), 'mmas', 'watchdog.sh'), 'utf8');
 
+function processExists(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 describe('MMAS watchdog completion authority', () => {
   it('does not mark a still-running stuck worker done merely because a summary exists', () => {
     expect(watchdogSource).not.toContain('stuck but has summary — marking done');
@@ -84,6 +93,78 @@ describe('MMAS watchdog completion authority', () => {
         process.kill(-workerPid, 'SIGKILL');
       } catch {
         // The watchdog should already have terminated the worker process group.
+      }
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('does not act on a reused PID whose process-start identity no longer matches', () => {
+    if (process.platform === 'win32') return;
+
+    const root = mkdtempSync(join(tmpdir(), 'delegate-team-pid-reuse-'));
+    const home = join(root, 'home');
+    const taskId = 'pid-reuse-must-not-be-worker';
+    const taskDir = join(home, '.apeiron', 'multi-agent', 'tasks', taskId);
+    const fakeBin = join(root, 'bin');
+    const workerLog = join(taskDir, 'worker.log');
+    const summaryFile = join(taskDir, 'worker-summary.md');
+    mkdirSync(taskDir, { recursive: true });
+    mkdirSync(fakeBin, { recursive: true });
+    writeFileSync(workerLog, 'worker finished earlier\n');
+    writeFileSync(summaryFile, 'completed summary\n');
+
+    const fakeApeiron = join(fakeBin, 'apeiron');
+    writeFileSync(fakeApeiron, '#!/usr/bin/env bash\nexit 0\n');
+    chmodSync(fakeApeiron, 0o755);
+
+    const unrelated = spawn('bash', ['-c', 'while :; do sleep 1; done'], {
+      detached: true,
+      stdio: 'ignore',
+    });
+    unrelated.unref();
+    expect(unrelated.pid).toBeTypeOf('number');
+    const reusedPid = unrelated.pid!;
+
+    try {
+      writeFileSync(
+        join(taskDir, 'boulder.json'),
+        JSON.stringify({
+          task: 'pid reuse identity boundary',
+          status: 'running',
+          guardrails: { timeoutSeconds: 1, killGracePeriod: 0, writeMode: 'workspace' },
+          agents: [
+            {
+              name: 'worker',
+              status: 'running',
+              pid: reusedPid,
+              pgid: reusedPid,
+              process_start_id: 'definitely-not-the-current-process',
+              log_file: workerLog,
+              summary_file: summaryFile,
+            },
+          ],
+        }),
+      );
+
+      const result = spawnSync('bash', [resolve('mmas/watchdog.sh'), taskId, 'boss-session', '--interval', '1'], {
+        env: { ...process.env, HOME: home, PATH: `${fakeBin}:${process.env.PATH ?? ''}` },
+        encoding: 'utf8',
+        timeout: 8000,
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.status).toBe(0);
+
+      const boulder = JSON.parse(readFileSync(join(taskDir, 'boulder.json'), 'utf8'));
+      expect(boulder.status).toBe('complete');
+      expect(boulder.agents[0].status).toBe('done');
+      expect(boulder.agents[0].completed_at).toBeTypeOf('string');
+      expect(processExists(reusedPid)).toBe(true);
+    } finally {
+      try {
+        process.kill(-reusedPid, 'SIGKILL');
+      } catch {
+        // Cleanup only; the watchdog must not terminate this unrelated process.
       }
       rmSync(root, { recursive: true, force: true });
     }
