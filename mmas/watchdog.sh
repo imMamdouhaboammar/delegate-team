@@ -28,14 +28,60 @@ TASK_DIR="$HOME/.apeiron/multi-agent/tasks/$TASK_ID"
 BOULDER="$TASK_DIR/boulder.json"
 WATCHDOG_LOG="$TASK_DIR/watchdog.log"
 IDLE_THRESHOLD_SEC=300
+PROCESS_START_TOLERANCE_SEC=5
 
 log() {
   echo "[$(date -u +%H:%M:%S)] $*" | tee -a "$WATCHDOG_LOG" >&2
 }
 
+iso_timestamp_epoch() {
+  local value="$1"
+  local normalized
+  normalized=$(printf '%s' "$value" | sed -E 's/\.[0-9]+Z$/Z/')
+
+  if date -d "$normalized" +%s >/dev/null 2>&1; then
+    date -d "$normalized" +%s
+  elif date -j -f "%Y-%m-%dT%H:%M:%SZ" "$normalized" +%s >/dev/null 2>&1; then
+    date -j -f "%Y-%m-%dT%H:%M:%SZ" "$normalized" +%s
+  else
+    return 1
+  fi
+}
+
+process_started_epoch() {
+  local pid="$1"
+  local started
+  started=$(ps -o lstart= -p "$pid" 2>/dev/null | sed -E 's/^ +//; s/ +$//')
+  [[ -n "$started" ]] || return 1
+
+  if date -d "$started" +%s >/dev/null 2>&1; then
+    date -d "$started" +%s
+  elif date -j -f "%a %b %e %T %Y" "$started" +%s >/dev/null 2>&1; then
+    date -j -f "%a %b %e %T %Y" "$started" +%s
+  else
+    return 1
+  fi
+}
+
 is_pid_alive() {
   local pid="$1"
-  [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null
+  local expected_started_at="${2:-}"
+  [[ -n "$pid" && "$pid" != "null" ]] || return 1
+  kill -0 "$pid" 2>/dev/null || return 1
+
+  # Older boulders did not always persist a worker start timestamp. Preserve
+  # their historical behavior rather than treating an unverifiable live PID
+  # as exited. New tasks already record started_at immediately after spawn.
+  if [[ -z "$expected_started_at" || "$expected_started_at" == "null" ]]; then
+    return 0
+  fi
+
+  local expected_epoch actual_epoch delta
+  expected_epoch=$(iso_timestamp_epoch "$expected_started_at") || return 0
+  actual_epoch=$(process_started_epoch "$pid") || return 0
+  delta=$(( actual_epoch - expected_epoch ))
+  (( delta < 0 )) && delta=$(( -delta ))
+  (( delta <= PROCESS_START_TOLERANCE_SEC ))
 }
 
 is_process_group_alive() {
@@ -104,17 +150,18 @@ set_agent_status() {
 
 update_agent_state() {
   local agent_name="$1"
-  local pid log_file summary_file status
+  local pid log_file summary_file status started_at
   pid=$(jq -r --arg name "$agent_name" '.agents[] | select(.name == $name) | .pid' "$BOULDER")
   log_file=$(jq -r --arg name "$agent_name" '.agents[] | select(.name == $name) | .log_file' "$BOULDER")
   summary_file=$(jq -r --arg name "$agent_name" '.agents[] | select(.name == $name) | (.summary_file // empty)' "$BOULDER")
   status=$(jq -r --arg name "$agent_name" '.agents[] | select(.name == $name) | .status' "$BOULDER")
+  started_at=$(jq -r --arg name "$agent_name" '.agents[] | select(.name == $name) | (.started_at // empty)' "$BOULDER")
 
   if [[ "$status" == "done" || "$status" == "error" || "$status" == "spawn_failed" ]]; then
     return
   fi
 
-  if ! is_pid_alive "$pid"; then
+  if ! is_pid_alive "$pid" "$started_at"; then
     local write_mode
     write_mode=$(jq -r '.guardrails.writeMode // "workspace"' "$BOULDER")
     if [[ "$write_mode" == "none" || ( -n "$summary_file" && -f "$summary_file" ) ]]; then
@@ -136,32 +183,34 @@ update_agent_state() {
 }
 
 terminate_remaining_agents() {
-  local grace pid pgid status
+  local grace pid pgid status started_at
   grace=$(jq -r '.guardrails.killGracePeriod // 5' "$BOULDER")
 
-  while IFS=$'\t' read -r pid pgid status; do
+  while IFS=$'\t' read -r pid pgid status started_at; do
     [[ "$status" == "done" || "$status" == "error" || "$status" == "spawn_failed" ]] && continue
     [[ -z "$pid" || "$pid" == "null" ]] && continue
+    is_pid_alive "$pid" "$started_at" || continue
     if [[ -n "$pgid" && "$pgid" != "null" ]]; then
       kill -TERM -- "-$pgid" 2>/dev/null || true
     else
       kill -TERM "$pid" 2>/dev/null || true
     fi
-  done < <(jq -r '.agents[] | [(.pid // ""), (.pgid // ""), .status] | @tsv' "$BOULDER")
+  done < <(jq -r '.agents[] | [(.pid // ""), (.pgid // ""), .status, (.started_at // "")] | @tsv' "$BOULDER")
 
   sleep "$grace"
 
-  while IFS=$'\t' read -r pid pgid status; do
+  while IFS=$'\t' read -r pid pgid status started_at; do
     [[ "$status" == "done" || "$status" == "error" || "$status" == "spawn_failed" ]] && continue
     [[ -z "$pid" || "$pid" == "null" ]] && continue
+    is_pid_alive "$pid" "$started_at" || continue
     if [[ -n "$pgid" && "$pgid" != "null" ]]; then
       if is_process_group_alive "$pgid"; then
         kill -KILL -- "-$pgid" 2>/dev/null || true
       fi
-    elif is_pid_alive "$pid"; then
+    else
       kill -KILL "$pid" 2>/dev/null || true
     fi
-  done < <(jq -r '.agents[] | [(.pid // ""), (.pgid // ""), .status] | @tsv' "$BOULDER")
+  done < <(jq -r '.agents[] | [(.pid // ""), (.pgid // ""), .status, (.started_at // "")] | @tsv' "$BOULDER")
 }
 
 log "Watchdog started for task $TASK_ID, interval=${INTERVAL}s, boss=$BOSS_SESSION"
