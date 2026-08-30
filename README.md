@@ -34,9 +34,9 @@
   </table>
   <p><strong>Daily build pulse</strong></p>
   <ul>
-      <li>3 commits landed: Merge pull request #55 from imMamdouhaboammar/daily/2026-08-29-watchdog-timeout-integra…; test(mmas): treat zombies as terminated execution.</li>
-      <li>1 pull request updated, led by #55: test(mmas): prove watchdog timeout cleanup at runtime.</li>
-      <li>Daily summary covers 4 public activity items from the last 1 day.</li>
+      <li>1 pull request updated, led by #56: fix(mmas): require worker exit before accepting summary.</li>
+      <li>Daily summary covers 1 public activity item from the last 1 day.</li>
+      <li>Documentation and project status remain aligned with the repository’s current public state.</li>
   </ul>
 </details>
 <!-- project-story:end -->
