@@ -34,9 +34,10 @@
   </table>
   <p><strong>Daily build pulse</strong></p>
   <ul>
-      <li>1 pull request updated, led by #56: fix(mmas): require worker exit before accepting summary.</li>
-      <li>Daily summary covers 1 public activity item from the last 1 day.</li>
-      <li>Documentation and project status remain aligned with the repository’s current public state.</li>
+      <li>7 commits landed: Merge pull request #58 from imMamdouhaboammar/daily/2026-08-30-live-summary-not-complete; test(mmas): follow start-aware worker liveness signature.</li>
+      <li>2 pull requests updated, led by #58: fix(mmas): require worker exit before accepting summary.</li>
+      <li>1 issue changed, including #57: 📅 Weekly AI Health Report — 2026-08-30.</li>
+      <li>Daily summary covers 10 public activity items from the last 1 day.</li>
   </ul>
 </details>
 <!-- project-story:end -->
