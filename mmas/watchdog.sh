@@ -84,6 +84,23 @@ is_pid_alive() {
   (( delta <= PROCESS_START_TOLERANCE_SEC ))
 }
 
+process_group_for_pid() {
+  local pid="$1"
+  local pgid
+  pgid=$(ps -o pgid= -p "$pid" 2>/dev/null | tr -d '[:space:]')
+  [[ -n "$pgid" ]] || return 1
+  printf '%s\n' "$pgid"
+}
+
+recorded_group_matches_pid() {
+  local pid="$1"
+  local recorded_pgid="$2"
+  local actual_pgid
+  [[ -n "$recorded_pgid" && "$recorded_pgid" != "null" ]] || return 1
+  actual_pgid=$(process_group_for_pid "$pid") || return 1
+  [[ "$actual_pgid" == "$recorded_pgid" ]]
+}
+
 is_process_group_alive() {
   local pgid="$1"
   [[ -n "$pgid" && "$pgid" != "null" ]] && kill -0 -- "-$pgid" 2>/dev/null
@@ -190,9 +207,12 @@ terminate_remaining_agents() {
     [[ "$status" == "done" || "$status" == "error" || "$status" == "spawn_failed" ]] && continue
     [[ -z "$pid" || "$pid" == "null" ]] && continue
     is_pid_alive "$pid" "$started_at" || continue
-    if [[ -n "$pgid" && "$pgid" != "null" ]]; then
+    if recorded_group_matches_pid "$pid" "$pgid"; then
       kill -TERM -- "-$pgid" 2>/dev/null || true
     else
+      if [[ -n "$pgid" && "$pgid" != "null" ]]; then
+        log "WARNING: recorded PGID $pgid no longer belongs to verified worker PID $pid; signaling PID only"
+      fi
       kill -TERM "$pid" 2>/dev/null || true
     fi
   done < <(jq -r '.agents[] | [(.pid // ""), (.pgid // ""), .status, (.started_at // "")] | @tsv' "$BOULDER")
@@ -203,11 +223,14 @@ terminate_remaining_agents() {
     [[ "$status" == "done" || "$status" == "error" || "$status" == "spawn_failed" ]] && continue
     [[ -z "$pid" || "$pid" == "null" ]] && continue
     is_pid_alive "$pid" "$started_at" || continue
-    if [[ -n "$pgid" && "$pgid" != "null" ]]; then
+    if recorded_group_matches_pid "$pid" "$pgid"; then
       if is_process_group_alive "$pgid"; then
         kill -KILL -- "-$pgid" 2>/dev/null || true
       fi
     else
+      if [[ -n "$pgid" && "$pgid" != "null" ]]; then
+        log "WARNING: recorded PGID $pgid no longer belongs to verified worker PID $pid; signaling PID only"
+      fi
       kill -KILL "$pid" 2>/dev/null || true
     fi
   done < <(jq -r '.agents[] | [(.pid // ""), (.pgid // ""), .status, (.started_at // "")] | @tsv' "$BOULDER")
