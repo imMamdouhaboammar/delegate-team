@@ -34,10 +34,9 @@
   </table>
   <p><strong>Daily build pulse</strong></p>
   <ul>
-      <li>7 commits landed: Merge pull request #58 from imMamdouhaboammar/daily/2026-08-30-live-summary-not-complete; test(mmas): follow start-aware worker liveness signature.</li>
-      <li>2 pull requests updated, led by #58: fix(mmas): require worker exit before accepting summary.</li>
-      <li>1 issue changed, including #57: 📅 Weekly AI Health Report — 2026-08-30.</li>
-      <li>Daily summary covers 10 public activity items from the last 1 day.</li>
+      <li>3 commits landed: Merge pull request #59 from imMamdouhaboammar/daily/2026-09-01-watchdog-pgid-identity; fix(mmas): bind timeout cleanup to worker process group.</li>
+      <li>1 pull request updated, led by #59: fix(mmas): verify worker process groups before timeout cleanup.</li>
+      <li>Daily summary covers 4 public activity items from the last 1 day.</li>
   </ul>
 </details>
 <!-- project-story:end -->
