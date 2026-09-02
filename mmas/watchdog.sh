@@ -70,15 +70,22 @@ is_pid_alive() {
   kill -0 "$pid" 2>/dev/null || return 1
 
   # Older boulders did not always persist a worker start timestamp. Preserve
-  # their historical behavior rather than treating an unverifiable live PID
-  # as exited. New tasks already record started_at immediately after spawn.
+  # their historical PID-only behavior only when identity evidence is absent.
+  # When started_at is present, it is an authority token: malformed or
+  # unverifiable evidence must fail closed rather than silently widening trust.
   if [[ -z "$expected_started_at" || "$expected_started_at" == "null" ]]; then
     return 0
   fi
 
   local expected_epoch actual_epoch delta
-  expected_epoch=$(iso_timestamp_epoch "$expected_started_at") || return 0
-  actual_epoch=$(process_started_epoch "$pid") || return 0
+  if ! expected_epoch=$(iso_timestamp_epoch "$expected_started_at"); then
+    log "WARNING: worker PID $pid has malformed started_at identity evidence; treating PID as unverifiable"
+    return 1
+  fi
+  if ! actual_epoch=$(process_started_epoch "$pid"); then
+    log "WARNING: cannot resolve process start time for worker PID $pid; treating PID as unverifiable"
+    return 1
+  fi
   delta=$(( actual_epoch - expected_epoch ))
   (( delta < 0 )) && delta=$(( -delta ))
   (( delta <= PROCESS_START_TOLERANCE_SEC ))
