@@ -34,9 +34,9 @@
   </table>
   <p><strong>Daily build pulse</strong></p>
   <ul>
-      <li>3 commits landed: Merge pull request #59 from imMamdouhaboammar/daily/2026-09-01-watchdog-pgid-identity; fix(mmas): bind timeout cleanup to worker process group.</li>
-      <li>1 pull request updated, led by #59: fix(mmas): verify worker process groups before timeout cleanup.</li>
-      <li>Daily summary covers 4 public activity items from the last 1 day.</li>
+      <li>1 issue changed, including #60: MMAS: fail closed when persisted worker identity cannot be verified.</li>
+      <li>Daily summary covers 1 public activity item from the last 1 day.</li>
+      <li>Documentation and project status remain aligned with the repository’s current public state.</li>
   </ul>
 </details>
 <!-- project-story:end -->
