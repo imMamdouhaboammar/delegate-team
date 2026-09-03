@@ -11,6 +11,7 @@ PROCESS_START_TOLERANCE_SEC = 5
 
 
 def process_alive(pid: int | None) -> bool:
+    """Return whether the recorded PID currently names a live process."""
     if not pid:
         return False
     try:
@@ -22,22 +23,27 @@ def process_alive(pid: int | None) -> bool:
         return True
 
 
-def verify_pid_started_at(pid: int | None, expected_started_at: str | None) -> tuple[bool, str]:
+def verify_pid_started_at(pid: int | None, expected_started_at: object) -> tuple[bool, str]:
     """Return whether a live PID still matches persisted worker identity evidence.
 
-    Historical boulders without ``started_at`` retain PID-only compatibility. Once
-    identity evidence is present, malformed or unverifiable evidence fails closed.
+    Historical boulders with no ``started_at`` value (``None``) retain PID-only
+    compatibility. Any present value must be a non-empty ISO timestamp and must
+    match the operating system's current process start time.
     """
     if not pid:
         return False, "no recorded pid"
     if not process_alive(pid):
         return False, "process is not running"
-    if not expected_started_at:
+    if expected_started_at is None:
         return True, "legacy pid-only identity"
+    if not isinstance(expected_started_at, str) or not expected_started_at.strip():
+        return False, "identity evidence is malformed; refusing to signal"
 
     try:
-        expected_epoch = datetime.fromisoformat(expected_started_at.replace("Z", "+00:00")).timestamp()
-    except (TypeError, ValueError):
+        expected_epoch = datetime.fromisoformat(
+            expected_started_at.strip().replace("Z", "+00:00")
+        ).timestamp()
+    except ValueError:
         return False, "identity evidence is malformed; refusing to signal"
 
     try:
