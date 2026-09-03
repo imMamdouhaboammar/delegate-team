@@ -13,79 +13,90 @@ function processExists(pid: number): boolean {
   }
 }
 
+const malformedStartedAtCases: Array<[string, unknown]> = [
+  ['unparseable-string', 'definitely-not-a-timestamp'],
+  ['empty-string', ''],
+  ['zero', 0],
+  ['boolean', true],
+  ['object', {}],
+];
+
 describe('MMAS manual stop identity boundary', () => {
-  it('does not signal a live PID when persisted started_at cannot identify that worker', () => {
-    if (process.platform === 'win32') return;
+  it.each(malformedStartedAtCases)(
+    'does not signal a live PID when persisted started_at is %s',
+    (caseName, startedAt) => {
+      if (process.platform === 'win32') return;
 
-    const root = mkdtempSync(join(tmpdir(), 'delegate-team-stop-identity-'));
-    const tasksRoot = join(root, 'tasks');
-    const taskId = 'manual-stop-must-not-trust-stale-pid';
-    const taskDir = join(tasksRoot, taskId);
-    const signalMarker = join(root, 'unexpected-signal');
-    mkdirSync(taskDir, { recursive: true });
+      const root = mkdtempSync(join(tmpdir(), 'delegate-team-stop-identity-'));
+      const tasksRoot = join(root, 'tasks');
+      const taskId = `manual-stop-must-not-trust-stale-pid-${caseName}`;
+      const taskDir = join(tasksRoot, taskId);
+      const signalMarker = join(root, 'unexpected-signal');
+      mkdirSync(taskDir, { recursive: true });
 
-    const unrelated = spawn(
-      'bash',
-      ['-c', 'trap \'printf signalled > "$1"\' TERM; while :; do sleep 0.1; done', 'worker', signalMarker],
-      {
-        detached: true,
-        stdio: 'ignore',
-      },
-    );
-    unrelated.unref();
-    expect(unrelated.pid).toBeTypeOf('number');
-    const unrelatedPid = unrelated.pid!;
-
-    try {
-      writeFileSync(
-        join(taskDir, 'boulder.json'),
-        JSON.stringify({
-          task_id: taskId,
-          task: 'manual stop identity boundary',
-          status: 'running',
-          watchdog_pid: null,
-          watchdog_pgid: null,
-          agents: [
-            {
-              name: 'worker',
-              status: 'running',
-              pid: unrelatedPid,
-              pgid: unrelatedPid,
-              started_at: 'definitely-not-a-timestamp',
-            },
-          ],
-          events: [],
-        }),
-      );
-
-      const result = spawnSync(
-        'python3',
-        [resolve('mmas/spawn-team.py'), 'stop', taskId, '--grace', '1'],
+      const unrelated = spawn(
+        'bash',
+        ['-c', 'trap \'printf signalled > "$1"\' TERM; while :; do sleep 0.1; done', 'worker', signalMarker],
         {
-          env: { ...process.env, MMAS_TASKS_ROOT: tasksRoot },
-          encoding: 'utf8',
-          timeout: 8000,
+          detached: true,
+          stdio: 'ignore',
         },
       );
+      unrelated.unref();
+      expect(unrelated.pid).toBeTypeOf('number');
+      const unrelatedPid = unrelated.pid!;
 
-      expect(result.error).toBeUndefined();
-      expect(processExists(unrelatedPid)).toBe(true);
-      expect(existsSync(signalMarker)).toBe(false);
-
-      const boulder = JSON.parse(readFileSync(join(taskDir, 'boulder.json'), 'utf8'));
-      expect(boulder.status).toBe('stop_incomplete');
-      expect(boulder.stop_reason).toBe('user_stop_incomplete');
-      expect(boulder.agents[0].status).toBe('stop_refused');
-      expect(result.status).toBe(1);
-      expect(result.stdout).toContain('identity evidence is malformed');
-      expect(result.stdout).toContain('refusing to signal');
-    } finally {
       try {
-        process.kill(-unrelatedPid, 'SIGKILL');
-      } catch {
-        // Cleanup only; manual stop must not terminate this unrelated process.
+        writeFileSync(
+          join(taskDir, 'boulder.json'),
+          JSON.stringify({
+            task_id: taskId,
+            task: 'manual stop identity boundary',
+            status: 'running',
+            watchdog_pid: null,
+            watchdog_pgid: null,
+            agents: [
+              {
+                name: 'worker',
+                status: 'running',
+                pid: unrelatedPid,
+                pgid: unrelatedPid,
+                started_at: startedAt,
+              },
+            ],
+            events: [],
+          }),
+        );
+
+        const result = spawnSync(
+          'python3',
+          [resolve('mmas/spawn-team.py'), 'stop', taskId, '--grace', '1'],
+          {
+            env: { ...process.env, MMAS_TASKS_ROOT: tasksRoot },
+            encoding: 'utf8',
+            timeout: 8000,
+          },
+        );
+
+        expect(result.error).toBeUndefined();
+        expect(processExists(unrelatedPid)).toBe(true);
+        expect(existsSync(signalMarker)).toBe(false);
+
+        const boulder = JSON.parse(readFileSync(join(taskDir, 'boulder.json'), 'utf8'));
+        expect(boulder.status).toBe('stop_incomplete');
+        expect(boulder.stop_reason).toBe('user_stop_incomplete');
+        expect(boulder.agents[0].status).toBe('stop_refused');
+        expect(result.status).toBe(1);
+        expect(result.stdout).toContain('identity evidence is malformed');
+        expect(result.stdout).toContain('refusing to signal');
+      } finally {
+        try {
+          process.kill(-unrelatedPid, 'SIGKILL');
+        } catch {
+          // Cleanup only; manual stop must not terminate this unrelated process.
+        }
+        rmSync(root, { recursive: true, force: true });
       }
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
+    },
+  );
 });
