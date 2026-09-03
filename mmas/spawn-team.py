@@ -19,6 +19,12 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
+MMAS_ROOT = Path(__file__).parent.resolve()
+if str(MMAS_ROOT) not in sys.path:
+    sys.path.insert(0, str(MMAS_ROOT))
+
+from process_identity import verify_pid_started_at
+
 try:
     import yaml
 except ImportError:
@@ -26,7 +32,6 @@ except ImportError:
     sys.exit(1)
 
 
-MMAS_ROOT = Path(__file__).parent.resolve()
 AGENTS_DIR = MMAS_ROOT / "agents"
 
 _DELEGATE_TEAM_ROOT_ENV = os.environ.get("DELEGATE_TEAM_ROOT")
@@ -401,11 +406,20 @@ def process_group_for(pid: int) -> int | None:
         return None
 
 
-def terminate_process_group(pid: int | None, grace: int, label: str) -> tuple[bool, str]:
+def terminate_process_group(
+    pid: int | None,
+    grace: int,
+    label: str,
+    expected_pgid: int | None = None,
+) -> tuple[bool, str]:
+    """Terminate a process, widening to its group only when group identity is authorized."""
     if not pid:
         return False, f"{label}: no pid"
 
-    pgid = process_group_for(pid)
+    actual_pgid = process_group_for(pid)
+    pgid = actual_pgid
+    if expected_pgid is not None and actual_pgid != expected_pgid:
+        pgid = None
     target = pgid if pgid is not None else pid
     killed = False
 
@@ -432,6 +446,8 @@ def terminate_process_group(pid: int | None, grace: int, label: str) -> tuple[bo
             os.killpg(target, signal.SIGKILL)
         else:
             os.kill(target, signal.SIGKILL)
+        if expected_pgid is not None and actual_pgid != expected_pgid:
+            return True, f"{label}: process group changed; killed verified PID only"
         return True, f"{label}: killed after grace period"
     except ProcessLookupError:
         return killed, f"{label}: exited before SIGKILL"
@@ -947,6 +963,7 @@ def cmd_list(args):
 
 
 def cmd_stop(args):
+    """Stop a task without granting signal authority to unverifiable modern workers."""
     boulder_path = MMAS_TASKS_ROOT / args.task_id / "boulder.json"
     if not boulder_path.exists():
         print(f"Task not found: {args.task_id}", file=sys.stderr)
@@ -955,6 +972,7 @@ def cmd_stop(args):
     boulder = read_boulder(boulder_path)
     details = []
     killed = 0
+    refused = 0
 
     did_kill, detail = terminate_process_group(boulder.get("watchdog_pid"), args.grace, "watchdog")
     if did_kill:
@@ -962,22 +980,56 @@ def cmd_stop(args):
     details.append(detail)
 
     for agent in boulder.get("agents", []):
-        did_kill, detail = terminate_process_group(agent.get("pid"), args.grace, agent.get("name", "agent"))
+        pid = agent.get("pid")
+        started_at = agent.get("started_at")
+        has_identity_evidence = started_at is not None
+        identity_ok, identity_detail = verify_pid_started_at(pid, started_at)
+        if not identity_ok:
+            if pid and process_alive(pid) and has_identity_evidence:
+                refused += 1
+                agent["status"] = "stop_refused"
+                details.append(f"{agent.get('name', 'agent')}: {identity_detail}")
+            else:
+                details.append(f"{agent.get('name', 'agent')}: {identity_detail}")
+            continue
+
+        expected_pgid = agent.get("pgid") if has_identity_evidence else None
+        if has_identity_evidence and expected_pgid is None:
+            expected_pgid = -1
+        did_kill, detail = terminate_process_group(
+            pid,
+            args.grace,
+            agent.get("name", "agent"),
+            expected_pgid=expected_pgid,
+        )
         if did_kill:
             killed += 1
             agent["status"] = "stopped"
             agent["completed_at"] = utc_now()
         details.append(detail)
 
-    boulder["status"] = "stopped"
-    boulder["stop_reason"] = "user_stop"
-    append_event(boulder, "stopped", f"User stopped task. Process groups signaled: {killed}. Details: {'; '.join(details)}")
+    if refused:
+        boulder["status"] = "stop_incomplete"
+        boulder["stop_reason"] = "user_stop_incomplete"
+        event_type = "stop_incomplete"
+    else:
+        boulder["status"] = "stopped"
+        boulder["stop_reason"] = "user_stop"
+        event_type = "stopped"
+    append_event(
+        boulder,
+        event_type,
+        f"User stopped task. Process groups signaled: {killed}. Refused workers: {refused}. Details: {'; '.join(details)}",
+    )
     write_boulder(boulder_path, boulder)
 
-    print(f"Stopped {killed} process groups for task {args.task_id}")
+    if refused:
+        print(f"Task {args.task_id} stop incomplete. Refused to signal {refused} unverifiable worker(s).")
+    else:
+        print(f"Stopped {killed} process groups for task {args.task_id}")
     for detail in details:
         print(f"  - {detail}")
-    return 0
+    return 1 if refused else 0
 
 
 def cmd_report(args):
