@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
@@ -21,12 +21,17 @@ describe('MMAS manual stop identity boundary', () => {
     const tasksRoot = join(root, 'tasks');
     const taskId = 'manual-stop-must-not-trust-stale-pid';
     const taskDir = join(tasksRoot, taskId);
+    const signalMarker = join(root, 'unexpected-signal');
     mkdirSync(taskDir, { recursive: true });
 
-    const unrelated = spawn('bash', ['-c', 'while :; do sleep 1; done'], {
-      detached: true,
-      stdio: 'ignore',
-    });
+    const unrelated = spawn(
+      'bash',
+      ['-c', 'trap \'printf signalled > "$1"\' TERM; while :; do sleep 0.1; done', 'worker', signalMarker],
+      {
+        detached: true,
+        stdio: 'ignore',
+      },
+    );
     unrelated.unref();
     expect(unrelated.pid).toBeTypeOf('number');
     const unrelatedPid = unrelated.pid!;
@@ -55,7 +60,7 @@ describe('MMAS manual stop identity boundary', () => {
 
       const result = spawnSync(
         'python3',
-        [resolve('mmas/spawn-team.py'), 'stop', taskId, '--grace', '0'],
+        [resolve('mmas/spawn-team.py'), 'stop', taskId, '--grace', '1'],
         {
           env: { ...process.env, MMAS_TASKS_ROOT: tasksRoot },
           encoding: 'utf8',
@@ -65,6 +70,7 @@ describe('MMAS manual stop identity boundary', () => {
 
       expect(result.error).toBeUndefined();
       expect(processExists(unrelatedPid)).toBe(true);
+      expect(existsSync(signalMarker)).toBe(false);
 
       const boulder = JSON.parse(readFileSync(join(taskDir, 'boulder.json'), 'utf8'));
       expect(boulder.status).toBe('stop_incomplete');
