@@ -19,6 +19,10 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
+MMAS_ROOT = Path(__file__).parent.resolve()
+if str(MMAS_ROOT) not in sys.path:
+    sys.path.insert(0, str(MMAS_ROOT))
+
 from process_identity import verify_pid_started_at
 
 try:
@@ -28,7 +32,6 @@ except ImportError:
     sys.exit(1)
 
 
-MMAS_ROOT = Path(__file__).parent.resolve()
 AGENTS_DIR = MMAS_ROOT / "agents"
 
 _DELEGATE_TEAM_ROOT_ENV = os.environ.get("DELEGATE_TEAM_ROOT")
@@ -409,6 +412,7 @@ def terminate_process_group(
     label: str,
     expected_pgid: int | None = None,
 ) -> tuple[bool, str]:
+    """Terminate a process, widening to its group only when group identity is authorized."""
     if not pid:
         return False, f"{label}: no pid"
 
@@ -959,6 +963,7 @@ def cmd_list(args):
 
 
 def cmd_stop(args):
+    """Stop a task without granting signal authority to unverifiable modern workers."""
     boulder_path = MMAS_TASKS_ROOT / args.task_id / "boulder.json"
     if not boulder_path.exists():
         print(f"Task not found: {args.task_id}", file=sys.stderr)
@@ -977,9 +982,10 @@ def cmd_stop(args):
     for agent in boulder.get("agents", []):
         pid = agent.get("pid")
         started_at = agent.get("started_at")
+        has_identity_evidence = started_at is not None
         identity_ok, identity_detail = verify_pid_started_at(pid, started_at)
         if not identity_ok:
-            if pid and process_alive(pid) and started_at:
+            if pid and process_alive(pid) and has_identity_evidence:
                 refused += 1
                 agent["status"] = "stop_refused"
                 details.append(f"{agent.get('name', 'agent')}: {identity_detail}")
@@ -987,8 +993,8 @@ def cmd_stop(args):
                 details.append(f"{agent.get('name', 'agent')}: {identity_detail}")
             continue
 
-        expected_pgid = agent.get("pgid") if started_at else None
-        if started_at and expected_pgid is None:
+        expected_pgid = agent.get("pgid") if has_identity_evidence else None
+        if has_identity_evidence and expected_pgid is None:
             expected_pgid = -1
         did_kill, detail = terminate_process_group(
             pid,
