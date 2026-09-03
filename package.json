@@ -1,6 +1,6 @@
 {
   "name": "delegate-team",
-  "version": "3.1.1",
+  "version": "3.1.2",
   "description": "Local agent orchestration CLI with task routing, backend delegation, multi-agent workflows, governed remote coding, and optional memory integrations.",
   "type": "module",
   "main": "dist/cli.js",

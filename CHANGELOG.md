@@ -3,6 +3,15 @@
 All notable changes to this project are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.1.2] - 2026-09-04
+
+### Fixed
+- Hardened MMAS manual task cancellation so modern worker PIDs are signaled only when persisted `started_at` identity evidence still matches the live process; unverifiable live workers are refused instead of allowing stale PID reuse to terminate unrelated processes.
+- Bound process-group signaling for identity-verified workers to their persisted PGID, narrowing cancellation to the verified PID when the process group has changed.
+
+### Tests
+- Added adversarial runtime coverage for malformed `started_at` values, proving unrelated detached processes remain alive and incomplete stops are reported explicitly.
+
 ## [3.1.1] - 2026-07-20
 
 ### Fixed
