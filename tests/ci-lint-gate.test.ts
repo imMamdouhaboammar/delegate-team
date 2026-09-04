@@ -8,7 +8,7 @@ const ci = readFileSync(join(ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
 
 describe('pull-request lint gate', () => {
   it('runs the release lint command in the canonical Node CI job', () => {
-    const nodeJob = ci.match(/  build-and-test:\n([\s\S]*?)(?=\n  [a-zA-Z0-9_-]+:\n|$)/)?.[1] ?? '';
+    const nodeJob = ci.match(/ {2}build-and-test:\n([\s\S]*?)(?=\n {2}[a-zA-Z0-9_-]+:\n|$)/)?.[1] ?? '';
 
     expect(nodeJob).toContain('- name: Lint');
     expect(nodeJob).toContain('run: npm run lint');
