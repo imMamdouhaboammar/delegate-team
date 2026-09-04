@@ -34,10 +34,9 @@
   </table>
   <p><strong>Daily build pulse</strong></p>
   <ul>
-      <li>4 commits landed: Merge pull request #61 from imMamdouhaboammar/daily/2026-09-03-watchdog-identity-fail-c…; test(mmas): prove malformed worker identity cannot authorize signals.</li>
-      <li>1 pull request updated, led by #61: fix(mmas): fail closed on unverifiable worker identity.</li>
-      <li>1 issue changed, including #60: MMAS: fail closed when persisted worker identity cannot be verified.</li>
-      <li>Daily summary covers 6 public activity items from the last 1 day.</li>
+      <li>13 commits landed: Merge pull request #62 from imMamdouhaboammar/daily/2026-09-04-manual-stop-identity; docs: align README with 3.1.2.</li>
+      <li>1 pull request updated, led by #62: fix(mmas): bind manual stop to worker identity.</li>
+      <li>Daily summary covers 14 public activity items from the last 1 day.</li>
   </ul>
 </details>
 <!-- project-story:end -->
