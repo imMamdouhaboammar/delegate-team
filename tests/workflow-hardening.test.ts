@@ -183,6 +183,7 @@ describe('GitHub workflow hardening', () => {
     expect(reporter).toContain("appendFileSync(process.env.GITHUB_OUTPUT, 'publishable=true\\n')");
     expect(reporter).toContain("appendFileSync(process.env.GITHUB_OUTPUT, 'publishable=false\\n')");
     expect(reporter).toContain("if: steps.weekly_ai.outputs.publishable == 'true'");
+    expect(reporter).toContain("const summary = json.choices?.[0]?.message?.content?.trim();");
     expect(reporter).toContain("if (!res.ok || !summary) throw new Error('weekly summary unavailable')");
     expect(reporter).not.toContain('AI summary unavailable this week.');
   });
