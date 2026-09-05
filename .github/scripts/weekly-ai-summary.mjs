@@ -13,6 +13,20 @@ function chooseDelimiter(summary, randomId) {
   throw new Error('unable to choose weekly summary output delimiter');
 }
 
+function describeStats(stats) {
+  return [
+    `commit_count: ${stats.commit_count ?? 'unknown'}`,
+    `open_ai_issues: ${stats.open_ai_issues ?? 'unknown'}`,
+    `closed_ai_issues: ${stats.closed_ai_issues ?? 'unknown'}`,
+    `week_start: ${stats.week_start ?? 'unknown'}`,
+    `week_end: ${stats.week_end ?? 'unknown'}`,
+  ].join('\n');
+}
+
+function buildRequestBody(prompt) {
+  return `{"model":"gemini-3.5-flash","max_tokens":1500,"temperature":0.4,"messages":[{"role":"user","content":${JSON.stringify(prompt)}}]}`;
+}
+
 export async function generateWeeklySummary({
   fetchImpl = globalThis.fetch,
   env = process.env,
@@ -29,7 +43,8 @@ export async function generateWeeklySummary({
     const prompt = `Generate a concise weekly project health summary for a GitHub Issue.
 Repository: delegate-team (Agentic Engineering Supersystem)
 Week: ${stats.week_start} → ${stats.week_end}
-Stats: ${JSON.stringify(stats, null, 2)}
+Stats:
+${describeStats(stats)}
 
 Write in GitHub-flavored Markdown. Include:
 - 📊 Weekly Snapshot table
@@ -46,12 +61,7 @@ Keep it under 600 words, use emoji, be direct and actionable.`;
         'X-API-Key': gatewayKey,
         Authorization: `Bearer ${gatewayKey}`,
       },
-      body: JSON.stringify({
-        model: 'gemini-3.5-flash',
-        max_tokens: 1500,
-        temperature: 0.4,
-        messages: [{ role: 'user', content: prompt }],
-      }),
+      body: buildRequestBody(prompt),
     });
 
     if (!response.ok) throw new Error(`weekly summary gateway returned ${response.status ?? 'non-success'}`);
@@ -70,7 +80,7 @@ Keep it under 600 words, use emoji, be direct and actionable.`;
     appendFile(env.GITHUB_OUTPUT, 'publishable=false\n');
     appendFile(
       env.GITHUB_STEP_SUMMARY,
-      `# 📅 Weekly AI Health Report\n\n⚠️ Summary generation failed, so no tracker Issue was created.\n\n**Stats:** ${JSON.stringify(stats)}\n`,
+      `# 📅 Weekly AI Health Report\n\n⚠️ Summary generation failed, so no tracker Issue was created.\n\n**Stats**\n\n${describeStats(stats)}\n`,
     );
     return { publishable: false, error: message };
   }
