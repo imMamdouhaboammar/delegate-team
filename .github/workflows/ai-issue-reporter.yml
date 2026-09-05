@@ -324,7 +324,7 @@ jobs:
             });
 
             const json    = res.ok ? await res.json() : {};
-            const summary = json.choices?.[0]?.message?.content;
+            const summary = json.choices?.[0]?.message?.content?.trim();
             if (!res.ok || !summary) throw new Error('weekly summary unavailable');
             appendFileSync(process.env.GITHUB_OUTPUT, 'publishable=true\n');
             appendFileSync(process.env.GITHUB_OUTPUT,
