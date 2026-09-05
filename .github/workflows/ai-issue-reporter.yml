@@ -323,19 +323,23 @@ jobs:
               }),
             });
 
-            const json    = await res.json();
-            const summary = json.choices?.[0]?.message?.content ?? 'AI summary unavailable.';
+            const json    = res.ok ? await res.json() : {};
+            const summary = json.choices?.[0]?.message?.content?.trim();
+            if (!res.ok || !summary) throw new Error('weekly summary unavailable');
+            appendFileSync(process.env.GITHUB_OUTPUT, 'publishable=true\n');
             appendFileSync(process.env.GITHUB_OUTPUT,
               `weekly_summary<<WEEKLY_EOF\n${summary}\nWEEKLY_EOF\n`);
             console.log('✓ AI weekly summary generated');
           } catch (e) {
             console.error(`AI weekly summary failed: ${e.message}`);
-            appendFileSync(process.env.GITHUB_OUTPUT,
-              `weekly_summary<<WEEKLY_EOF\n# Weekly Report\nAI summary unavailable this week.\n**Stats:** ${JSON.stringify(stats)}\nWEEKLY_EOF\n`);
+            appendFileSync(process.env.GITHUB_OUTPUT, 'publishable=false\n');
+            appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+              `# 📅 Weekly AI Health Report\n\n⚠️ Summary generation failed, so no tracker Issue was created.\n\n**Stats:** ${JSON.stringify(stats)}\n`);
           }
           JSEOF
 
       - name: Open weekly summary Issue
+        if: steps.weekly_ai.outputs.publishable == 'true'
         uses: actions/github-script@v7
         env:
           WEEKLY_SUMMARY: ${{ steps.weekly_ai.outputs.weekly_summary }}
