@@ -12,6 +12,10 @@ This file supplements the root `AGENTS.md` with a repository-local ECC baseline.
 
 Treat `.codex/config.toml` as an optional repository baseline. Review every server before use and keep secrets in user-level configuration or approved environment storage.
 
+Repository-provisioned npm MCP servers are pinned to exact reviewed versions. Do not use `@latest` or an unversioned package spec with `npx -y` in the checked-in baseline. When updating one, verify the intended upstream release, change the exact version explicitly, and run the repository test suite so the dependency change remains reviewable.
+
+The GitHub MCP entry uses GitHub's supported hosted endpoint in read-only mode. Authentication is host-managed; never add a token to `.codex/config.toml`. If a future workflow genuinely requires GitHub mutation tools, treat that as a separate permission expansion and review it explicitly rather than removing the read-only boundary as incidental maintenance.
+
 ## Multi-agent support
 
 - Explorer: read-only evidence gathering

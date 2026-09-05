@@ -5,28 +5,30 @@ approval_policy = "on-request"
 sandbox_mode = "workspace-write"
 web_search = "live"
 
+# GitHub's supported hosted MCP. Read-only mode keeps explorer/reviewer access
+# from silently acquiring repository mutation authority. Authentication remains
+# host-managed; do not commit tokens to project configuration.
 [mcp_servers.github]
-command = "npx"
-args = ["-y", "@modelcontextprotocol/server-github"]
+url = "https://api.githubcopilot.com/mcp/readonly"
 
 [mcp_servers.context7]
 command = "npx"
-args = ["-y", "@upstash/context7-mcp@latest"]
+args = ["-y", "@upstash/context7-mcp@4.0.4"]
 
 [mcp_servers.exa]
 url = "https://mcp.exa.ai/mcp"
 
 [mcp_servers.memory]
 command = "npx"
-args = ["-y", "@modelcontextprotocol/server-memory"]
+args = ["-y", "@modelcontextprotocol/server-memory@2026.8.31"]
 
 [mcp_servers.playwright]
 command = "npx"
-args = ["-y", "@playwright/mcp@latest", "--extension"]
+args = ["-y", "@playwright/mcp@0.0.79", "--extension"]
 
 [mcp_servers.sequential-thinking]
 command = "npx"
-args = ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+args = ["-y", "@modelcontextprotocol/server-sequential-thinking@2026.7.4"]
 
 [features]
 multi_agent = true
