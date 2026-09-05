@@ -24,6 +24,8 @@ function describeStats(stats) {
 }
 
 function buildRequestBody(prompt) {
+  // nosemgrep: javascript.lang.correctness.no-stringify-keys.no-stringify-keys
+  // This stringification only JSON-escapes a scalar prompt; no object-key ordering is consumed.
   return `{"model":"gemini-3.5-flash","max_tokens":1500,"temperature":0.4,"messages":[{"role":"user","content":${JSON.stringify(prompt)}}]}`;
 }
 
