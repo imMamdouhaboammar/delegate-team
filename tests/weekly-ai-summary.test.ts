@@ -51,6 +51,19 @@ describe('weekly AI summary publication authority', () => {
     });
 
     expect(result).toEqual({ publishable: true, summary: '# Health\nWEEKLY_COLLIDE\nGood week.' });
+    expect(fetchImpl).toHaveBeenCalledOnce();
+    const request = fetchImpl.mock.calls[0][1];
+    const body = JSON.parse(request.body);
+    expect(body).toMatchObject({
+      model: 'gemini-3.5-flash',
+      max_tokens: 1500,
+      temperature: 0.4,
+    });
+    expect(body.messages).toHaveLength(1);
+    expect(body.messages[0].role).toBe('user');
+    expect(body.messages[0].content).toContain('commit_count: 4');
+    expect(body.messages[0].content).toContain('week_start: 2026-08-30');
+
     const output = readFileSync(h.output, 'utf8');
     expect(output).toContain('publishable=true\n');
     expect(output).toContain('weekly_summary<<WEEKLY_SAFE\n# Health\nWEEKLY_COLLIDE\nGood week.\nWEEKLY_SAFE\n');
