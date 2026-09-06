@@ -284,59 +284,7 @@ jobs:
         env:
           AI_GATEWAY_KEY: ${{ secrets.AI_GATEWAY_KEY }}
           STATS_JSON: ${{ steps.stats.outputs.stats_json }}
-        run: |
-          node --input-type=module <<'JSEOF'
-          import { appendFileSync } from 'fs';
-
-          const GATEWAY_KEY = process.env.AI_GATEWAY_KEY;
-          const GATEWAY_URL = 'https://ai-gateway-1044452917221.us-central1.run.app/v1/chat/completions';
-          const stats       = JSON.parse(process.env.STATS_JSON || '{}');
-
-          const prompt = `Generate a concise weekly project health summary for a GitHub Issue.
-          Repository: delegate-team (Agentic Engineering Supersystem)
-          Week: ${stats.week_start} → ${stats.week_end}
-          Stats: ${JSON.stringify(stats, null, 2)}
-
-          Write in GitHub-flavored Markdown. Include:
-          - 📊 Weekly Snapshot table
-          - 🏥 Health Assessment (1-2 sentences)
-          - ✅ Wins this week
-          - 🔧 Areas to watch
-          - 📋 Recommended focus for next week
-          Keep it under 600 words, use emoji, be direct and actionable.`;
-
-          try {
-            const res = await fetch(GATEWAY_URL, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-API-Key':    GATEWAY_KEY,
-                'Authorization': `Bearer ${GATEWAY_KEY}`,
-              },
-              body: JSON.stringify({
-                model: 'gemini-3.5-flash',
-                max_tokens: 1500,
-                temperature: 0.4,
-                messages: [
-                  { role: 'user', content: prompt },
-                ],
-              }),
-            });
-
-            const json    = res.ok ? await res.json() : {};
-            const summary = json.choices?.[0]?.message?.content?.trim();
-            if (!res.ok || !summary) throw new Error('weekly summary unavailable');
-            appendFileSync(process.env.GITHUB_OUTPUT, 'publishable=true\n');
-            appendFileSync(process.env.GITHUB_OUTPUT,
-              `weekly_summary<<WEEKLY_EOF\n${summary}\nWEEKLY_EOF\n`);
-            console.log('✓ AI weekly summary generated');
-          } catch (e) {
-            console.error(`AI weekly summary failed: ${e.message}`);
-            appendFileSync(process.env.GITHUB_OUTPUT, 'publishable=false\n');
-            appendFileSync(process.env.GITHUB_STEP_SUMMARY,
-              `# 📅 Weekly AI Health Report\n\n⚠️ Summary generation failed, so no tracker Issue was created.\n\n**Stats:** ${JSON.stringify(stats)}\n`);
-          }
-          JSEOF
+        run: node .github/scripts/weekly-ai-summary.mjs
 
       - name: Open weekly summary Issue
         if: steps.weekly_ai.outputs.publishable == 'true'
