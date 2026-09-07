@@ -34,10 +34,10 @@
   </table>
   <p><strong>Daily build pulse</strong></p>
   <ul>
-      <li>9 commits landed: security: make Codex MCP dependencies reproducible (#74); docs(codex): document MCP trust boundary.</li>
-      <li>3 pull requests updated, led by #74: security: make Codex MCP dependencies reproducible.</li>
-      <li>2 issues changed, including #70: Replace the deprecated GitHub MCP and make Codex project MCP dependencies reproducible.</li>
-      <li>Daily summary covers 14 public activity items from the last 1 day.</li>
+      <li>1 commit landed: fix: harden weekly AI summary runtime contract (#73).</li>
+      <li>1 pull request updated, led by #73: fix: harden weekly AI summary runtime contract.</li>
+      <li>25 issues changed, including #97: Make Neural Mesh lookup precedence deterministic and immune to accidental CWD shadowing.</li>
+      <li>Daily summary covers 27 public activity items from the last 1 day.</li>
   </ul>
 </details>
 <!-- project-story:end -->
