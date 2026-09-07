@@ -178,14 +178,12 @@ describe('GitHub workflow hardening', () => {
     expect(guardian).not.toContain('"ai_analysis": ${{ needs.ai-analysis.outputs.ai_report }}');
   });
 
-  it('publishes weekly AI health issues only from substantive generated summaries', () => {
+  it('runs the tested weekly AI generator and gates issue publication on its result', () => {
     const reporter = workflow('ai-issue-reporter.yml');
-    expect(reporter).toContain("appendFileSync(process.env.GITHUB_OUTPUT, 'publishable=true\\n')");
-    expect(reporter).toContain("appendFileSync(process.env.GITHUB_OUTPUT, 'publishable=false\\n')");
+    expect(reporter).toContain('run: node .github/scripts/weekly-ai-summary.mjs');
     expect(reporter).toContain("if: steps.weekly_ai.outputs.publishable == 'true'");
-    expect(reporter).toContain("const summary = json.choices?.[0]?.message?.content?.trim();");
-    expect(reporter).toContain("if (!res.ok || !summary) throw new Error('weekly summary unavailable')");
     expect(reporter).not.toContain('AI summary unavailable this week.');
+    expect(reporter).not.toContain('weekly_summary<<WEEKLY_EOF');
   });
 
   it('keeps AI autofix issue classification internally consistent', () => {
