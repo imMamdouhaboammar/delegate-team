@@ -34,10 +34,10 @@
   </table>
   <p><strong>Daily build pulse</strong></p>
   <ul>
-      <li>33 commits landed: fix: harden weekly AI summary runtime contract (#73); security: make Codex MCP dependencies reproducible (#74).</li>
-      <li>6 pull requests updated, led by #73: fix: harden weekly AI summary runtime contract.</li>
-      <li>34 issues changed, including #97: Make Neural Mesh lookup precedence deterministic and immune to accidental CWD shadowing.</li>
-      <li>Daily summary covers 73 public activity items from the last 7 days.</li>
+      <li>29 commits landed: fix: harden weekly AI summary runtime contract (#73); security: make Codex MCP dependencies reproducible (#74).</li>
+      <li>5 pull requests updated, led by #73: fix: harden weekly AI summary runtime contract.</li>
+      <li>33 issues changed, including #97: Make Neural Mesh lookup precedence deterministic and immune to accidental CWD shadowing.</li>
+      <li>Daily summary covers 67 public activity items from the last 7 days.</li>
   </ul>
 </details>
 <!-- project-story:end -->
