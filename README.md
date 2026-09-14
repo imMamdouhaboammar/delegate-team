@@ -34,10 +34,9 @@
   </table>
   <p><strong>Daily build pulse</strong></p>
   <ul>
-      <li>1 commit landed: fix: harden weekly AI summary runtime contract (#73).</li>
-      <li>2 pull requests updated, led by #98: chore(deps): bump @vitest/mocker from 3.2.7 to 5.0.0 in the npm_and_yarn group across 0 dir….</li>
-      <li>25 issues changed, including #97: Make Neural Mesh lookup precedence deterministic and immune to accidental CWD shadowing.</li>
-      <li>Daily summary covers 28 public activity items from the last 7 days.</li>
+      <li>1 pull request updated, led by #98: chore(deps): bump @vitest/mocker from 3.2.7 to 5.0.0 in the npm_and_yarn group across 0 dir….</li>
+      <li>Daily summary covers 1 public activity item from the last 7 days.</li>
+      <li>Documentation and project status remain aligned with the repository’s current public state.</li>
   </ul>
 </details>
 <!-- project-story:end -->
